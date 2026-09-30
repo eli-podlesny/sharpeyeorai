@@ -1,0 +1,47 @@
+/*
+ * Design tokens. Temporary values — the owner retunes everything here.
+ * Never hard-code colors or fonts elsewhere; reference these variables.
+ */
+:root {
+  /* Palette */
+  --color-ink: #111;
+  --color-graphite: #333;
+  --color-ash: #777;
+  --color-concrete: #beb8ad;
+  --color-bone: #e6e1d7;
+  --color-paper: #f6f4ee;
+  /* Only for interactive elements, click targets, alerts, the score number, the Drama tint */
+  --color-hazard: #ee4d00;
+
+  /* Room tint: the background image is multiplied over this color */
+  --color-room: var(--color-concrete);
+
+  /* Typography */
+  --font-display: 'Turret Road', system-ui, sans-serif;
+  --font-mono: 'Kode Mono', ui-monospace, monospace;
+  --weight-display-medium: 500;
+  --weight-display-bold: 800;
+  --weight-mono-regular: 400;
+  --weight-mono-bold: 700;
+
+  /* Placeholder block colors (v0.1 – v1.0 only) */
+  --placeholder-vignette: color-mix(in srgb, var(--color-ink) 75%, transparent);
+  --placeholder-frame-glow: var(--color-bone);
+  --placeholder-screen: var(--color-graphite);
+  --placeholder-screen-texture: color-mix(in srgb, var(--color-paper) 6%, transparent);
+  --placeholder-door: var(--color-ash);
+  --placeholder-door-seam: var(--color-ink);
+  --placeholder-frame: var(--color-graphite);
+  --placeholder-frame-edge: var(--color-ash);
+  --placeholder-label: var(--color-paper);
+
+  /* HUD */
+  --color-hud-text: var(--color-paper);
+
+  /* Debug overlay */
+  --debug-bg: color-mix(in srgb, var(--color-ink) 85%, transparent);
+  --debug-text: var(--color-bone);
+
+  /* Focus ring */
+  --focus-ring: var(--color-hazard);
+}

@@ -1,0 +1,181 @@
+/* Sizes and positions come from layout.config.ts (set inline in rem). This file holds looks only. */
+
+#app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate; /* keeps the multiply blend inside the app */
+  background: var(--color-room);
+}
+
+/* The 1440 × 900 design stage, centered in the window. 90rem × 56.25rem = 1440 × 900 at 16px. */
+.stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 90rem;
+  height: 56.25rem;
+  transform: translate(-50%, -50%);
+}
+
+.layer {
+  position: absolute;
+}
+
+.placeholder-label {
+  position: absolute;
+  left: 0.375rem;
+  top: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1;
+  color: var(--placeholder-label);
+  opacity: 0.7;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 1. background — viewport-centered, multiplied over the room color */
+.layer--background {
+  inset: 0;
+  pointer-events: none;
+}
+
+.background__art {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: auto;
+  transform: translate(-50%, -50%);
+  mix-blend-mode: multiply;
+  user-select: none;
+}
+
+/* 2. vignette — covers the whole window */
+.layer--vignette {
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, var(--placeholder-vignette));
+}
+
+.layer--vignette .placeholder-label {
+  left: auto;
+  right: 0.375rem;
+}
+
+/* 3. frame-glow */
+.frame-glow__blur {
+  position: absolute;
+  inset: 0;
+  background: var(--placeholder-frame-glow);
+  opacity: 0.35;
+}
+
+/* 4. screen */
+.screen__base,
+.screen__texture,
+.screen-content {
+  position: absolute;
+  inset: 0;
+}
+
+.screen__base {
+  background: var(--placeholder-screen);
+}
+
+.screen__texture {
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--placeholder-screen-texture) 0 0.125rem,
+    transparent 0.125rem 0.25rem
+  );
+  pointer-events: none;
+}
+
+/* 5. doors — clipped to the screen viewport */
+.layer--doors {
+  overflow: hidden;
+}
+
+.door {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  background: var(--placeholder-door);
+}
+
+.door--left {
+  left: 0;
+  border-right: 0.0625rem solid var(--placeholder-door-seam);
+}
+
+.door--right {
+  right: 0;
+  border-left: 0.0625rem solid var(--placeholder-door-seam);
+}
+
+/* 6. frame — a border ring; widths set from config */
+.layer--frame {
+  pointer-events: none;
+}
+
+.frame__ring {
+  position: absolute;
+  inset: 0;
+  border-style: solid;
+  border-color: var(--placeholder-frame);
+  outline: 0.0625rem solid var(--placeholder-frame-edge);
+  outline-offset: -0.0625rem;
+  pointer-events: none;
+}
+
+/* 7. hud */
+.layer--hud {
+  inset: 0;
+  pointer-events: none;
+}
+
+.hud__logo,
+.hud__version {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  color: var(--color-hud-text);
+}
+
+.hud__logo {
+  font-weight: var(--weight-display-bold);
+  line-height: 1;
+}
+
+.hud__logo-accent {
+  color: var(--color-hazard);
+}
+
+.hud__version {
+  font-weight: var(--weight-display-medium);
+  line-height: 1;
+  opacity: 0.7;
+}
+
+/* Debug overlay — fixed screen pixels, not scaled with the stage */
+.debug-overlay {
+  position: fixed;
+  left: 8px;
+  top: 8px;
+  z-index: 1000;
+  padding: 8px 10px;
+  background: var(--debug-bg);
+  color: var(--debug-text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  pointer-events: none;
+}
+
+.debug-overlay[hidden] {
+  display: none;
+}

@@ -1,0 +1,30 @@
+{
+  "name": "sharpeyeorai",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A browser game about visual perception: do you see like a human or like a machine?",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@fontsource/kode-mono": "^5.3.0",
+    "@fontsource/turret-road": "^5.3.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.3"
+  }
+}

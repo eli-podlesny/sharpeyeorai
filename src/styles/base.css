@@ -1,0 +1,41 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* The root font size is set by src/core/stage.ts: 1rem = 16 design px × scale. */
+html {
+  font-size: 16px;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* never scroll, in any direction */
+}
+
+body {
+  background: var(--color-room);
+  color: var(--color-paper);
+  font-family: var(--font-display);
+  font-weight: var(--weight-display-medium);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

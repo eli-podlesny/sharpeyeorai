@@ -1,0 +1,21 @@
+# dependencies and build output
+node_modules/
+dist/
+
+# environment files
+.env
+.env.*
+
+# owner's raw art exports (large files, kept local)
+assets-src/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# logs
+*.log
