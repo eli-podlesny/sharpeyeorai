@@ -18,12 +18,13 @@ describe('blobShape (round 2)', () => {
     expect(blobShape(config, ctx(42))).not.toEqual(blobShape(config, ctx(43)));
   });
 
-  it('fills its 500 × 300 box, centered, with points about 3px apart', () => {
+  it('fills its upright 300 × 440 box, centered, with points about 3px apart', () => {
     for (const seed of SEEDS.slice(0, 20)) {
       const { outer } = blobShape(config, ctx(seed));
       const s = size(outer);
-      expect(s.width).toBeCloseTo(500, 0);
-      expect(s.height).toBeCloseTo(300, 0);
+      expect(s.width).toBeCloseTo(config.width, 0);
+      expect(s.height).toBeCloseTo(config.height, 0);
+      expect(config.height).toBeGreaterThan(config.width);
       expect(Math.abs(s.cx)).toBeLessThan(1);
       expect(Math.abs(s.cy)).toBeLessThan(1);
       expect(maxGap(outer)).toBeLessThan(3.5);

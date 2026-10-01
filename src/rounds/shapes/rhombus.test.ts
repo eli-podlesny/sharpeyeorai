@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { getRound } from '../../config/rounds.config';
 import type { Point } from '../../core/stage';
 import { selfIntersects } from '../polygon';
 import { rhombusShape, type RhombusParams } from './rhombus';
 import { ctx, maxGap, size } from './testUtil';
 
-const config = getRound(10).shape as { type: 'rhombus' } & RhombusParams;
+const config: RhombusParams = {
+  width: 300,
+  height: 220,
+  corners: [
+    { x: 0.1, y: -0.5 },
+    { x: 0.5, y: 0.08 },
+    { x: -0.12, y: 0.5 },
+    { x: -0.5, y: -0.1 },
+  ],
+};
 
 /** Inner angle at corner b, in degrees. */
 function angleAt(a: Point, b: Point, c: Point): number {
@@ -15,7 +23,7 @@ function angleAt(a: Point, b: Point, c: Point): number {
   return (Math.acos(cos) * 180) / Math.PI;
 }
 
-describe('rhombusShape (round 10)', () => {
+describe('rhombusShape', () => {
   const shape = rhombusShape(config, ctx());
 
   it('fills its 300 × 220 box, centered', () => {
