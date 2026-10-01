@@ -12,6 +12,7 @@ import { createButton, createPanel } from './layout';
 export function createReadyScene(ctx: SceneContext): Scene {
   return defineScene((scope) => {
     ctx.doors.setOpen(false, 0);
+    ctx.hud.reset();
     ctx.newSession();
 
     const panel = createPanel('ready');
@@ -19,12 +20,12 @@ export function createReadyScene(ctx: SceneContext): Scene {
 
     if (gameConfig.startMode === 'auto') {
       panel.append(h('p', 'scene-text', copy.ready.autoStart));
-      scope.timeout(() => ctx.machine.go('opening'), gameConfig.autoStartDelayMs);
+      scope.timeout(() => ctx.machine.go('loading'), gameConfig.autoStartDelayMs);
       return;
     }
 
     const start = createButton(copy.ready.start);
-    scope.listen(start, 'click', () => ctx.machine.go('opening'));
+    scope.listen(start, 'click', () => ctx.machine.go('loading'));
     panel.append(start);
   });
 }

@@ -23,7 +23,7 @@ stage.className = 'stage';
 
 const layers = createLayerStack();
 stage.append(...layers.stage);
-app.append(...layers.viewport, stage);
+app.append(...layers.viewport, stage, ...layers.overViewport);
 
 initStage(stage);
 
@@ -33,10 +33,16 @@ const game = createGame({
   content: layers.screenContent,
   overlay: layers.hudScreenSlot,
   doors: layers.doors,
+  hud: layers.screenHud,
+  darkness: layers.darkness,
   bus,
   seed: params.seed,
   createScenes,
 });
+
+// Scene mode has no look yet; the attribute is there for the effects that come later.
+stage.dataset.sceneMode = game.context.sceneMode;
+bus.on('scene.mode', ({ mode }) => (stage.dataset.sceneMode = mode));
 
 initDebugOverlay({ game, bus, open: params.debug });
 

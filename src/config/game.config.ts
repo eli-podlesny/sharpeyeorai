@@ -10,13 +10,23 @@ export interface GameConfig {
   autoStartDelayMs: number;
   /** How long the blast doors take to slide apart. */
   doorOpenMs: number;
-  /** The "Initializing" progress bar fills over this time. */
+  /** How long the blast doors take to slide shut (end of the game). */
+  doorCloseMs: number;
+  /** "Initializing" starts behind the shut doors; the doors start opening this much later. */
+  loadingStartBeforeDoorsMs: number;
+  /** Total time of the "Initializing" progress bar, counted from when it starts. */
   loadingMs: number;
-  /** How long "Calculating" stays on screen before the score. */
+  /** "Initializing" fades out over this time before round 1's intro. */
+  loadingFadeOutMs: number;
+  /** How long "Calculating" stays on screen. Unused while Calculating is out of the flow. */
   calculatingMs: number;
   roundCount: number;
-  /** Pause after a click (while the "logged" tooltip shows) before the next round. */
-  nextRoundDelayMs: number;
+  /** Timings of every round's intro → play → outro (src/rounds/sequence.ts). */
+  roundSequence: RoundSequenceConfig;
+  /** After the last round: how long the scene stays fully dark between doors closing and opening. */
+  endDarknessMs: number;
+  /** The darkness fades in and out over this time. */
+  endDarknessFadeMs: number;
   /** How long the score counts up from 0 on the score screen. */
   scoreCountUpMs: number;
   /** How long the "Copied" tooltip stays after Share result. */
@@ -24,6 +34,29 @@ export interface GameConfig {
   optical: OpticalConfig;
   scoring: ScoringConfig;
   persona: PersonaConfig;
+}
+
+/** Round choreography timings, in ms. See src/rounds/sequence.ts for the order. */
+export interface RoundSequenceConfig {
+  /** 1. "Test #N" and the objective fade in at the center. */
+  introFadeMs: number;
+  /** 2. Both stay put. */
+  holdMs: number;
+  /** 3. "Test #N" fades out… */
+  titleFadeOutMs: number;
+  /** …while the objective moves down to its bottom position. */
+  objectiveMoveMs: number;
+  /** 4. The shape fades in. The round timer starts when it is fully visible. */
+  shapeFadeInMs: number;
+  /** 7. Pause after the click (marker and tooltip showing). */
+  postClickWaitMs: number;
+  /** 8. Objective, shape and marker fade out together. */
+  outroFadeMs: number;
+  /** With prefers-reduced-motion, moves are instant and fades are at most this long. */
+  reducedMotionFadeMs: number;
+  /** CSS easing of fades and of the objective move. */
+  fadeEasing: string;
+  moveEasing: string;
 }
 
 /**
@@ -73,10 +106,26 @@ export const gameConfig: GameConfig = {
   startMode: 'button',
   autoStartDelayMs: 1500,
   doorOpenMs: 1200,
-  loadingMs: 1500,
+  doorCloseMs: 1200,
+  loadingStartBeforeDoorsMs: 300,
+  loadingMs: 2500,
+  loadingFadeOutMs: 200,
   calculatingMs: 1500,
   roundCount: 12,
-  nextRoundDelayMs: 900,
+  roundSequence: {
+    introFadeMs: 400,
+    holdMs: 900,
+    titleFadeOutMs: 300,
+    objectiveMoveMs: 500,
+    shapeFadeInMs: 400,
+    postClickWaitMs: 400,
+    outroFadeMs: 400,
+    reducedMotionFadeMs: 150,
+    fadeEasing: 'ease',
+    moveEasing: 'ease-in-out',
+  },
+  endDarknessMs: 3000,
+  endDarknessFadeMs: 300,
   scoreCountUpMs: 1200,
   copiedTooltipMs: 2000,
   optical: {

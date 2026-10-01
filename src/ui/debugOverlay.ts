@@ -9,7 +9,7 @@ import type { EventBus } from '../core/events';
 import type { Game } from '../core/game';
 import { contentSize, toContentCoords } from '../core/input';
 import { getScale, toStageCoords, type Point } from '../core/stage';
-import { GAME_STATES, type GameState } from '../core/state';
+import { GAME_STATES, SCENE_MODES, type GameState, type SceneMode } from '../core/state';
 import { autoplayResults } from '../rounds/autoplay';
 import { createResult } from '../rounds/session';
 import { scoreRound } from '../scoring/summary';
@@ -41,8 +41,8 @@ function summarize(payload: unknown): string {
 /**
  * Developer panel, hidden by default. The backtick key (`) toggles it.
  * Shows scale, mouse position, current state and round, live dO / dC / q under the
- * cursor during a round, the last events, controls to jump anywhere in the game, and
- * autoplay presets that fill all rounds and go straight to the score.
+ * cursor during a round, the last events, controls to jump anywhere in the game,
+ * autoplay presets that fill all rounds and go straight to the score, and the scene mode.
  */
 export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void {
   const el = h('div', 'debug-overlay');
@@ -114,22 +114,35 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
     const results = autoplayResults(preset, context.session.rng, contentSize);
     context.session.results.push(...results);
     bus.emit('game.end', { results });
-    context.machine.force('calculating');
+    context.machine.force('score');
   });
   autoplay.append(presetSelect, spreadInput, play);
 
-  el.append(info, states, controls, autoplay, events);
+  // Scene mode (placeholder: no visual effect yet)
+  const modeRow = h('div', 'debug-overlay__row');
+  const modeSelect = h('select', 'debug-overlay__input debug-overlay__select');
+  modeSelect.setAttribute('aria-label', 'Scene mode');
+  for (const mode of SCENE_MODES) modeSelect.append(new Option(mode, mode));
+  modeSelect.value = game.context.sceneMode;
+  modeSelect.addEventListener('change', () => {
+    game.context.setSceneMode(modeSelect.value as SceneMode);
+  });
+  modeRow.append('scene mode ', modeSelect);
+
+  el.append(info, states, controls, autoplay, modeRow, events);
   document.body.append(el);
 
   let mouse = { x: NaN, y: NaN };
   let mouseContent: Point = { x: NaN, y: NaN };
   let state: GameState | null = null;
   let round: number | null = null;
-  let roundStartedAt = 0;
+  /** When the current round's shape became fully visible; NaN during the intro. */
+  let roundStartedAt = NaN;
 
   /** What a click right here, right now, would score. */
   const liveScore = (): string => {
     if (state !== 'round' || round === null || Number.isNaN(mouseContent.x)) return '—';
+    if (Number.isNaN(roundStartedAt)) return 'waiting for the shape';
     const latency = Math.round(performance.now() - roundStartedAt);
     const r = scoreRound(createResult(round, mouseContent, latency, contentSize));
     return `dO ${r.dO.toFixed(1)}  dC ${r.dC.toFixed(1)}  q ${r.q.toFixed(3)}`;
@@ -156,12 +169,14 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
 
   // Specific listeners run before onAny ones, so state and round are fresh when we render.
   bus.on('state.change', ({ to }) => (state = to));
-  bus.on('round.start', ({ roundId }) => {
+  bus.on('round.intro.start', ({ roundId }) => {
     round = roundId;
-    roundStartedAt = performance.now();
+    roundStartedAt = NaN;
   });
+  bus.on('round.shape.visible', () => (roundStartedAt = performance.now()));
+  bus.on('scene.mode', ({ mode }) => (modeSelect.value = mode));
   bus.onAny((name, payload) => {
-    log.unshift(`${name.padEnd(16)}${summarize(payload)}`);
+    log.unshift(`${name.padEnd(20)}${summarize(payload)}`);
     log.length = Math.min(log.length, EVENT_LOG_SIZE);
     render();
   });

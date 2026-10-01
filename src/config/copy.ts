@@ -15,11 +15,13 @@ export const copy = {
     title: 'Initializing',
   },
   round: {
+    /** Large title of each round's intro. */
+    title: 'Test #{n}',
     counter: 'Test {n}',
     counterTotal: '/{total}',
     timeLabel: 'Time: ',
-    timeValue: '+{ms}ms',
-    objectiveLabel: 'OBJECTIVE:',
+    /** `{ms}` is padded with `padTime()`, so the idle timer reads 0000ms. */
+    timeValue: '{ms}ms',
     logged: 'Sample {n}, logged',
     loggedPosition: 'x {x}  y {y}',
     loggedTime: 't {ms}ms',
@@ -132,4 +134,12 @@ export function fill(template: string, values: Record<string, string | number>):
 /** Two-digit round number, as shown in "Test 04". */
 export function padRound(n: number): string {
   return String(n).padStart(2, '0');
+}
+
+/** Digits the HUD timer always shows: 0000ms idle, 0347ms, 12034ms. */
+export const TIME_DIGITS = 4;
+
+/** Timer milliseconds padded to `TIME_DIGITS`, as shown in "0347ms". */
+export function padTime(ms: number): string {
+  return String(Math.max(Math.round(ms), 0)).padStart(TIME_DIGITS, '0');
 }

@@ -23,6 +23,9 @@
   --weight-display-bold: 800;
   --weight-mono-regular: 400;
   --weight-mono-bold: 700;
+  /* Screen HUD: round counter and timer */
+  --font-hud: var(--font-mono);
+  --weight-hud: var(--weight-mono-bold);
 
   /* Placeholder block colors (v0.1 – v1.0 only) */
   --placeholder-vignette: color-mix(in srgb, var(--color-ink) 75%, transparent);
@@ -42,6 +45,7 @@
   --progress-fill: var(--color-ink);
   --shape-fill: color-mix(in srgb, var(--color-graphite) 80%, transparent);
   --shape-border: var(--color-ink);
+  --click-marker: var(--color-hazard);
   --tooltip-bg: var(--color-ink);
   --tooltip-text: var(--color-paper);
   --table-rule: color-mix(in srgb, var(--color-ink) 24%, transparent);
@@ -51,6 +55,9 @@
   --button-bg: var(--color-hazard);
   --button-text: var(--color-ink);
   --button-border: var(--color-ink);
+
+  /* End-of-game darkness (placeholder for the blackout effect) */
+  --end-darkness: var(--color-ink);
 
   /* HUD */
   --color-hud-text: var(--color-paper);

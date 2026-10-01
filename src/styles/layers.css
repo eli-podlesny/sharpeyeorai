@@ -96,6 +96,42 @@
   pointer-events: none;
 }
 
+/* screen-hud — inside the screen, above its content, below the doors. Clicks pass through. */
+.screen-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: var(--screen-text);
+  font-family: var(--font-hud);
+  font-weight: var(--weight-hud);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.screen-hud__dim {
+  color: var(--screen-text-dim);
+}
+
+.screen-hud__progress,
+.screen-hud__timer {
+  position: absolute;
+}
+
+.screen-hud__progress {
+  display: flex;
+  align-items: center;
+}
+
+.screen-hud__track {
+  position: relative;
+  background: var(--progress-track);
+}
+
+.screen-hud__bar {
+  height: 100%;
+  background: var(--progress-fill);
+}
+
 /* 5. doors — clipped to the screen viewport. --door-duration is set by the doors control. */
 .layer--doors {
   overflow: hidden;
@@ -185,6 +221,13 @@
 
 .hud__screen-slot > * {
   pointer-events: auto;
+}
+
+/* End-of-game darkness — covers the whole window, above every layer */
+.layer--darkness {
+  inset: 0;
+  pointer-events: none;
+  background: var(--end-darkness);
 }
 
 /* Debug overlay — fixed screen pixels, not scaled with the stage */

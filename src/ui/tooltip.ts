@@ -16,6 +16,17 @@ export interface TooltipContent {
   above?: boolean;
 }
 
+function createTooltip(content: TooltipContent): HTMLElement {
+  const tip = h('div', content.wrap ? 'tooltip tooltip--wrap' : 'tooltip');
+  setRem(tip, { fontSize: T.fontSize, lineHeight: T.lineHeight });
+  if (content.wrap) tip.style.maxWidth = rem(T.maxWidth);
+  tip.style.padding = `${rem(T.paddingY)} ${rem(T.paddingX)}`;
+  tip.setAttribute('role', 'status');
+  tip.append(h('div', 'tooltip__title', content.title));
+  for (const line of content.lines ?? []) tip.append(h('div', '', line));
+  return tip;
+}
+
 /**
  * The one tooltip of the game (in-round "logged" sample, score screen "Copied").
  * Placed in `container` at a point in its design pixels, offset down-right (or up-right
@@ -27,18 +38,8 @@ export function showTooltip(
   at: Point,
   content: TooltipContent,
 ): HTMLElement {
-  const tip = h('div', content.wrap ? 'tooltip tooltip--wrap' : 'tooltip');
-  setRem(tip, {
-    left: at.x + T.offsetX,
-    top: at.y + T.offsetY,
-    fontSize: T.fontSize,
-    lineHeight: T.lineHeight,
-  });
-  if (content.wrap) tip.style.maxWidth = rem(T.maxWidth);
-  tip.style.padding = `${rem(T.paddingY)} ${rem(T.paddingX)}`;
-  tip.setAttribute('role', 'status');
-  tip.append(h('div', 'tooltip__title', content.title));
-  for (const line of content.lines ?? []) tip.append(h('div', '', line));
+  const tip = createTooltip(content);
+  setRem(tip, { left: at.x + T.offsetX, top: at.y + T.offsetY });
   container.append(tip);
 
   const flipY = (): void => {
@@ -54,6 +55,18 @@ export function showTooltip(
     tip.classList.add('tooltip--flip-x');
   }
   if (!content.above && box.bottom > bounds.bottom) flipY();
+  return tip;
+}
+
+/** The same tooltip pinned to a fixed spot, `right`/`top` design px from the container's top-right. */
+export function showTooltipAtCorner(
+  container: HTMLElement,
+  corner: { right: number; top: number },
+  content: TooltipContent,
+): HTMLElement {
+  const tip = createTooltip(content);
+  setRem(tip, corner);
+  container.append(tip);
   return tip;
 }
 

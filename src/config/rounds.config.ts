@@ -1,3 +1,4 @@
+import type { RoundTimeline } from '../rounds/timeline';
 import type { ObjectiveKey } from './copy';
 import { gameConfig, type OpticalConfig } from './game.config';
 
@@ -25,6 +26,8 @@ export type RoundConfig = {
   timeLimitMs: number | null;
   effects: string[]; // effect ids, empty for now
   copyKey: ObjectiveKey;
+  /** Hooks into the round sequence (moving shapes, glitches…). Empty for now. */
+  timeline?: RoundTimeline;
 };
 
 const DEFAULT_TIME_WEIGHT = 0.2;

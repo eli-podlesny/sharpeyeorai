@@ -9,12 +9,10 @@ import { rem, setRem } from '../core/units';
 import { createSampleResults } from '../rounds/autoplay';
 import { summarize, type SessionSummary } from '../scoring/summary';
 import { h } from '../ui/dom';
+import { prefersReducedMotion } from '../ui/motion';
 import { besideElement, showTooltip } from '../ui/tooltip';
 
 const { score: L } = layout;
-
-const prefersReducedMotion = (): boolean =>
-  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** A centered line of text at a fixed top, sized from layout.config.ts. */
 function createLine(
@@ -92,12 +90,14 @@ function createDetailsTable(summary: SessionSummary): HTMLTableElement {
 
 /**
  * The end of the test: total (counted up), verdict persona, speed tag, a Details table,
- * Share result and Play again. Reached without playing (debug jump), it scores seeded
- * sample clicks instead.
+ * Share result and Play again. It renders behind the shut doors, then opens them; the
+ * count-up starts once they are open. The screen HUD is hidden here. Reached without
+ * playing (debug jump), it scores seeded sample clicks instead.
  */
 export function createScoreScene(ctx: SceneContext): Scene {
   return defineScene((scope) => {
-    ctx.doors.setOpen(true, 0);
+    ctx.doors.setOpen(false, 0);
+    ctx.hud.setVisible(false, 0);
 
     const { session } = ctx;
     const isSample = session.results.length === 0;
@@ -109,7 +109,7 @@ export function createScoreScene(ctx: SceneContext): Scene {
 
     // Verdict view
     const verdict = h('div', 'score-verdict');
-    const total = createLine('p', 'score-total', '', L.total);
+    const total = createLine('p', 'score-total', fill(copy.score.total, { total: 0 }), L.total);
     total.setAttribute('aria-label', fill(copy.score.total, { total: summary.total }));
     const line = createLine('p', 'score-body', persona.line, L.line);
     line.style.maxWidth = rem(L.line.maxWidth);
@@ -139,7 +139,15 @@ export function createScoreScene(ctx: SceneContext): Scene {
     root.append(createLine('p', 'score-label', copy.score.label, L.label), verdict, table, links);
     if (isSample) root.append(h('p', 'score-sample-note', copy.score.sampleNote));
     scope.mount(ctx.content, root);
-    countUp(scope, total, summary.total);
+
+    const doorMs = gameConfig.doorOpenMs;
+    ctx.bus.emit('door.open.start', { durationMs: doorMs });
+    ctx.doors.setOpen(true, doorMs);
+    scope.timeout(() => {
+      ctx.bus.emit('door.open.end', {});
+      ctx.bus.emit('score.reveal', { summary, isSample });
+      countUp(scope, total, summary.total);
+    }, doorMs);
 
     scope.listen(details, 'click', () => {
       const open = table.hidden;
@@ -196,7 +204,5 @@ export function createScoreScene(ctx: SceneContext): Scene {
     });
 
     scope.listen(playAgain, 'click', () => ctx.machine.go('ready'));
-
-    ctx.bus.emit('score.reveal', { summary, isSample });
   });
 }

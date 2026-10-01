@@ -73,28 +73,9 @@
   user-select: none;
 }
 
-.round-text-dim {
-  color: var(--screen-text-dim);
-}
-
-.round-progress,
-.round-timer {
+.round-play {
   position: absolute;
-  white-space: nowrap;
-}
-
-.round-timer {
-  font-variant-numeric: tabular-nums;
-}
-
-.round-progress__track {
-  position: absolute;
-  background: var(--progress-track);
-}
-
-.round-progress__bar {
-  height: 100%;
-  background: var(--progress-fill);
+  inset: 0;
 }
 
 .round-shape {
@@ -103,19 +84,35 @@
   border: solid var(--shape-border);
 }
 
-.round-objective-label,
-.round-objective {
+.round-click-marker {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--click-marker);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* "Test #N", centered for the round intro */
+.round-title {
   position: absolute;
   left: 0;
   right: 0;
   margin: 0;
   text-align: center;
-  font-family: var(--font-mono);
-  font-weight: var(--weight-mono-bold);
+  font-weight: var(--weight-display-bold);
 }
 
-.round-objective-label {
-  color: var(--screen-text-dim);
+.round-objective {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.round-objective__text {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-mono-bold);
 }
 
 /* Shared tooltip (src/ui/tooltip.ts) */

@@ -6,10 +6,10 @@ describe('event bus', () => {
     const bus = createEventBus();
     const onStart = vi.fn();
     const onEnd = vi.fn();
-    bus.on('round.start', onStart);
-    bus.on('round.end', onEnd);
+    bus.on('round.intro.start', onStart);
+    bus.on('round.outro.end', onEnd);
 
-    bus.emit('round.start', { roundId: 3 });
+    bus.emit('round.intro.start', { roundId: 3 });
 
     expect(onStart).toHaveBeenCalledWith({ roundId: 3 });
     expect(onEnd).not.toHaveBeenCalled();
@@ -18,9 +18,9 @@ describe('event bus', () => {
   it('stops delivering after unsubscribe', () => {
     const bus = createEventBus();
     const fn = vi.fn();
-    const off = bus.on('round.start', fn);
+    const off = bus.on('round.intro.start', fn);
     off();
-    bus.emit('round.start', { roundId: 1 });
+    bus.emit('round.intro.start', { roundId: 1 });
     expect(fn).not.toHaveBeenCalled();
   });
 
@@ -38,6 +38,6 @@ describe('event bus', () => {
     // @ts-expect-error — not a known event
     bus.emit('round.explode', {});
     // @ts-expect-error — roundId must be a number
-    bus.emit('round.start', { roundId: 'one' });
+    bus.emit('round.intro.start', { roundId: 'one' });
   });
 });
