@@ -1,5 +1,5 @@
-import { getRound, rounds } from '../config/rounds.config';
-import { createRng, rangeOf, type Rng } from '../core/rng';
+import { getRound } from '../config/rounds.config';
+import { createRng, type Rng } from '../core/rng';
 import type { Point } from '../core/stage';
 import { toShapeLocal, type Size } from './geometry';
 import { roundCenters, type Centers } from './opticalCenter';
@@ -53,23 +53,4 @@ export function createResult(
     centers,
     penalty: false,
   };
-}
-
-const SAMPLE_SPREAD_PX = 40;
-const SAMPLE_LATENCY_MS = { min: 600, max: 4000 };
-
-/**
- * Fake results for reviewing the score screen without playing (debug jumps).
- * Clicks scatter around O; the session's seed makes them repeatable.
- */
-export function createSampleResults(rng: Rng, content: Size): RoundResult[] {
-  return rounds.map((round) => {
-    const o = roundCenters(round, content).O;
-    const click = {
-      x: o.x + rangeOf(rng, -SAMPLE_SPREAD_PX, SAMPLE_SPREAD_PX),
-      y: o.y + rangeOf(rng, -SAMPLE_SPREAD_PX, SAMPLE_SPREAD_PX),
-    };
-    const latency = Math.round(rangeOf(rng, SAMPLE_LATENCY_MS.min, SAMPLE_LATENCY_MS.max));
-    return createResult(round.id, click, latency, content);
-  });
 }

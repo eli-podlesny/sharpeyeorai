@@ -173,6 +173,10 @@
       var(--marker-stroke) 100% no-repeat;
 }
 
+.debug-marker--pole {
+  border: var(--marker-stroke) solid var(--debug-marker-pole);
+}
+
 .debug-marker--optical {
   border: var(--marker-stroke) solid var(--debug-marker-optical);
   border-radius: 50%;

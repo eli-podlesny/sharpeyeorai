@@ -62,8 +62,8 @@ function createShape(round: RoundConfig, c: Point): HTMLElement {
   return shape;
 }
 
-/** Debug markers: a cross at C and a circle at O. Hidden unless the debug toggle is on. */
-function createMarker(kind: 'computed' | 'optical', at: Point): HTMLElement {
+/** Debug markers: a cross at C, a circle at O, a square at M. Hidden unless the debug toggle is on. */
+function createMarker(kind: 'computed' | 'optical' | 'pole', at: Point): HTMLElement {
   const marker = h('div', `debug-marker debug-marker--${kind}`);
   setRem(marker, { left: at.x, top: at.y, width: L.markerSize, height: L.markerSize });
   marker.style.setProperty('--marker-stroke', rem(L.markerStroke));
@@ -95,7 +95,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
     const { session } = ctx;
     const roundId = session.currentRound;
     const round = getRound(roundId);
-    const { C: c, O: o } = roundCenters(round, contentSize);
+    const { C: c, M: m, O: o } = roundCenters(round, contentSize);
 
     const root = h('div', 'round');
     setRem(root, { fontSize: L.textSize });
@@ -120,6 +120,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
       timer,
       createShape(round, c),
       createMarker('computed', c),
+      createMarker('pole', m),
       createMarker('optical', o),
       objectiveLabel,
       objective,

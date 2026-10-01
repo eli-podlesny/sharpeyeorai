@@ -62,6 +62,7 @@
   --debug-button-active: var(--color-hazard);
   --debug-marker-computed: var(--color-paper);
   --debug-marker-optical: var(--color-hazard);
+  --debug-marker-pole: var(--color-ash);
 
   /* Focus ring */
   --focus-ring: var(--color-hazard);

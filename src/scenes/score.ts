@@ -6,7 +6,7 @@ import { contentSize } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
 import type { Scope } from '../core/scope';
 import { rem, setRem } from '../core/units';
-import { createSampleResults } from '../rounds/session';
+import { createSampleResults } from '../rounds/autoplay';
 import { summarize, type SessionSummary } from '../scoring/summary';
 import { h } from '../ui/dom';
 import { besideElement, showTooltip } from '../ui/tooltip';

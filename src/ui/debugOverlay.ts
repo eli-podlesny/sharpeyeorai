@@ -1,8 +1,18 @@
+import {
+  autoplayPresets,
+  spreadPreset,
+  type AutoplayPreset,
+  type AutoplayPresetId,
+} from '../config/autoplay.config';
 import { gameConfig } from '../config/game.config';
 import type { EventBus } from '../core/events';
 import type { Game } from '../core/game';
-import { getScale, toStageCoords } from '../core/stage';
+import { contentSize, toContentCoords } from '../core/input';
+import { getScale, toStageCoords, type Point } from '../core/stage';
 import { GAME_STATES, type GameState } from '../core/state';
+import { autoplayResults } from '../rounds/autoplay';
+import { createResult } from '../rounds/session';
+import { scoreRound } from '../scoring/summary';
 import { h } from './dom';
 
 /** Physical key (same spot on any layout) or the typed character. */
@@ -11,6 +21,8 @@ const TOGGLE_CHAR = '`';
 const EVENT_LOG_SIZE = 10;
 const EVENT_PAYLOAD_CHARS = 70;
 const MARKERS_ATTR = 'data-debug-markers';
+const CUSTOM_PRESET = 'custom';
+const DEFAULT_SPREAD_PX = 20;
 
 export interface DebugOverlayOptions {
   game: Game;
@@ -28,8 +40,9 @@ function summarize(payload: unknown): string {
 
 /**
  * Developer panel, hidden by default. The backtick key (`) toggles it.
- * Shows scale, mouse position, current state and round, the last events,
- * and controls to jump anywhere in the game.
+ * Shows scale, mouse position, current state and round, live dO / dC / q under the
+ * cursor during a round, the last events, controls to jump anywhere in the game, and
+ * autoplay presets that fill all rounds and go straight to the score.
  */
 export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void {
   const el = h('div', 'debug-overlay');
@@ -71,15 +84,56 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
   markers.addEventListener('change', () => {
     document.documentElement.toggleAttribute(MARKERS_ATTR, markers.checked);
   });
-  markersLabel.append(markers, ' C/O markers');
+  markersLabel.append(markers, ' C/O/M markers');
 
   controls.append(roundInput, goRound, restart, markersLabel);
-  el.append(info, states, controls, events);
+
+  // Autoplay: fake all rounds with a preset, then show the score
+  const autoplay = h('div', 'debug-overlay__row');
+  const presetSelect = h('select', 'debug-overlay__input debug-overlay__select');
+  presetSelect.setAttribute('aria-label', 'Autoplay preset');
+  for (const [id, preset] of Object.entries(autoplayPresets)) {
+    presetSelect.append(new Option(preset.label, id));
+  }
+  presetSelect.append(new Option('custom spread around O', CUSTOM_PRESET));
+  const spreadInput = h('input', 'debug-overlay__input');
+  spreadInput.type = 'number';
+  spreadInput.min = '0';
+  spreadInput.value = String(DEFAULT_SPREAD_PX);
+  spreadInput.setAttribute('aria-label', 'Custom spread in pixels');
+  const play = h('button', 'debug-overlay__button', 'autoplay');
+  play.type = 'button';
+  play.addEventListener('click', () => {
+    const id = presetSelect.value;
+    const preset: AutoplayPreset =
+      id === CUSTOM_PRESET
+        ? spreadPreset(Math.max(Number(spreadInput.value) || 0, 0))
+        : autoplayPresets[id as AutoplayPresetId];
+    const { context } = game;
+    context.newSession();
+    const results = autoplayResults(preset, context.session.rng, contentSize);
+    context.session.results.push(...results);
+    bus.emit('game.end', { results });
+    context.machine.force('calculating');
+  });
+  autoplay.append(presetSelect, spreadInput, play);
+
+  el.append(info, states, controls, autoplay, events);
   document.body.append(el);
 
   let mouse = { x: NaN, y: NaN };
+  let mouseContent: Point = { x: NaN, y: NaN };
   let state: GameState | null = null;
   let round: number | null = null;
+  let roundStartedAt = 0;
+
+  /** What a click right here, right now, would score. */
+  const liveScore = (): string => {
+    if (state !== 'round' || round === null || Number.isNaN(mouseContent.x)) return '—';
+    const latency = Math.round(performance.now() - roundStartedAt);
+    const r = scoreRound(createResult(round, mouseContent, latency, contentSize));
+    return `dO ${r.dO.toFixed(1)}  dC ${r.dC.toFixed(1)}  q ${r.q.toFixed(3)}`;
+  };
   const log: string[] = [];
 
   const render = (): void => {
@@ -92,6 +146,7 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
       `stage   ${stage}`,
       `state   ${state ?? '—'}${showRound ? `  (round ${round}/${gameConfig.roundCount})` : ''}`,
       `seed    ${game.context.session.seed}`,
+      `live    ${liveScore()}`,
     ].join('\n');
     events.textContent = log.length ? log.join('\n') : 'no events yet';
     for (const [name, button] of stateButtons) {
@@ -101,7 +156,10 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
 
   // Specific listeners run before onAny ones, so state and round are fresh when we render.
   bus.on('state.change', ({ to }) => (state = to));
-  bus.on('round.start', ({ roundId }) => (round = roundId));
+  bus.on('round.start', ({ roundId }) => {
+    round = roundId;
+    roundStartedAt = performance.now();
+  });
   bus.onAny((name, payload) => {
     log.unshift(`${name.padEnd(16)}${summarize(payload)}`);
     log.length = Math.min(log.length, EVENT_LOG_SIZE);
@@ -117,6 +175,7 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
 
   window.addEventListener('mousemove', (e) => {
     mouse = toStageCoords(e.clientX, e.clientY);
+    mouseContent = toContentCoords(e.clientX, e.clientY);
     render();
   });
 

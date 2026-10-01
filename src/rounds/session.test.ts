@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gameConfig } from '../config/game.config';
-import { createRng } from '../core/rng';
-import { createResult, createSampleResults } from './session';
+import { createResult } from './session';
 
 const content = { width: 1046, height: 676 };
 
@@ -16,14 +14,5 @@ describe('createResult', () => {
     expect(result.O.y).toBeCloseTo(-10);
     expect(result.clickContent).toEqual({ x: 533, y: 320 });
     expect(result.latencyMs).toBe(1500);
-  });
-});
-
-describe('createSampleResults', () => {
-  it('fills every round and repeats with the same seed', () => {
-    const a = createSampleResults(createRng(42), content);
-    const b = createSampleResults(createRng(42), content);
-    expect(a).toHaveLength(gameConfig.roundCount);
-    expect(a).toEqual(b);
   });
 });
