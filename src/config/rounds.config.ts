@@ -64,11 +64,34 @@ export function freeScreenArea(): { left: number; top: number; width: number; he
   return { left: margin, top, width: screen.width - 2 * margin, height: bottom - top };
 }
 
-/** Round 7: a rectangle that fills the free area, centered in it. */
-function largeRect(): Pick<RoundConfig, 'shape' | 'offset'> {
+/** Round 7's rectangle turns this far clockwise. */
+const LARGE_RECT_ROTATION_DEG = 10;
+
+/**
+ * The biggest rectangle that, turned by `deg`, has exactly `width` × `height` as its
+ * on-screen bounding box. Solves w·cos + h·sin = width and w·sin + h·cos = height.
+ */
+export function rectForRotatedBox(
+  width: number,
+  height: number,
+  deg: number,
+): { width: number; height: number } {
+  const rad = (deg * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(rad));
+  const sin = Math.abs(Math.sin(rad));
+  const det = cos * cos - sin * sin;
+  return {
+    width: (width * cos - height * sin) / det,
+    height: (height * cos - width * sin) / det,
+  };
+}
+
+/** Round 7: a rectangle turned clockwise, as big as it can be while it fills the free area. */
+function largeRect(): Pick<RoundConfig, 'shape' | 'offset' | 'rotationDeg'> {
   const area = freeScreenArea();
   return {
-    shape: { type: 'rect', width: area.width, height: area.height },
+    shape: { type: 'rect', ...rectForRotatedBox(area.width, area.height, LARGE_RECT_ROTATION_DEG) },
+    rotationDeg: LARGE_RECT_ROTATION_DEG,
     offset: {
       x: area.left + area.width / 2 - layout.screen.width / 2,
       y: area.top + area.height / 2 - layout.screen.height / 2,
@@ -83,8 +106,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     // Seeded per game: same seed, same blob (see shapeSeed in src/rounds/session.ts).
     shape: {
       type: 'blob',
-      width: 500,
-      height: 300,
+      width: 300,
+      height: 440,
       minPoints: 8,
       maxPoints: 10,
       minRadius: 0.6,
@@ -104,23 +127,24 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     },
   },
   7: { ...largeRect(), falloffRadius: REFERENCE_FALLOFF_PX },
-  9: { shape: { type: 'circle', diameter: 320 } },
-  10: {
+  9: {
+    // Three overlapping circles of different sizes, merged into one lopsided outline.
     shape: {
-      type: 'rhombus',
-      width: 300,
-      height: 220,
-      corners: [
-        { x: 0.1, y: -0.5 },
-        { x: 0.5, y: 0.08 },
-        { x: -0.12, y: 0.5 },
-        { x: -0.5, y: -0.1 },
+      type: 'circleCluster',
+      circles: [
+        { x: -34, y: 51, r: 128 },
+        { x: 77, y: -38, r: 90 },
+        { x: -26, y: -102, r: 76 },
       ],
     },
+  },
+  10: {
+    // A five-point star, stretched sideways.
+    shape: { type: 'star', width: 380, height: 240, points: 5, innerRatio: 0.45 },
     rotationDeg: 14,
     offset: { x: -120, y: DEFAULT_OFFSET.y },
   },
-  12: { shape: { type: 'smiley', diameter: 300 }, fill: 'light' },
+  12: { shape: { type: 'smiley', diameter: 100 }, fill: 'light' },
 };
 
 const ROUND_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
