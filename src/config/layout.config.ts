@@ -85,6 +85,8 @@ export const layout = {
     lineHeight: 24,
     /** The objective line at the bottom of the screen. */
     objectiveText: { top: 596 },
+    /** The objective slides up into place from this far below. */
+    objectiveSlide: 16,
     shapeBorder: 2,
     /** Dot left where the player clicked. */
     clickMarkerSize: 8,

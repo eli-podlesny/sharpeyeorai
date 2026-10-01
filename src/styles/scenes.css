@@ -96,6 +96,9 @@
   position: absolute;
   left: 0;
   right: 0;
+}
+
+.round-objective__text {
   margin: 0;
   text-align: center;
   font-family: var(--font-mono);

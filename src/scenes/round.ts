@@ -12,7 +12,7 @@ import { buildRoundSequence } from '../rounds/sequence';
 import { createResult, type RoundResult } from '../rounds/session';
 import type { RoundStage, RoundTimelineContext } from '../rounds/timeline';
 import { h } from '../ui/dom';
-import { commitStyles, fadeTo, prefersReducedMotion } from '../ui/motion';
+import { commitStyles, fadeTo, moveY, prefersReducedMotion } from '../ui/motion';
 import { showTooltipAtCorner } from '../ui/tooltip';
 
 const { round: L } = layout;
@@ -68,7 +68,7 @@ function showLoggedTooltip(result: RoundResult, container: HTMLElement): void {
 
 /**
  * One test round, following the shared sequence (src/rounds/sequence.ts):
- * shape and objective fade in → one click → fade out → pause → next round.
+ * shape fades in (objective slides up a moment later) → one click → fade out → pause → next round.
  * The timer and the latency count from the moment the shape is fully visible; clicks
  * before that are ignored. Counter, progress and timer live in the screen HUD.
  */
@@ -85,9 +85,13 @@ export function createRoundScene(ctx: SceneContext): Scene {
     const root = h('div', 'round');
     setRem(root, { fontSize: L.textSize, lineHeight: L.lineHeight });
 
-    const objective = h('p', 'round-objective fade', copy.objectives[round.copyKey]);
+    // The objective starts a little below its line: the wrapper slides up, the text fades.
+    const objective = h('div', 'round-objective move');
     setRem(objective, { top: L.objectiveText.top });
-    objective.style.opacity = '0';
+    const objectiveText = h('p', 'round-objective__text fade', copy.objectives[round.copyKey]);
+    objectiveText.style.opacity = '0';
+    objective.append(objectiveText);
+    moveY(objective, L.objectiveSlide, 0);
 
     // Shape, debug markers and (later) the click marker fade in and out together.
     const play = h('div', 'round-play fade');
@@ -116,20 +120,23 @@ export function createRoundScene(ctx: SceneContext): Scene {
     let clicked = false;
     let finished = false;
 
-    // 1. Shape and objective fade in together.
+    // 1. The shape fades in; the objective follows a moment later, sliding up.
     bus.emit('round.intro.start', { roundId });
     timeline?.onIntroStart?.(tl);
-    fadeTo(play, 1, seq.fadeInMs, seq.fadeEasing);
-    fadeTo(objective, 1, seq.fadeInMs, seq.fadeEasing);
+    fadeTo(play, 1, seq.shapeFadeInMs, seq.fadeEasing);
+    scope.timeout(() => {
+      fadeTo(objectiveText, 1, seq.objectiveFadeInMs, seq.fadeEasing);
+      moveY(objective, 0, seq.objectiveSlideMs, seq.slideEasing);
+    }, seq.objectiveDelayMs);
 
-    // 2. Fully visible: the timer starts and clicks count.
+    // 2. The shape is fully visible: the timer starts and clicks count.
     scope.timeout(() => {
       shapeVisibleAt = performance.now();
       stage = 'play';
       bus.emit('round.intro.end', { roundId });
       bus.emit('round.shape.visible', { roundId });
       timeline?.onShapeVisible?.(tl);
-    }, seq.fadeInMs);
+    }, seq.shapeFadeInMs);
 
     scope.frame((now) => {
       if (shapeVisibleAt !== null && !clicked) hud.setTime(now - shapeVisibleAt);
@@ -160,7 +167,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
         stage = 'outro';
         bus.emit('round.outro.start', { roundId });
         fadeTo(play, 0, seq.outroFadeMs, seq.fadeEasing);
-        fadeTo(objective, 0, seq.outroFadeMs, seq.fadeEasing);
+        fadeTo(objectiveText, 0, seq.outroFadeMs, seq.fadeEasing);
 
         scope.timeout(() => {
           finished = true;

@@ -38,18 +38,23 @@ export interface GameConfig {
 
 /** Round choreography timings, in ms. See src/rounds/sequence.ts for the order. */
 export interface RoundSequenceConfig {
-  /** 1. Shape and objective fade in together. The round timer starts when they are fully visible. */
-  fadeInMs: number;
+  /** 1. The shape fades in. The round timer starts when it is fully visible. */
+  shapeFadeInMs: number;
+  /** …and the objective fades in and slides up into place, starting this much later… */
+  objectiveDelayMs: number;
+  /** …over this time (slide distance: `layout.round.objectiveSlide`). */
+  objectiveInMs: number;
   /** 4. Pause after the click (marker and tooltip showing). */
   postClickWaitMs: number;
   /** 5. Objective, shape and marker fade out together. */
   outroFadeMs: number;
   /** 6. Empty screen between one round's fade-out and the next round's fade-in. */
   betweenRoundsMs: number;
-  /** With prefers-reduced-motion, fades are at most this long. */
+  /** With prefers-reduced-motion, fades are at most this long and the slide is instant. */
   reducedMotionFadeMs: number;
-  /** CSS easing of the fades. */
+  /** CSS easing of the fades and of the objective slide. */
   fadeEasing: string;
+  slideEasing: string;
 }
 
 /**
@@ -106,12 +111,15 @@ export const gameConfig: GameConfig = {
   calculatingMs: 1500,
   roundCount: 12,
   roundSequence: {
-    fadeInMs: 400,
+    shapeFadeInMs: 400,
+    objectiveDelayMs: 200,
+    objectiveInMs: 200,
     postClickWaitMs: 400,
     outroFadeMs: 400,
     betweenRoundsMs: 400,
     reducedMotionFadeMs: 150,
     fadeEasing: 'ease',
+    slideEasing: 'ease-out',
   },
   endDarknessMs: 3000,
   endDarknessFadeMs: 300,

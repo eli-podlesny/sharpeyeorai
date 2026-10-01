@@ -111,7 +111,7 @@ Colors and type are not final. Always use tokens, never hard-coded values, so th
 ## Gameplay rules (current decisions)
 
 - Flow: Intro → Ready (closed doors + Start button) → Loading ("Initializing" starts behind the doors, doors open onto it after `loadingStartBeforeDoorsMs`) → Test 01…12 → Ending (doors close, darkness for `endDarknessMs`) → Score (rendered behind the doors, which open onto it). The Calculating scene is kept but out of the flow.
-- Every round follows one sequence (`src/rounds/sequence.ts`, timings in `gameConfig.roundSequence`): shape and objective (at its bottom position) fade in together → timer starts when they are fully visible (earlier clicks ignored) → click: marker + "Sample 0X, logged" tooltip (fixed top-right) → wait 400ms → objective, shape and marker fade out → 400ms pause → next round. No "Test #N" title. Reduced motion: fades short.
+- Every round follows one sequence (`src/rounds/sequence.ts`, timings in `gameConfig.roundSequence`): shape fades in (400ms) while the objective fades in and slides up 16px into its bottom position (200ms delay, 200ms) → timer starts when the shape is fully visible (earlier clicks ignored) → click: marker + "Sample 0X, logged" tooltip (fixed top-right) → wait 400ms → objective, shape and marker fade out → 400ms pause → next round. No "Test #N" title. Reduced motion: fades short, no slide.
 - Timer and score show at least 4 digits (`padDigits`): `0000ms` idle (dimmed like the "Time:" label), `0347ms`, `0636pts`. The timer freezes at the click time until the next round starts.
 - Rounds may have an optional `timeline` hook (intro start, shape visible, every frame, click, outro end); empty for now. `sceneMode` (normal / distorted / alert / blackout) is a placeholder with no visual effect, settable from the debug panel.
 - A `startMode` config flag: `"button"` (current) or `"auto"` (possible later). Build for both.
@@ -213,4 +213,4 @@ Mobile layout, leaderboard/database, sound playback, narrator/intro cinematic, f
 - Score screen follows the Figma "Score" frame; Details (table only, no diagram), Play again and the speed tag are added in the same style.
 - v0.4: the screen is live behind the doors (loading starts before they open); the screen HUD is persistent and below the doors; the game ends with doors closing, darkness and doors opening on the score; Calculating is out of the flow.
 - v0.4: the "OBJECTIVE:" label is dropped; only the objective sentence shows. Loading runs 2500ms in total.
-- v0.4 review: no round intro and no "Test #N" title; shape and objective fade in together; 400ms between rounds; score padded to 4 digits like the timer.
+- v0.4 review: no round intro and no "Test #N" title; shape fades in, objective slides up 16px (200ms delay, 200ms); 400ms between rounds; score padded to 4 digits like the timer.
