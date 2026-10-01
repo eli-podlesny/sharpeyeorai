@@ -9,8 +9,8 @@ export interface RoundTimelineContext {
   roundId: number;
   /** The round's root element inside screen-content. */
   root: HTMLElement;
-  /** The shape element. */
-  shape: HTMLElement;
+  /** The shape element (an SVG covering screen-content). */
+  shape: SVGSVGElement;
   bus: EventBus;
 }
 

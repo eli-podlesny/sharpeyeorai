@@ -1,0 +1,35 @@
+import type { ShapeFill } from '../config/rounds.config';
+import { rem } from '../core/units';
+import { shapePath, type PlacedShape, type Size } from '../rounds/geometry';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+export function svg<K extends keyof SVGElementTagNameMap>(
+  tag: K,
+  className = '',
+): SVGElementTagNameMap[K] {
+  const el = document.createElementNS(SVG_NS, tag);
+  if (className) el.setAttribute('class', className);
+  return el;
+}
+
+/**
+ * A placed shape as one SVG path over the whole screen-content area (viewBox in
+ * screen-content px), so holes are real cutouts. Sized in rem like everything on the stage.
+ */
+export function createShapeSvg(
+  shape: PlacedShape,
+  content: Size,
+  options: { fill: ShapeFill; strokeWidth: number; type: string },
+): SVGSVGElement {
+  const root = svg('svg', `round-shape round-shape--${options.type} round-shape--${options.fill}`);
+  root.setAttribute('viewBox', `0 0 ${content.width} ${content.height}`);
+  root.setAttribute('aria-hidden', 'true');
+  root.style.width = rem(content.width);
+  root.style.height = rem(content.height);
+  const path = svg('path', 'round-shape__path');
+  path.setAttribute('d', shapePath(shape));
+  path.setAttribute('stroke-width', String(options.strokeWidth));
+  root.append(path);
+  return root;
+}

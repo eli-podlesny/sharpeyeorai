@@ -105,9 +105,11 @@ export const layout = {
     clickMarkerSize: 8,
     /** The "Sample 0X, logged" tooltip: fixed in the top-right corner of the screen. */
     loggedTooltip: { right: 24, top: 24 },
-    /** Debug C (cross) and O (circle) markers. */
+    /** Debug C (cross), O (circle) and M (square) markers. */
     markerSize: 16,
     markerStroke: 2,
+    /** Round 7's large shape keeps this far from the HUD row, the objective line and the screen edges. */
+    largeShapeMargin: 40,
   },
 
   /** The shared tooltip (in-round "logged" sample, "Copied"), placed this far from its point. */

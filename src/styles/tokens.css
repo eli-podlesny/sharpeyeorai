@@ -47,6 +47,9 @@
   /* The fill pulses between these two while the round timer runs */
   --shape-fill-pulse-low: var(--shape-fill);
   --shape-fill-pulse-high: var(--color-graphite);
+  /* Round 12 uses the light logo color, pulsing the same way */
+  --shape-fill-light: color-mix(in srgb, var(--color-hud-text) 80%, transparent);
+  --shape-fill-light-pulse-high: var(--color-hud-text);
   --shape-border: var(--color-ink);
   --click-marker: var(--color-hazard);
   --tooltip-bg: var(--color-ink);

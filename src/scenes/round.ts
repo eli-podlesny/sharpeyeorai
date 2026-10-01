@@ -1,36 +1,22 @@
 import { copy, fill, padRound } from '../config/copy';
 import { gameConfig } from '../config/game.config';
 import { layout } from '../config/layout.config';
-import { getRound, type RoundConfig } from '../config/rounds.config';
+import { getRound } from '../config/rounds.config';
 import type { SceneContext } from '../core/game';
 import { contentSize, toContentCoords } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
 import type { Point } from '../core/stage';
 import { rem, setRem } from '../core/units';
-import { roundCenters } from '../rounds/opticalCenter';
 import { buildRoundSequence } from '../rounds/sequence';
-import { createResult, type RoundResult } from '../rounds/session';
+import { createResult, shapeSeed, type RoundResult } from '../rounds/session';
+import { roundTarget } from '../rounds/target';
 import type { RoundStage, RoundTimelineContext } from '../rounds/timeline';
 import { h } from '../ui/dom';
+import { createShapeSvg } from '../ui/shapeSvg';
 import { commitStyles, fadeTo, moveTo, prefersReducedMotion } from '../ui/motion';
 import { showTooltipAtCorner } from '../ui/tooltip';
 
 const { round: L } = layout;
-
-/** The placeholder shape, centered on C and turned around it. */
-function createShape(round: RoundConfig, c: Point): HTMLElement {
-  const { width, height, rotationDeg } = round.shape;
-  const shape = h('div', `round-shape round-shape--${round.shape.type}`);
-  setRem(shape, {
-    left: c.x - width / 2,
-    top: c.y - height / 2,
-    width,
-    height,
-    borderWidth: L.shapeBorder,
-  });
-  shape.style.transform = `rotate(${rotationDeg}deg)`;
-  return shape;
-}
 
 /** Debug markers: a cross at C, a circle at O, a square at M. Hidden unless the debug toggle is on. */
 function createMarker(kind: 'computed' | 'optical' | 'pole', at: Point): HTMLElement {
@@ -80,7 +66,9 @@ export function createRoundScene(ctx: SceneContext): Scene {
     const { session, hud, bus } = ctx;
     const roundId = session.currentRound;
     const round = getRound(roundId);
-    const { C: c, M: m, O: o } = roundCenters(round, contentSize);
+    const target = roundTarget(round, contentSize, shapeSeed(session, roundId));
+    const { C: c, M: m, O: o } = target.centers;
+    const { anchor } = target.shape;
     const seq = buildRoundSequence(gameConfig.roundSequence, prefersReducedMotion());
 
     const root = h('div', 'round');
@@ -91,10 +79,14 @@ export function createRoundScene(ctx: SceneContext): Scene {
     const play = h('div', 'round-play fade');
     play.style.opacity = '0';
     const playMotion = h('div', 'round-play move');
-    playMotion.style.transformOrigin = `${rem(c.x)} ${rem(c.y)}`;
+    playMotion.style.transformOrigin = `${rem(anchor.x)} ${rem(anchor.y)}`;
     moveTo(playMotion, { y: L.shapeEnter.rise, scale: L.shapeEnter.scale }, 0);
     play.append(playMotion);
-    const shape = createShape(round, c);
+    const shape = createShapeSvg(target.shape, contentSize, {
+      fill: round.fill,
+      strokeWidth: L.shapeBorder,
+      type: round.shape.type,
+    });
     playMotion.append(
       shape,
       createMarker('computed', c),
@@ -155,7 +147,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
       // The event's own timestamp is when the press happened, not when we handled it.
       const latencyMs = Math.max(Math.round(e.timeStamp - shapeVisibleAt), 0);
       const point = toContentCoords(e.clientX, e.clientY);
-      const result = createResult(roundId, point, latencyMs, contentSize);
+      const result = createResult(target, point, latencyMs);
       hud.setTime(latencyMs);
       playMotion.append(createClickMarker(point));
 

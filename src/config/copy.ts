@@ -29,7 +29,7 @@ export const copy = {
   },
   /** Objective lines, referenced by `copyKey` in rounds.config.ts. */
   objectives: {
-    'objective.rect': 'Find an optical center of the rectangle',
+    'objective.shape': 'Find the optical center of the shape',
   },
   calculating: {
     title: 'Calculating',

@@ -101,7 +101,7 @@ export function createScoreScene(ctx: SceneContext): Scene {
 
     const { session } = ctx;
     const isSample = session.results.length === 0;
-    const results = isSample ? createSampleResults(session.rng, contentSize) : session.results;
+    const results = isSample ? createSampleResults(session, contentSize) : session.results;
     const summary = summarize(results);
     const { persona } = summary;
 
