@@ -91,7 +91,17 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
       angleJitter: 0.25,
     },
   },
-  3: { shape: { type: 'avocado', width: 280, height: 380, pitFraction: 0.35, pitCenterY: 0.22 } },
+  3: {
+    shape: {
+      type: 'avocado',
+      width: 280,
+      height: 380,
+      pitFraction: 0.35,
+      pitAspect: 1.3,
+      pitRotationDeg: 15,
+      pitCenterY: 0.22,
+    },
+  },
   7: { ...largeRect(), falloffRadius: REFERENCE_FALLOFF_PX },
   9: { shape: { type: 'circle', diameter: 320 } },
   10: {
