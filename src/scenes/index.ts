@@ -3,6 +3,7 @@ import type { SceneMap } from '../core/scenes';
 import { createEndingScene } from './ending';
 import { createIntroScene } from './intro';
 import { createLoadingScene } from './loading';
+import { createObjectiveScene } from './objective';
 import { createReadyScene } from './ready';
 import { createRoundScene } from './round';
 import { createScoreScene } from './score';
@@ -15,6 +16,7 @@ export function createScenes(ctx: SceneContext): SceneMap {
     intro: createIntroScene(ctx),
     ready: createReadyScene(ctx),
     loading: createLoadingScene(ctx),
+    objective: createObjectiveScene(ctx),
     round: createRoundScene(ctx),
     ending: createEndingScene(ctx),
     score: createScoreScene(ctx),

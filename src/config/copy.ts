@@ -14,6 +14,9 @@ export const copy = {
   loading: {
     title: 'Initializing',
   },
+  objectiveIntro: {
+    title: 'Objective:',
+  },
   round: {
     counter: 'Test {n}',
     counterTotal: '/{total}',
@@ -32,7 +35,7 @@ export const copy = {
     title: 'Calculating',
   },
   score: {
-    label: 'Your medical summary',
+    label: 'Your score',
     /** `{total}` is padded with `padDigits()`: 0636pts. */
     total: '{total}pts',
     sampleNote: 'Sample data — no rounds played',

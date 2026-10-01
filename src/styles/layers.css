@@ -132,6 +132,17 @@
   background: var(--progress-fill);
 }
 
+.screen-hud__objective {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.screen-hud__objective-text {
+  margin: 0;
+  text-align: center;
+}
+
 /* 5. doors — clipped to the screen viewport. --door-duration is set by the doors control. */
 .layer--doors {
   overflow: hidden;

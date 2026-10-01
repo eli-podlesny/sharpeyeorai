@@ -92,17 +92,19 @@
   pointer-events: none;
 }
 
-.round-objective {
+/* Objective intro before round 1: "Objective:" (the objective line is in the screen HUD) */
+.objective-intro {
   position: absolute;
   left: 0;
   right: 0;
+  transform-origin: center;
 }
 
-.round-objective__text {
+.objective-intro__title {
   margin: 0;
   text-align: center;
-  font-family: var(--font-mono);
-  font-weight: var(--weight-mono-bold);
+  color: var(--screen-text);
+  font-weight: var(--weight-display-bold);
 }
 
 /* Shared tooltip (src/ui/tooltip.ts) */

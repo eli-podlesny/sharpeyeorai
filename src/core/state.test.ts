@@ -16,6 +16,7 @@ describe('transition table', () => {
       'intro',
       'ready',
       'loading',
+      'objective',
       'round',
       'round',
       'ending',

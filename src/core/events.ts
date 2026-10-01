@@ -14,6 +14,8 @@ export interface GameEvents {
   'door.close.start': { durationMs: number };
   'door.close.end': Record<string, never>;
   /** Round sequence steps, in order (see src/rounds/sequence.ts). The intro is the fade-in of shape and objective. */
+  'objective.intro.start': Record<string, never>;
+  'objective.intro.end': Record<string, never>;
   'round.intro.start': { roundId: number };
   'round.intro.end': { roundId: number };
   /** The shape is fully visible: the timer starts and clicks count from here. */

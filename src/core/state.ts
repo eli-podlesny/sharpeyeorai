@@ -1,9 +1,18 @@
 /**
  * The game's states and which state may follow which.
  * `intro` exists but is skipped for now (it is built in v1.4).
- * `loading` also opens the doors; `ending` closes them and goes dark before the score.
+ * `loading` also opens the doors; `objective` introduces the objective before round 1;
+ * `ending` closes the doors and goes dark before the score.
  */
-export const GAME_STATES = ['intro', 'ready', 'loading', 'round', 'ending', 'score'] as const;
+export const GAME_STATES = [
+  'intro',
+  'ready',
+  'loading',
+  'objective',
+  'round',
+  'ending',
+  'score',
+] as const;
 
 export type GameState = (typeof GAME_STATES)[number];
 
@@ -11,7 +20,8 @@ export type GameState = (typeof GAME_STATES)[number];
 export const TRANSITIONS: Readonly<Record<GameState, readonly GameState[]>> = {
   intro: ['ready'],
   ready: ['loading'],
-  loading: ['round'],
+  loading: ['objective'],
+  objective: ['round'],
   round: ['round', 'ending'],
   ending: ['score'],
   score: ['ready'],

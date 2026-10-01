@@ -37,7 +37,7 @@ export function createLoadingScene(ctx: SceneContext): Scene {
     const next = (): void => {
       if (!loaded || !doorsOpen) return;
       fadeTo(panel, 0, gameConfig.loadingFadeOutMs);
-      scope.timeout(() => ctx.machine.go('round'), gameConfig.loadingFadeOutMs);
+      scope.timeout(() => ctx.machine.go('objective'), gameConfig.loadingFadeOutMs);
     };
 
     scope.timeout(() => {
