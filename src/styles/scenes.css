@@ -84,6 +84,26 @@
   border: solid var(--shape-border);
 }
 
+/* While the timer runs the fill pulses (--pulse-ms per cycle); on the click it freezes */
+.round-shape.is-pulsing {
+  animation: shape-pulse var(--pulse-ms, 1000ms) ease-in-out infinite;
+}
+
+.round-shape.is-pulse-stopped {
+  animation-play-state: paused;
+}
+
+@keyframes shape-pulse {
+  0%,
+  100% {
+    background-color: var(--shape-fill-pulse-low);
+  }
+
+  50% {
+    background-color: var(--shape-fill-pulse-high);
+  }
+}
+
 .round-click-marker {
   position: absolute;
   border-radius: 50%;

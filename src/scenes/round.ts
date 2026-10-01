@@ -129,9 +129,11 @@ export function createRoundScene(ctx: SceneContext): Scene {
     fadeTo(play, 1, seq.shapeFadeInMs, seq.fadeEasing);
     moveTo(playMotion, {}, seq.shapeMoveInMs, seq.slideEasing);
 
-    // 2. The shape is fully visible: the timer starts and clicks count.
+    // 2. The shape is fully visible: the timer starts, the fill pulses and clicks count.
     scope.timeout(() => {
       shapeVisibleAt = performance.now();
+      shape.style.setProperty('--pulse-ms', `${seq.shapePulseMs}ms`);
+      shape.classList.add('is-pulsing');
       stage = 'play';
       bus.emit('round.intro.end', { roundId });
       bus.emit('round.shape.visible', { roundId });
@@ -148,6 +150,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
     scope.listen(ctx.content, 'pointerdown', (e) => {
       if (shapeVisibleAt === null || clicked || e.button !== 0) return;
       clicked = true;
+      shape.classList.add('is-pulse-stopped');
 
       // The event's own timestamp is when the press happened, not when we handled it.
       const latencyMs = Math.max(Math.round(e.timeStamp - shapeVisibleAt), 0);

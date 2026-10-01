@@ -9,6 +9,7 @@ import { buildObjectiveIntro, buildRoundSequence } from './sequence';
 const config: RoundSequenceConfig = {
   shapeFadeInMs: 400,
   loggedTooltipMs: 500,
+  shapePulseMs: 1000,
   postClickWaitMs: 800,
   outroFadeMs: 400,
   betweenRoundsMs: 400,
@@ -62,6 +63,7 @@ describe('round sequence', () => {
       shapeMoveInMs: 400,
       shapeMoveOutMs: 400,
       loggedTooltipMs: 500,
+      shapePulseMs: 1000,
       postClickWaitMs: 800,
       outroFadeMs: 400,
       betweenRoundsMs: 400,

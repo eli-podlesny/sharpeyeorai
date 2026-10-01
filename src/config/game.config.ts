@@ -64,6 +64,8 @@ export interface RoundSequenceConfig {
   shapeFadeInMs: number;
   /** 3. The "Sample 0X, logged" tooltip disappears (instantly) this long after the click. */
   loggedTooltipMs: number;
+  /** One full pulse of the shape fill (low → high → low) while the timer runs. Colors are tokens. */
+  shapePulseMs: number;
   /** 4. The shape stays this long after the click (marker showing). */
   postClickWaitMs: number;
   /** 5. Shape and marker fade out over this time. */
@@ -142,6 +144,7 @@ export const gameConfig: GameConfig = {
   roundSequence: {
     shapeFadeInMs: 400,
     loggedTooltipMs: 500,
+    shapePulseMs: 1000,
     postClickWaitMs: 800,
     outroFadeMs: 400,
     betweenRoundsMs: 400,

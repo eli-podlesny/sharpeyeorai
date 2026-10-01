@@ -44,6 +44,9 @@
   --progress-track: color-mix(in srgb, var(--color-ink) 48%, transparent);
   --progress-fill: var(--color-ink);
   --shape-fill: color-mix(in srgb, var(--color-graphite) 80%, transparent);
+  /* The fill pulses between these two while the round timer runs */
+  --shape-fill-pulse-low: var(--shape-fill);
+  --shape-fill-pulse-high: var(--color-graphite);
   --shape-border: var(--color-ink);
   --click-marker: var(--color-hazard);
   --tooltip-bg: var(--color-ink);
