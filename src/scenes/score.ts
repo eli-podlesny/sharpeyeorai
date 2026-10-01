@@ -91,7 +91,7 @@ function createDetailsTable(summary: SessionSummary): HTMLTableElement {
 /**
  * The end of the test: total (counted up), verdict persona, speed tag, a Details table,
  * Share result and Play again. It renders behind the shut doors, then opens them; the
- * count-up starts once they are open. The screen HUD is hidden here. Reached without
+ * count-up runs while they open. The screen HUD is hidden here. Reached without
  * playing (debug jump), it scores seeded sample clicks instead.
  */
 export function createScoreScene(ctx: SceneContext): Scene {
@@ -148,11 +148,10 @@ export function createScoreScene(ctx: SceneContext): Scene {
     const doorMs = gameConfig.doorOpenMs;
     ctx.bus.emit('door.open.start', { durationMs: doorMs });
     ctx.doors.setOpen(true, doorMs);
-    scope.timeout(() => {
-      ctx.bus.emit('door.open.end', {});
-      ctx.bus.emit('score.reveal', { summary, isSample });
-      countUp(scope, total, summary.total);
-    }, doorMs);
+    // The total counts up while the doors slide open.
+    ctx.bus.emit('score.reveal', { summary, isSample });
+    countUp(scope, total, summary.total);
+    scope.timeout(() => ctx.bus.emit('door.open.end', {}), doorMs);
 
     scope.listen(details, 'click', () => {
       const open = table.hidden;
