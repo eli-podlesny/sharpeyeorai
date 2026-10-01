@@ -141,6 +141,12 @@ describe('shapes with holes', () => {
     expectPoint(O, filled.O.x, filled.O.y);
   });
 
+  it('avocado: lopsided enough that C and O are far apart, both on the material', () => {
+    const { C, O } = shapeCenters(avocado, gameConfig.optical);
+    expect(Math.hypot(O.x - C.x, O.y - C.y)).toBeGreaterThan(15);
+    expect(contains(pit, C) || contains(pit, O)).toBe(false);
+  });
+
   it('avocado: O can sit in the pit (here with the full pull toward M)', () => {
     const settings = { ...gameConfig.optical, skeletonWeight: 1, biasY: 0 };
     const { O } = shapeCenters(avocado, settings);

@@ -118,7 +118,7 @@ Colors and type are not final. Always use tokens, never hard-coded values, so th
 - Rounds may have an optional `timeline` hook (intro start, shape visible, every frame, click, outro end); empty for now. `sceneMode` (normal / distorted / alert / blackout) is a placeholder with no visual effect, settable from the debug panel.
 - A `startMode` config flag: `"button"` (current) or `"auto"` (possible later). Build for both.
 - Shapes (`src/rounds/shapes/`): a shape is `{ outer, holes }`, closed rings sampled about every `gameConfig.shapePointSpacingPx` (3px). Generators are pure functions of `(params, { rng, spacing })`, centered on their bounding box. `placeShape` (`src/rounds/geometry.ts`) is the one place offset and rotation are applied; rendering (one SVG `<path>`, even-odd fill, so holes are cutouts) and scoring both use its output. `roundTarget` (`src/rounds/target.ts`) bundles the placed shape, C/M/O and the falloff radius.
-- Round shapes (`rounds.config.ts`): 1 rectangle 360 × 360; 2 seeded blob about 500 × 300 (8–10 points around an ellipse, smooth closed curve, never self-crossing); 3 lopsided avocado 280 × 380 with an oval pit (35% of its width, 1.3× as tall, tilted 15°); 7 rectangle filling the free screen area (`layout.round.largeShapeMargin` = 40px from the HUD row, the objective line and the screen edges, via `freeScreenArea()`); 9 circle 320; 10 lopsided rhombus 300 × 220, rotated 14°, 120px left; 12 smiley 300 (disc with eye and mouth holes), in the light logo color (`--shape-fill-light`). Rounds 4, 5, 6, 8, 11 keep the 200 × 200 placeholder until v0.6. All other shapes are 8px above center.
+- Round shapes (`rounds.config.ts`): 1 rectangle 360 × 360; 2 seeded blob about 500 × 300 (8–10 points around an ellipse, smooth closed curve, never self-crossing); 3 lopsided avocado 280 × 380 (neck and top bulb lean right, big bulb left) with an oval pit (35% of its width, 1.3× as tall, tilted 20°, 8% left of the bulb's middle); 7 rectangle filling the free screen area (`layout.round.largeShapeMargin` = 40px from the HUD row, the objective line and the screen edges, via `freeScreenArea()`); 9 circle 320; 10 lopsided rhombus 300 × 220, rotated 14°, 120px left; 12 smiley 300 (disc with eye and mouth holes), in the light logo color (`--shape-fill-light`). Rounds 4, 5, 6, 8, 11 keep the 200 × 200 placeholder until v0.6. All other shapes are 8px above center.
 - Shape seeds: each round's shape seed is `mixSeed(game seed, round id)` (`shapeSeed` in `src/rounds/session.ts`), so `?seed=` replays the same blob. The debug panel's "reroll round 2" sets a new seed for round 2 only; "shape gallery" shows all 12 shapes with C/O/M markers and the free area.
 - Objective line (all rounds): "Find the optical center of the shape".
 - One click per round. The click is final and the next round loads automatically. Latency is measured from `round.shape.visible`.
@@ -171,7 +171,7 @@ t_lean = clamp( ((P − C) · (O − C)) / sep² , −0.5, 1.5 )        0 = mach
 humanityIndex = mean t_lean over included rounds (null if none)
 ```
 
-C and O are about 10–40px apart on most shapes; on the avocado the pit pulls C up next to O (about 1px apart), so round 3 is left out of the lean.
+C and O are about 10–40px apart on most shapes (avocado ≈ 19px, by design of its lean and pit placement).
 
 ### Session summary (`src/scoring/summary.ts`)
 
@@ -223,4 +223,4 @@ Mobile layout, leaderboard/database, sound playback, narrator/intro cinematic, f
 - v0.4 review: no round intro and no "Test #N" title; shape fades in, objective slides up 16px (200ms delay, 200ms); 400ms between rounds; score padded to 4 digits like the timer.
 - v0.4 review: the objective is introduced once before round 1 ("Objective:" + objective line) and stays at the bottom through round 12; between rounds only the shape comes and goes. Score label is "Your score".
 - v0.5: O is computed from the outer contour (holes filled) and may sit in a hole; C is the centroid of the material. Falloff defaults to half the shorter side of the on-screen bbox; rounds 1 and 7 keep 100px. Objective text is generic. Round 12's smiley uses the light logo color.
-- v0.5 review: the avocado is lopsided (two different sides) with an oval pit (35% of the width, 1.3× as tall, tilted 15° clockwise with the fruit), centered in the lower bulb. The shape stays 1600ms after the click before fading.
+- v0.5 review: the avocado is strongly lopsided (neck and top bulb lean right, big bulb left) with an oval pit (35% of the width, 1.3× as tall, tilted 20°, set 8% left), so C and O land about 19px apart, both on the material. The shape stays 1600ms after the click before fading.

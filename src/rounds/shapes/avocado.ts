@@ -18,6 +18,8 @@ export interface AvocadoParams {
   pitAspect: number;
   /** Pit tilt, clockwise in degrees, around its own center (follows the fruit's lean). */
   pitRotationDeg: number;
+  /** Pit center sideways from the middle of the lower bulb, as a fraction of the width (− = left). */
+  pitOffsetX: number;
   /** Pit center below the box center, as a fraction of the height. */
   pitCenterY: number;
 }
@@ -25,34 +27,35 @@ export interface AvocadoParams {
 /**
  * The pear outline as fractions of the box (x: −0.5 = left edge, 0.5 = right edge;
  * y: −0.5 = top, 0.5 = bottom). The two sides differ, so the fruit is lopsided:
- * the top bulb leans right and the bottom bulb swells more to the left.
+ * the neck and top bulb lean right while the big bottom bulb swells to the left, which
+ * pulls the optical center (built from the outline) away from the centroid.
  */
 export const AVOCADO_OUTLINE = {
-  top: { x: 0.06, y: -0.5 },
+  top: { x: 0.32, y: -0.5 },
   /** Right side, top to bottom. */
   right: [
-    { x: 0.19, y: -0.47 },
-    { x: 0.29, y: -0.39 },
-    { x: 0.32, y: -0.28 },
-    { x: 0.28, y: -0.16 },
-    { x: 0.33, y: -0.05 },
-    { x: 0.43, y: 0.07 },
-    { x: 0.47, y: 0.22 },
-    { x: 0.44, y: 0.36 },
-    { x: 0.32, y: 0.46 },
+    { x: 0.43, y: -0.46 },
+    { x: 0.5, y: -0.37 },
+    { x: 0.49, y: -0.26 },
+    { x: 0.4, y: -0.16 },
+    { x: 0.32, y: -0.06 },
+    { x: 0.33, y: 0.07 },
+    { x: 0.34, y: 0.21 },
+    { x: 0.29, y: 0.35 },
+    { x: 0.16, y: 0.46 },
   ],
-  bottom: { x: -0.04, y: 0.5 },
+  bottom: { x: -0.1, y: 0.5 },
   /** Left side, bottom to top. */
   left: [
-    { x: -0.3, y: 0.47 },
-    { x: -0.46, y: 0.37 },
-    { x: -0.53, y: 0.2 },
-    { x: -0.47, y: 0.04 },
-    { x: -0.33, y: -0.07 },
-    { x: -0.21, y: -0.18 },
-    { x: -0.2, y: -0.31 },
-    { x: -0.14, y: -0.42 },
-    { x: -0.06, y: -0.48 },
+    { x: -0.34, y: 0.46 },
+    { x: -0.48, y: 0.33 },
+    { x: -0.5, y: 0.16 },
+    { x: -0.42, y: 0.01 },
+    { x: -0.24, y: -0.09 },
+    { x: -0.03, y: -0.18 },
+    { x: 0.1, y: -0.28 },
+    { x: 0.16, y: -0.4 },
+    { x: 0.22, y: -0.48 },
   ],
 } as const;
 
@@ -75,10 +78,10 @@ export function avocadoShape(p: AvocadoParams, { spacing }: ShapeContext): Shape
   const resampled = resampleClosed(smoothClosed(controls), spacing);
   const outline = fitToBox({ outer: resampled, holes: [] }, p.width, p.height).outer;
 
-  // The pit sits in the middle of the lower bulb, wherever the lopsided outline puts it.
+  // The pit is placed from the middle of the lower bulb, wherever the lopsided outline puts it.
   const pitY = p.pitCenterY * p.height;
   const rx = (p.pitFraction * p.width) / 2;
-  const center = { x: middleAt(outline, pitY), y: pitY };
+  const center = { x: middleAt(outline, pitY) + p.pitOffsetX * p.width, y: pitY };
   const turn = (p.pitRotationDeg * Math.PI) / 180;
   const pit = ellipsePoints({ x: 0, y: 0 }, rx, rx * p.pitAspect, spacing).map((q) => ({
     x: center.x + q.x * Math.cos(turn) - q.y * Math.sin(turn),

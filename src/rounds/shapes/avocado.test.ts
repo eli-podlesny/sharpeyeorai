@@ -29,20 +29,24 @@ describe('avocadoShape (round 3)', () => {
     expect(s.cy).toBeCloseTo(0, 6);
   });
 
-  it('is a pear: small top bulb, a waist, a bigger bottom bulb', () => {
-    const top = widthAt(shape.outer, -0.3 * 380);
-    const waist = widthAt(shape.outer, -0.17 * 380);
-    const bottom = widthAt(shape.outer, 0.2 * 380);
-    expect(waist).toBeLessThan(top);
+  it('is a pear: a bottom bulb much wider than the top bulb, with a narrower neck between', () => {
+    const widths = (from: number, to: number): number[] =>
+      Array.from({ length: 21 }, (_, i) =>
+        widthAt(shape.outer, (from + ((to - from) * i) / 20) * 380),
+      );
+    const top = Math.max(...widths(-0.45, -0.3));
+    const neck = Math.min(...widths(-0.1, 0));
+    const bottom = Math.max(...widths(0.1, 0.35));
+    expect(neck).toBeLessThan(bottom);
     expect(bottom).toBeGreaterThan(1.5 * top);
   });
 
-  it('is lopsided: the top bulb sits off-center from the bottom bulb', () => {
+  it('is lopsided: the top bulb leans right of the bottom bulb', () => {
     const middle = (y: number): number => {
       const { left, right } = edgesAt(shape.outer, y);
       return (left + right) / 2;
     };
-    expect(Math.abs(middle(-0.3 * 380) - middle(0.2 * 380))).toBeGreaterThan(10);
+    expect(middle(-0.4 * 380) - middle(0.2 * 380)).toBeGreaterThan(40);
   });
 
   it('untilted, the pit is an upright oval about 35% of the width', () => {
@@ -60,13 +64,13 @@ describe('avocadoShape (round 3)', () => {
     expect(topmost.x).toBeGreaterThan(s.cx + 5);
   });
 
-  it('the pit is centered in the lower bulb, inside the outline', () => {
+  it('the pit sits in the lower bulb, moved sideways by pitOffsetX, inside the outline', () => {
     expect(shape.holes).toHaveLength(1);
     const pit = shape.holes[0] ?? [];
     const s = size(pit);
     expect(s.cy).toBeGreaterThan(0);
     const { left, right } = edgesAt(shape.outer, s.cy);
-    expect(s.cx).toBeCloseTo((left + right) / 2, 0);
+    expect(s.cx).toBeCloseTo((left + right) / 2 + config.pitOffsetX * 280, 0);
     for (const p of pit) expect(contains(shape.outer, p)).toBe(true);
   });
 
