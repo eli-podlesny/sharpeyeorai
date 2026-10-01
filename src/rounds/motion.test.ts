@@ -17,7 +17,7 @@ const times = (untilMs: number, stepMs: number): number[] =>
 
 describe('still rounds', () => {
   it('have no motion: every moment is the shape at rest', () => {
-    for (const id of [1, 2, 3, 7, 9, 10, 12]) {
+    for (const id of [1, 2, 3, 12]) {
       const round = getRound(id);
       expect(shapeFrameAt(round, content, SEED, 1234)).toBeUndefined();
       expect(shapeAt(round, content, SEED, 1234)).toEqual(placeShape(round, content, SEED));
@@ -25,10 +25,9 @@ describe('still rounds', () => {
   });
 });
 
-describe('round 4 and 5: morphing curves', () => {
-  for (const id of [4, 5]) {
+describe('rounds 4, 5 and 9: morphing', () => {
+  for (const id of [4, 5, 9]) {
     const round = getRound(id);
-    const shape = round.shape as { width: number; height: number };
 
     it(`round ${id} changes over time and repeats for the same seed`, () => {
       const a = shapeAt(round, content, SEED, 0).outer;
@@ -37,20 +36,27 @@ describe('round 4 and 5: morphing curves', () => {
       expect(shapeAt(round, content, SEED, 750).outer).toEqual(b);
     });
 
-    it(`round ${id} stays close to its size (drift up to 5% per side) and never crosses itself`, () => {
+    it(`round ${id} stays close to its size (drift up to 3%) and never crosses itself`, () => {
       for (const seed of SEEDS) {
-        for (const t of times(6000, 100)) {
+        const rest = bounds(placeShape(round, content, seed).outer);
+        for (const t of times(10000, 250)) {
           const outer = shapeAt(round, content, seed, t).outer;
           expect(selfIntersects(outer)).toBe(false);
           const box = bounds(outer);
-          expect(Math.abs(box.width - shape.width)).toBeLessThanOrEqual(0.1 * shape.width + 1e-6);
-          expect(Math.abs(box.height - shape.height)).toBeLessThanOrEqual(
-            0.1 * shape.height + 1e-6,
-          );
+          expect(Math.abs(box.width - rest.width)).toBeLessThanOrEqual(0.1 * rest.width);
+          expect(Math.abs(box.height - rest.height)).toBeLessThanOrEqual(0.1 * rest.height);
         }
       }
     });
   }
+
+  it('round 5 also bobs up and down by up to 12px', () => {
+    const round = getRound(5);
+    const ys = times(4000, 50).map((t) => shapeAt(round, content, SEED, t).anchor.y);
+    const rest = placeShape(round, content, SEED).anchor.y;
+    expect(Math.max(...ys) - rest).toBeCloseTo(12, 1);
+    expect(rest - Math.min(...ys)).toBeCloseTo(12, 1);
+  });
 
   it('round 5 keeps C and O far enough apart to count for the lean', () => {
     const round = getRound(5);
@@ -67,7 +73,7 @@ describe('round 6: the swaying oval', () => {
 
   it('starts at rest and sways wide', () => {
     expect(shapeFrameAt(round, content, SEED, 0)?.offset).toEqual({ x: 0, y: 0 });
-    const motion = round.motion;
+    const motion = round.motions?.[0];
     if (motion?.type !== 'wave') throw new Error('round 6 should wave');
     expect(waveAmplitude(round, motion, content, SEED).x).toBeGreaterThan(300);
     expect(waveAmplitude(round, motion, content, SEED).y).toBe(40);
@@ -86,7 +92,8 @@ describe('round 6: the swaying oval', () => {
   });
 
   it('reaches both sides of the free area', () => {
-    const period = round.motion?.type === 'wave' ? round.motion.periodMs : NaN;
+    const wave = round.motions?.[0];
+    const period = wave?.type === 'wave' ? wave.periodMs : NaN;
     const quarter = shapeAt(round, content, SEED, period / 4);
     const threeQuarters = shapeAt(round, content, SEED, (3 * period) / 4);
     expect(Math.min(bounds(quarter.outer).maxX, bounds(threeQuarters.outer).maxX)).toBeLessThan(
@@ -107,11 +114,12 @@ describe('round 8: the jumping star', () => {
     expect(round.shape).toMatchObject({ type: 'star', points: 7 });
   });
 
-  const every = round.motion?.type === 'jump' ? round.motion.everyMs : NaN;
+  const jump = round.motions?.[0];
+  const every = jump?.type === 'jump' ? jump.everyMs : NaN;
 
-  it('holds still for a while (1s), then jumps', () => {
+  it('holds still for a while (1.2s), then jumps', () => {
     const at = (t: number) => shapeFrameAt(round, content, SEED, t)?.offset;
-    expect(every).toBe(1000);
+    expect(every).toBe(1200);
     expect(at(0)).toEqual({ x: 0, y: 0 });
     expect(at(every - 1)).toEqual(at(0));
     expect(at(every)).not.toEqual(at(every - 1));
@@ -150,5 +158,30 @@ describe('round 11: the shrinking square', () => {
     expect(side(12000)).toBeCloseTo(40, 6);
     const rest = shapeAt(round, content, SEED, 0).anchor;
     expect(shapeAt(round, content, SEED, 7000).anchor).toEqual(rest);
+  });
+});
+
+describe('round 9 and 10 stay inside the free area', () => {
+  const area = freeScreenArea();
+  const inside = (id: number, untilMs: number, stepMs: number): void => {
+    for (const t of times(untilMs, stepMs)) {
+      const box = bounds(shapeAt(getRound(id), content, SEED, t).outer);
+      expect(box.minX).toBeGreaterThanOrEqual(area.left);
+      expect(box.maxX).toBeLessThanOrEqual(area.left + area.width);
+      expect(box.minY).toBeGreaterThanOrEqual(area.top);
+      expect(box.maxY).toBeLessThanOrEqual(area.top + area.height);
+    }
+  };
+
+  it('round 9 while it morphs', () => inside(9, 10000, 500));
+  it('round 10 through a whole turn', () => inside(10, 20000, 100));
+});
+
+describe('round 10: the turning star', () => {
+  it('turns clockwise, one full turn every 20s', () => {
+    const round = getRound(10);
+    expect(shapeAt(round, content, SEED, 0).rotationDeg).toBeCloseTo(14, 9);
+    expect(shapeAt(round, content, SEED, 5000).rotationDeg).toBeCloseTo(14 + 90, 9);
+    expect(shapeAt(round, content, SEED, 20000).rotationDeg).toBeCloseTo(14 + 360, 9);
   });
 });

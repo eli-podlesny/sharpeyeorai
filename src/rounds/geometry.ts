@@ -44,18 +44,31 @@ export function shapeAnchor(round: RoundConfig, content: Size): Point {
 
 /**
  * One moment of a moving or morphing shape (see motion.ts): how far it has moved from its
- * resting place, how much it has grown or shrunk, and, for morphing shapes, its outline.
+ * resting place, how much it has grown or shrunk, turned or skewed, and, for morphing
+ * shapes, its outline.
  */
 export interface ShapeFrame {
   offset: Point;
   scale: number;
+  /** Clockwise, in degrees, on top of the round's own rotation. */
+  rotationDeg: number;
+  /** Horizontal skew along the shape's own axes, in degrees (positive leans the top right). */
+  skewDeg: number;
   /** The shape in its local space at this moment; leave out to build it from the config. */
   local?: Shape;
 }
 
+/** A frame that changes nothing. */
+export const STILL_FRAME: ShapeFrame = {
+  offset: { x: 0, y: 0 },
+  scale: 1,
+  rotationDeg: 0,
+  skewDeg: 0,
+};
+
 /**
- * Builds a round's shape and puts it on the screen: scaled, turned by the round's
- * rotation, then moved to its anchor (plus the frame's offset). The only place shape
+ * Builds a round's shape and puts it on the screen: scaled, skewed, turned by the round's
+ * rotation (plus the frame's), then moved to its anchor (plus the frame's offset). The only place shape
  * transforms are applied — rendering and scoring both use the result. `seed` feeds
  * shapes that are random (round 2's blob); `frame` is one moment of a moving shape.
  */
@@ -70,15 +83,19 @@ export function placeShape(
   const rest = shapeAnchor(round, content);
   const anchor = frame ? { x: rest.x + frame.offset.x, y: rest.y + frame.offset.y } : rest;
   const scale = frame?.scale ?? 1;
+  const shear = Math.tan(((frame?.skewDeg ?? 0) * Math.PI) / 180);
+  const rotationDeg = round.rotationDeg + (frame?.rotationDeg ?? 0);
   const place = (p: Point): Point => {
-    const turned = rotate({ x: p.x * scale, y: p.y * scale }, round.rotationDeg);
+    // y points down, so leaning the top right moves points with negative y to the right.
+    const skewed = { x: (p.x - shear * p.y) * scale, y: p.y * scale };
+    const turned = rotate(skewed, rotationDeg);
     return { x: anchor.x + turned.x, y: anchor.y + turned.y };
   };
   return {
     outer: local.outer.map(place),
     holes: local.holes.map((hole) => hole.map(place)),
     anchor,
-    rotationDeg: round.rotationDeg,
+    rotationDeg,
     ...(local.pole ? { pole: place(local.pole) } : {}),
   };
 }

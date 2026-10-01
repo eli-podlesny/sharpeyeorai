@@ -33,8 +33,8 @@ export type RoundConfig = {
   inputWindows?: readonly InputWindow[];
   /** Set → the round runs a fixed length: after the last input window, input is ignored this long, then the round ends. */
   postRoundIdleMs?: number;
-  /** How the shape moves or morphs from `round.shape.visible` on (src/rounds/motion.ts). It freezes on the click. */
-  motion?: RoundMotion;
+  /** How the shape moves or morphs from `round.shape.visible` on (src/rounds/motion.ts), combined in order. It freezes on the click. */
+  motions?: readonly RoundMotion[];
   /** The shape is only visible for a while (round 12). */
   hideAfter?: HideAfter;
   /** A blinking dot on C (or O) right after the shape is visible (round 5). */
@@ -87,6 +87,12 @@ export function freeScreenArea(margin: number = layout.round.largeShapeMargin): 
 
 /** Round 7's rectangle turns this far clockwise. */
 const LARGE_RECT_ROTATION_DEG = 10;
+/** Round 7's rectangle leans back and forth by up to this much, slowly. */
+const LARGE_RECT_SKEW: Extract<RoundMotion, { type: 'skew' }> = {
+  type: 'skew',
+  periodMs: 8000,
+  maxDeg: 6,
+};
 
 /**
  * The biggest rectangle that, turned by `deg`, has exactly `width` × `height` as its
@@ -107,12 +113,55 @@ export function rectForRotatedBox(
   };
 }
 
-/** Round 7: a rectangle turned clockwise, as big as it can be while it fills the free area. */
-function largeRect(): Pick<RoundConfig, 'shape' | 'offset' | 'rotationDeg'> {
-  const area = freeScreenArea();
+/**
+ * The on-screen box of a width × height rectangle, skewed by `skewDeg` (along its own
+ * axes), then turned by `deg`.
+ */
+export function skewedRotatedBox(
+  width: number,
+  height: number,
+  deg: number,
+  skewDeg: number,
+): { width: number; height: number } {
+  const rad = (deg * Math.PI) / 180;
+  const shear = Math.tan((skewDeg * Math.PI) / 180);
+  const corners = [-1, 1].flatMap((sx) =>
+    [-1, 1].map((sy) => {
+      const y = (sy * height) / 2;
+      const x = (sx * width) / 2 - shear * y;
+      return { x: x * Math.cos(rad) - y * Math.sin(rad), y: x * Math.sin(rad) + y * Math.cos(rad) };
+    }),
+  );
+  const xs = corners.map((c) => c.x);
+  const ys = corners.map((c) => c.y);
   return {
-    shape: { type: 'rect', ...rectForRotatedBox(area.width, area.height, LARGE_RECT_ROTATION_DEG) },
+    width: Math.max(...xs) - Math.min(...xs),
+    height: Math.max(...ys) - Math.min(...ys),
+  };
+}
+
+/**
+ * Round 7: a rectangle turned clockwise and leaning back and forth, as big as it can be
+ * while its box at the strongest lean (either way) still fits the free area.
+ */
+function largeRect(): Pick<RoundConfig, 'shape' | 'offset' | 'rotationDeg' | 'motions'> {
+  const area = freeScreenArea();
+  const base = rectForRotatedBox(area.width, area.height, LARGE_RECT_ROTATION_DEG);
+  const fit = Math.min(
+    ...[-1, 1].map((sign) => {
+      const box = skewedRotatedBox(
+        base.width,
+        base.height,
+        LARGE_RECT_ROTATION_DEG,
+        sign * LARGE_RECT_SKEW.maxDeg,
+      );
+      return Math.min(area.width / box.width, area.height / box.height);
+    }),
+  );
+  return {
+    shape: { type: 'rect', width: base.width * fit, height: base.height * fit },
     rotationDeg: LARGE_RECT_ROTATION_DEG,
+    motions: [LARGE_RECT_SKEW],
     offset: {
       x: area.left + area.width / 2 - layout.screen.width / 2,
       y: area.top + area.height / 2 - layout.screen.height / 2,
@@ -120,8 +169,8 @@ function largeRect(): Pick<RoundConfig, 'shape' | 'offset' | 'rotationDeg'> {
   };
 }
 
-/** Morphing rounds: control points drift by up to 5% of the shape's size, on a cycle of about 3s. */
-const MORPH: RoundMotion = { type: 'morph', amplitude: 0.05, cycleMs: 3000 };
+/** Morphing rounds: the outline drifts by up to 3% of the shape's size, on a slow cycle of about 5s. */
+const MORPH: RoundMotion = { type: 'morph', amplitude: 0.03, cycleMs: 5000 };
 
 /** Round 11's square shrinks from this size… */
 const SHRINK_FROM_PX = 200;
@@ -176,11 +225,11 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
         { x: -0.9, y: 0.48 },
       ],
     },
-    motion: MORPH,
+    motions: [MORPH],
   },
   5: {
-    // A soft triangle, apex up and a little right, heavier bottom left. Morphs like round 4,
-    // with a decoy dot blinking twice, slowly (under 3 Hz), on C.
+    // A soft triangle, apex up and a little right, heavier bottom left. Morphs like round 4
+    // while slowly bobbing up and down, with a decoy dot blinking twice, slowly (under 3 Hz), on C.
     shape: {
       type: 'curve',
       width: 320,
@@ -196,23 +245,19 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
         { x: -0.42, y: -0.38 },
       ],
     },
-    motion: MORPH,
+    motions: [MORPH, { type: 'bob', periodMs: 4000, ampY: 12 }],
     decoy: { target: 'computed', blinks: 2, onMs: 400, offMs: 400 },
   },
   6: {
     // An oval swaying left and right on a figure-eight, never leaving the free area.
     shape: { type: 'ellipse', width: 240, height: 150 },
-    motion: {
-      type: 'wave',
-      periodMs: 6000,
-      ampY: 40,
-      phaseDeg: 0,
-      margin: layout.round.motionMargin,
-    },
+    motions: [
+      { type: 'wave', periodMs: 6000, ampY: 40, phaseDeg: 0, margin: layout.round.motionMargin },
+    ],
   },
   7: { ...largeRect(), falloffRadius: REFERENCE_FALLOFF_PX },
   8: {
-    // An irregular seven-point star that jumps somewhere new every second.
+    // An irregular seven-point star that jumps somewhere new every 1.2s.
     shape: {
       type: 'star',
       width: 300,
@@ -221,7 +266,7 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
       innerRatio: 0.5,
       innerRadii: [0.46, 0.62, 0.38, 0.56, 0.42, 0.66, 0.5],
     },
-    motion: { type: 'jump', everyMs: 1000, margin: layout.round.motionMargin },
+    motions: [{ type: 'jump', everyMs: 1200, margin: layout.round.motionMargin }],
   },
   9: {
     // A big circle with a medium and a small one bulging out of its upper right, merged into
@@ -234,17 +279,21 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
         { x: 118, y: -118, r: 50 },
       ],
     },
+    // Each circle drifts and swells a little, so the merged outline slowly morphs.
+    motions: [MORPH],
   },
   10: {
     // A five-point star, stretched sideways.
     shape: { type: 'star', width: 380, height: 240, points: 5, innerRatio: 0.6 },
     rotationDeg: 14,
     offset: { x: -120, y: DEFAULT_OFFSET.y },
+    // One full turn, clockwise, every 20s.
+    motions: [{ type: 'spin', periodMs: 20000 }],
   },
   11: {
     // Shrinks; the falloff follows the current size, so late clicks are judged more strictly.
     shape: { type: 'rect', width: SHRINK_FROM_PX, height: SHRINK_FROM_PX },
-    motion: { type: 'shrink', endScale: SHRINK_TO_PX / SHRINK_FROM_PX, durationMs: SHRINK_MS },
+    motions: [{ type: 'shrink', endScale: SHRINK_TO_PX / SHRINK_FROM_PX, durationMs: SHRINK_MS }],
     timeLimitMs: SHRINK_MS,
   },
   12: {

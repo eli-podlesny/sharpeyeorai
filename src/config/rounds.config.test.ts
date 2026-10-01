@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { copy } from './copy';
 import { gameConfig } from './game.config';
 import { layout } from './layout.config';
-import { placeShape } from '../rounds/geometry';
+import { shapeAt } from '../rounds/motion';
 import { bounds } from '../rounds/polygon';
 import {
   freeScreenArea,
   getRound,
   opticalSettings,
   rectForRotatedBox,
+  skewedRotatedBox,
   rounds,
 } from './rounds.config';
 
@@ -52,13 +53,19 @@ describe('rounds config', () => {
     expect(getRound(11).shape).toEqual({ type: 'rect', width: 200, height: 200 });
   });
 
-  it('moves rounds 4, 5, 6, 8 and 11 only', () => {
-    expect(rounds.filter((r) => r.motion).map((r) => r.id)).toEqual([4, 5, 6, 8, 11]);
-    expect(getRound(4).motion?.type).toBe('morph');
-    expect(getRound(5).motion?.type).toBe('morph');
-    expect(getRound(6).motion?.type).toBe('wave');
-    expect(getRound(8).motion?.type).toBe('jump');
-    expect(getRound(11).motion?.type).toBe('shrink');
+  it('moves every round except 1, 2, 3 and 12', () => {
+    const kinds = (id: number) => getRound(id).motions?.map((m) => m.type);
+    expect(rounds.filter((r) => r.motions?.length).map((r) => r.id)).toEqual([
+      4, 5, 6, 7, 8, 9, 10, 11,
+    ]);
+    expect(kinds(4)).toEqual(['morph']);
+    expect(kinds(5)).toEqual(['morph', 'bob']);
+    expect(kinds(6)).toEqual(['wave']);
+    expect(kinds(7)).toEqual(['skew']);
+    expect(kinds(8)).toEqual(['jump']);
+    expect(kinds(9)).toEqual(['morph']);
+    expect(kinds(10)).toEqual(['spin']);
+    expect(kinds(11)).toEqual(['shrink']);
   });
 
   it('round 5 alone has the decoy, on C, blinking no faster than 3 Hz', () => {
@@ -96,27 +103,45 @@ describe('rounds config', () => {
     expect(getRound(7).falloffRadius).toBe(100);
   });
 
-  describe('round 7: a rectangle turned clockwise that fills the free area', () => {
-    const { screen, screenHud, round: L } = layout;
-    const margin = L.largeShapeMargin;
+  describe('round 7: a rectangle turned clockwise and leaning, that fills the free area', () => {
+    const { screen } = layout;
+    const content = { width: screen.width, height: screen.height };
     const r7 = getRound(7);
-    const box = bounds(placeShape(r7, { width: screen.width, height: screen.height }, 1).outer);
+    const area = freeScreenArea();
+    const skew = r7.motions?.find((m) => m.type === 'skew');
+    const period = skew?.type === 'skew' ? skew.periodMs : NaN;
+    const boxAt = (t: number) => bounds(shapeAt(r7, content, 1, t).outer);
 
     it('is turned clockwise and smaller than the free area', () => {
       const shape = r7.shape as { width: number; height: number };
       expect(r7.rotationDeg).toBeGreaterThan(0);
-      expect(shape.width).toBeLessThan(freeScreenArea().width);
-      expect(shape.height).toBeLessThan(freeScreenArea().height);
+      expect(shape.width).toBeLessThan(area.width);
+      expect(shape.height).toBeLessThan(area.height);
     });
 
-    it('turned, keeps the margin from the screen edges', () => {
-      expect(box.minX).toBeCloseTo(margin, 6);
-      expect(box.maxX).toBeCloseTo(screen.width - margin, 6);
+    it('never leaves the free area while it leans', () => {
+      for (let t = 0; t <= period; t += 50) {
+        const box = boxAt(t);
+        expect(box.minX).toBeGreaterThanOrEqual(area.left - 1e-6);
+        expect(box.maxX).toBeLessThanOrEqual(area.left + area.width + 1e-6);
+        expect(box.minY).toBeGreaterThanOrEqual(area.top - 1e-6);
+        expect(box.maxY).toBeLessThanOrEqual(area.top + area.height + 1e-6);
+      }
     });
 
-    it('turned, keeps the margin from the HUD row and the objective line', () => {
-      expect(box.minY).toBeCloseTo(screenHud.progress.top + screenHud.lineHeight + margin, 6);
-      expect(box.maxY).toBeCloseTo(screenHud.objective.top - margin, 6);
+    it('at its strongest lean, fills the free area one way', () => {
+      const leans = [period / 4, (3 * period) / 4].map(boxAt);
+      const fills = leans.some(
+        (box) =>
+          Math.abs(box.width - area.width) < 1e-6 || Math.abs(box.height - area.height) < 1e-6,
+      );
+      expect(fills).toBe(true);
+    });
+
+    it('skewedRotatedBox: no skew, no turn is the rectangle itself', () => {
+      const box = skewedRotatedBox(300, 200, 0, 0);
+      expect(box.width).toBeCloseTo(300, 9);
+      expect(box.height).toBeCloseTo(200, 9);
     });
   });
 

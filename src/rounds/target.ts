@@ -2,7 +2,7 @@ import { gameConfig } from '../config/game.config';
 import { opticalSettings, type RoundConfig } from '../config/rounds.config';
 import { falloffRadius } from '../scoring/score';
 import type { PlacedShape, Size } from './geometry';
-import { shapeAt } from './motion';
+import { isMoving, shapeAt } from './motion';
 import { shapeCenters, type Centers } from './opticalCenter';
 import { bounds } from './polygon';
 
@@ -56,6 +56,6 @@ export function roundTarget(round: RoundConfig, content: Size, seed: number): Ro
  * cached target.
  */
 export function targetAt(round: RoundConfig, content: Size, seed: number, t: number): RoundTarget {
-  if (!round.motion) return roundTarget(round, content, seed);
+  if (!isMoving(round)) return roundTarget(round, content, seed);
   return buildTarget(round, content, seed, t);
 }

@@ -9,7 +9,7 @@ import type { Point } from '../core/stage';
 import { rem, setRem } from '../core/units';
 import { createRoundClock, DEBUG_STEP_MS, roundDebug } from '../rounds/clock';
 import type { PlacedShape } from '../rounds/geometry';
-import { shapeAt } from '../rounds/motion';
+import { isMoving, shapeAt } from '../rounds/motion';
 import { shapeCenters, type Centers } from '../rounds/opticalCenter';
 import { materialCentroid } from '../rounds/polygon';
 import { buildRoundSequence } from '../rounds/sequence';
@@ -95,6 +95,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
     const seq = buildRoundSequence(gameConfig.roundSequence, prefersReducedMotion());
     const deadline = inputDeadlineMs(round);
     const fixedEnd = fixedRoundEndMs(round);
+    const moving = isMoving(round);
 
     const root = h('div', 'round');
     setRem(root, { fontSize: L.textSize, lineHeight: L.lineHeight });
@@ -242,13 +243,13 @@ export function createRoundScene(ctx: SceneContext): Scene {
 
       if (!decided) {
         if (clock.started) hud.setTime(t);
-        if (round.motion && t !== shownMs) {
+        if (moving && t !== shownMs) {
           shownMs = t;
           shown = shapeAt(round, contentSize, seed, t);
           updateShapeSvg(shape, shown);
         }
       }
-      if (round.motion && markersOn() && markersAtMs !== shownMs) {
+      if (moving && markersOn() && markersAtMs !== shownMs) {
         markersAtMs = shownMs;
         placeMarkers(shapeCenters(shown, opticalSettings(round)));
       }

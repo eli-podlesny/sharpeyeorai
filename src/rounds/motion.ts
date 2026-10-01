@@ -2,24 +2,38 @@ import { gameConfig } from '../config/game.config';
 import { freeScreenArea, type RoundConfig } from '../config/rounds.config';
 import { createRng, mixSeed, rangeOf } from '../core/rng';
 import type { Point } from '../core/stage';
-import { placeShape, type PlacedShape, type ShapeFrame, type Size } from './geometry';
+import { placeShape, STILL_FRAME, type PlacedShape, type ShapeFrame, type Size } from './geometry';
 import { bounds, type Bounds } from './polygon';
+import type { Shape } from './shapes';
+import { circleClusterShape } from './shapes/circleCluster';
 import { curveShape } from './shapes/curve';
 
 /**
- * How a round's shape changes over time, from `round.shape.visible` (t = 0). Every motion
- * is a pure function of t, so the shape the player saw at any moment can be rebuilt
- * exactly for scoring. Distances are in design px.
+ * How a round's shape changes over time, from `round.shape.visible` (t = 0). A round can
+ * combine several motions (round 5 morphs and bobs). Every motion is a pure function of
+ * t, so the shape the player saw at any moment can be rebuilt exactly for scoring.
+ * Distances are in design px, angles in degrees.
  */
 export type RoundMotion =
-  /** Each control point of a `curve` shape drifts on smooth noise (rounds 4, 5). */
+  /**
+   * The outline drifts on smooth noise, up to `amplitude` of its size: a `curve`'s control
+   * points (rounds 4, 5), or a `circleCluster`'s circles (round 9).
+   */
   | { type: 'morph'; amplitude: number; cycleMs: number }
   /** A figure-eight sway: x = A·sin(ωt), y = B·sin(2ωt + φ), A as wide as the area allows (round 6). */
   | { type: 'wave'; periodMs: number; ampY: number; phaseDeg: number; margin: number }
+  /** A gentle up-and-down: y = ampY·sin(ωt) (round 5). */
+  | { type: 'bob'; periodMs: number; ampY: number }
   /** Jumps to a new seeded position every `everyMs`, with no animation in between (round 8). */
   | { type: 'jump'; everyMs: number; margin: number }
+  /** Leans back and forth: skew = maxDeg·sin(ωt) (round 7). */
+  | { type: 'skew'; periodMs: number; maxDeg: number }
+  /** Turns clockwise, one full turn every `periodMs` (round 10). */
+  | { type: 'spin'; periodMs: number }
   /** Shrinks linearly around its center to `endScale` over `durationMs`, then stays (round 11). */
   | { type: 'shrink'; endScale: number; durationMs: number };
+
+type Motion<K extends RoundMotion['type']> = Extract<RoundMotion, { type: K }>;
 
 /** Salts that keep each motion's randomness apart from the shape's own. */
 const MORPH_SALT = 0x6d6f7270;
@@ -31,6 +45,11 @@ const NOISE_WEIGHTS = [0.6, 0.4] as const;
 const NOISE_SECOND_SPEED = 1.7;
 
 const TAU = 2 * Math.PI;
+
+/** True for rounds whose shape changes after it becomes visible. */
+export function isMoving(round: RoundConfig): boolean {
+  return (round.motions?.length ?? 0) > 0;
+}
 
 /** Where the shape at rest sits on screen. */
 function restBounds(round: RoundConfig, content: Size, seed: number, spacing: number): Bounds {
@@ -51,33 +70,67 @@ function room(
   };
 }
 
-/** Each control point's drift at time t: two slow sines per axis, with seeded phases. */
-export function morphDrift(
-  motion: Extract<RoundMotion, { type: 'morph' }>,
-  size: { width: number; height: number },
-  controlCount: number,
-  seed: number,
-  t: number,
-): Point[] {
+/**
+ * Smooth noise at time t, between −1 and 1: each call gives the next independent value
+ * (two slow sines with seeded phases). The same seed gives the same values in the same order.
+ */
+function noiseAt(motion: Motion<'morph'>, seed: number, t: number): () => number {
   const rng = createRng(mixSeed(seed, MORPH_SALT));
   const s = (TAU * t) / motion.cycleMs;
-  const noise = (): number => {
+  return () => {
     const a = rng() * TAU;
     const b = rng() * TAU;
     return (
       NOISE_WEIGHTS[0] * Math.sin(s + a) + NOISE_WEIGHTS[1] * Math.sin(NOISE_SECOND_SPEED * s + b)
     );
   };
+}
+
+/** Each control point's drift at time t, up to `amplitude` of the width and height. */
+export function morphDrift(
+  motion: Motion<'morph'>,
+  size: { width: number; height: number },
+  controlCount: number,
+  seed: number,
+  t: number,
+): Point[] {
+  const noise = noiseAt(motion, seed, t);
   return Array.from({ length: controlCount }, () => ({
     x: motion.amplitude * size.width * noise(),
     y: motion.amplitude * size.height * noise(),
   }));
 }
 
+/** The morphed outline at time t, or undefined for shapes that cannot morph. */
+function morphedShape(
+  round: RoundConfig,
+  motion: Motion<'morph'>,
+  seed: number,
+  t: number,
+  spacing: number,
+): Shape | undefined {
+  const { shape } = round;
+  const ctx = { rng: createRng(seed), spacing };
+  if (shape.type === 'curve') {
+    return curveShape(shape, ctx, morphDrift(motion, shape, shape.controls.length, seed, t));
+  }
+  if (shape.type === 'circleCluster') {
+    // Each circle drifts and swells by up to `amplitude` of its own radius.
+    const noise = noiseAt(motion, seed, t);
+    const circles = shape.circles.map((c) => ({
+      x: c.x + motion.amplitude * c.r * noise(),
+      y: c.y + motion.amplitude * c.r * noise(),
+      r: c.r * (1 + motion.amplitude * noise()),
+    }));
+    return circleClusterShape({ circles }, ctx);
+  }
+  return undefined;
+}
+
 /** The figure-eight's horizontal and vertical reach for a round: as wide as fits, `ampY` tall (or less if it does not fit). */
 export function waveAmplitude(
   round: RoundConfig,
-  motion: Extract<RoundMotion, { type: 'wave' }>,
+  motion: Motion<'wave'>,
   content: Size,
   seed: number,
   spacing: number = gameConfig.shapePointSpacingPx,
@@ -100,7 +153,53 @@ function jumpOffset(rest: Bounds, margin: number, seed: number, k: number): Poin
   };
 }
 
-/** One moment of a round's motion, or undefined for a shape that never changes. */
+/** One motion's contribution to the frame at time t (≥ 0). */
+function applyMotion(
+  frame: ShapeFrame,
+  motion: RoundMotion,
+  round: RoundConfig,
+  content: Size,
+  seed: number,
+  t: number,
+  spacing: number,
+): ShapeFrame {
+  const moved = (dx: number, dy: number): ShapeFrame => ({
+    ...frame,
+    offset: { x: frame.offset.x + dx, y: frame.offset.y + dy },
+  });
+  switch (motion.type) {
+    case 'morph': {
+      const local = morphedShape(round, motion, seed, t, spacing);
+      return local ? { ...frame, local } : frame;
+    }
+    case 'wave': {
+      const amp = waveAmplitude(round, motion, content, seed, spacing);
+      const w = (TAU * t) / motion.periodMs;
+      const phase = (motion.phaseDeg * Math.PI) / 180;
+      return moved(amp.x * Math.sin(w), amp.y * Math.sin(2 * w + phase));
+    }
+    case 'bob':
+      return moved(0, motion.ampY * Math.sin((TAU * t) / motion.periodMs));
+    case 'jump': {
+      const rest = restBounds(round, content, seed, spacing);
+      const at = jumpOffset(rest, motion.margin, seed, Math.floor(t / motion.everyMs));
+      return moved(at.x, at.y);
+    }
+    case 'skew':
+      return {
+        ...frame,
+        skewDeg: frame.skewDeg + motion.maxDeg * Math.sin((TAU * t) / motion.periodMs),
+      };
+    case 'spin':
+      return { ...frame, rotationDeg: frame.rotationDeg + (360 * t) / motion.periodMs };
+    case 'shrink': {
+      const p = Math.min(t / motion.durationMs, 1);
+      return { ...frame, scale: frame.scale * (1 + (motion.endScale - 1) * p) };
+    }
+  }
+}
+
+/** One moment of a round's motions, or undefined for a shape that never changes. */
 export function shapeFrameAt(
   round: RoundConfig,
   content: Size,
@@ -108,37 +207,12 @@ export function shapeFrameAt(
   t: number,
   spacing: number = gameConfig.shapePointSpacingPx,
 ): ShapeFrame | undefined {
-  const motion = round.motion;
-  if (!motion) return undefined;
+  if (!isMoving(round)) return undefined;
   const time = Math.max(t, 0);
-  const still = { x: 0, y: 0 };
-  switch (motion.type) {
-    case 'morph': {
-      const { shape } = round;
-      if (shape.type !== 'curve') return undefined;
-      const drift = morphDrift(motion, shape, shape.controls.length, seed, time);
-      const local = curveShape(shape, { rng: createRng(seed), spacing }, drift);
-      return { offset: still, scale: 1, local };
-    }
-    case 'wave': {
-      const amp = waveAmplitude(round, motion, content, seed, spacing);
-      const w = (TAU * time) / motion.periodMs;
-      const phase = (motion.phaseDeg * Math.PI) / 180;
-      return {
-        offset: { x: amp.x * Math.sin(w), y: amp.y * Math.sin(2 * w + phase) },
-        scale: 1,
-      };
-    }
-    case 'jump': {
-      const rest = restBounds(round, content, seed, spacing);
-      const k = Math.floor(time / motion.everyMs);
-      return { offset: jumpOffset(rest, motion.margin, seed, k), scale: 1 };
-    }
-    case 'shrink': {
-      const p = Math.min(time / motion.durationMs, 1);
-      return { offset: still, scale: 1 + (motion.endScale - 1) * p };
-    }
-  }
+  return (round.motions ?? []).reduce(
+    (frame, motion) => applyMotion(frame, motion, round, content, seed, time, spacing),
+    STILL_FRAME,
+  );
 }
 
 /** The round's shape as it is shown t ms after `round.shape.visible`. */
