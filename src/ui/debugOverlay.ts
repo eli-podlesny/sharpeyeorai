@@ -5,15 +5,19 @@ import {
   type AutoplayPresetId,
 } from '../config/autoplay.config';
 import { gameConfig } from '../config/game.config';
+import { getRound } from '../config/rounds.config';
 import type { EventBus } from '../core/events';
 import type { Game } from '../core/game';
 import { contentSize, toContentCoords } from '../core/input';
+import { randomSeed } from '../core/rng';
 import { getScale, toStageCoords, type Point } from '../core/stage';
 import { GAME_STATES, SCENE_MODES, type GameState, type SceneMode } from '../core/state';
 import { autoplayResults } from '../rounds/autoplay';
-import { createResult } from '../rounds/session';
+import { createResult, shapeSeed } from '../rounds/session';
+import { roundTarget } from '../rounds/target';
 import { scoreRound } from '../scoring/summary';
 import { h } from './dom';
+import { openShapeGallery } from './shapeGallery';
 
 /** Physical key (same spot on any layout) or the typed character. */
 const TOGGLE_CODE = 'Backquote';
@@ -23,6 +27,8 @@ const EVENT_PAYLOAD_CHARS = 70;
 const MARKERS_ATTR = 'data-debug-markers';
 const CUSTOM_PRESET = 'custom';
 const DEFAULT_SPREAD_PX = 20;
+/** The round with a random (seeded) shape. */
+const REROLL_ROUND = 2;
 
 export interface DebugOverlayOptions {
   game: Game;
@@ -88,6 +94,21 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
 
   controls.append(roundInput, goRound, restart, markersLabel);
 
+  // Shapes: reroll the random blob, and see every shape at once
+  const shapes = h('div', 'debug-overlay__row');
+  const reroll = h('button', 'debug-overlay__button', 'reroll round 2');
+  reroll.type = 'button';
+  reroll.addEventListener('click', () => {
+    const { context } = game;
+    context.newSession(REROLL_ROUND);
+    context.session.shapeSeeds.set(REROLL_ROUND, randomSeed());
+    context.machine.force('round');
+  });
+  const gallery = h('button', 'debug-overlay__button', 'shape gallery');
+  gallery.type = 'button';
+  gallery.addEventListener('click', () => openShapeGallery(game.context.session));
+  shapes.append(reroll, gallery);
+
   // Autoplay: fake all rounds with a preset, then show the score
   const autoplay = h('div', 'debug-overlay__row');
   const presetSelect = h('select', 'debug-overlay__input debug-overlay__select');
@@ -111,7 +132,7 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
         : autoplayPresets[id as AutoplayPresetId];
     const { context } = game;
     context.newSession();
-    const results = autoplayResults(preset, context.session.rng, contentSize);
+    const results = autoplayResults(preset, context.session, contentSize);
     context.session.results.push(...results);
     bus.emit('game.end', { results });
     context.machine.force('score');
@@ -129,7 +150,7 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
   });
   modeRow.append('scene mode ', modeSelect);
 
-  el.append(info, states, controls, autoplay, modeRow, events);
+  el.append(info, states, controls, shapes, autoplay, modeRow, events);
   document.body.append(el);
 
   let mouse = { x: NaN, y: NaN };
@@ -144,7 +165,9 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
     if (state !== 'round' || round === null || Number.isNaN(mouseContent.x)) return '—';
     if (Number.isNaN(roundStartedAt)) return 'waiting for the shape';
     const latency = Math.round(performance.now() - roundStartedAt);
-    const r = scoreRound(createResult(round, mouseContent, latency, contentSize));
+    const { session } = game.context;
+    const target = roundTarget(getRound(round), contentSize, shapeSeed(session, round));
+    const r = scoreRound(createResult(target, mouseContent, latency));
     return `dO ${r.dO.toFixed(1)}  dC ${r.dC.toFixed(1)}  q ${r.q.toFixed(3)}`;
   };
   const log: string[] = [];
@@ -159,6 +182,7 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
       `stage   ${stage}`,
       `state   ${state ?? '—'}${showRound ? `  (round ${round}/${gameConfig.roundCount})` : ''}`,
       `seed    ${game.context.session.seed}`,
+      `shape   ${round === null ? '—' : shapeSeed(game.context.session, round)}`,
       `live    ${liveScore()}`,
     ].join('\n');
     events.textContent = log.length ? log.join('\n') : 'no events yet';
