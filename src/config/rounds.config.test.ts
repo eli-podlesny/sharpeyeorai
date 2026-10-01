@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { copy } from './copy';
 import { gameConfig } from './game.config';
-import { getRound, rounds } from './rounds.config';
+import { getRound, opticalSettings, rounds } from './rounds.config';
 
 describe('rounds config', () => {
   it('has one round per roundCount, numbered 1…N', () => {
@@ -15,7 +15,13 @@ describe('rounds config', () => {
 
   it('ignores time in round 1 only', () => {
     expect(getRound(1).timeWeight).toBe(0);
-    for (const r of rounds.slice(1)) expect(r.timeWeight).toBeGreaterThan(0);
+    for (const r of rounds.slice(1)) expect(r.timeWeight).toBe(0.2);
+  });
+
+  it('uses the global optical defaults unless a round overrides them', () => {
+    expect(opticalSettings(getRound(1))).toEqual(gameConfig.optical);
+    const custom = { ...getRound(1), optical: { biasY: 0.1 } };
+    expect(opticalSettings(custom)).toEqual({ ...gameConfig.optical, biasY: 0.1 });
   });
 
   it('uses a 200 × 200 rectangle everywhere for now', () => {

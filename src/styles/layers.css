@@ -245,6 +245,10 @@
   width: 4em;
 }
 
+.debug-overlay__select {
+  width: auto;
+}
+
 .debug-overlay__toggle {
   display: inline-flex;
   align-items: center;

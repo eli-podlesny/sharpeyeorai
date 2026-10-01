@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RoundConfig } from '../config/rounds.config';
-import { computedCenter, opticalCenter, rotate, toShapeLocal } from './geometry';
+import { computedCenter, rotate, shapePolygon, toShapeLocal } from './geometry';
+import { roundCenters } from './opticalCenter';
 
 const content = { width: 1000, height: 600 };
 
@@ -10,7 +11,6 @@ function makeRound(overrides: Partial<RoundConfig> = {}): RoundConfig {
     phase: 1,
     shape: { type: 'rect', width: 200, height: 200, rotationDeg: 0 },
     offset: { x: 0, y: 0 },
-    opticalOffsetY: 0.05,
     timeWeight: 0,
     timeLimitMs: null,
     effects: [],
@@ -46,19 +46,18 @@ describe('computedCenter (C)', () => {
   });
 });
 
-describe('opticalCenter (O)', () => {
-  it('sits above C by opticalOffsetY × height (0.05 × 200 = 10px)', () => {
-    expectPoint(opticalCenter(makeRound(), content), 500, 290);
+describe('shapePolygon', () => {
+  it('lists the rectangle corners around C', () => {
+    const [topLeft, , bottomRight] = shapePolygon(makeRound(), content);
+    expectPoint(topLeft ?? { x: NaN, y: NaN }, 400, 200);
+    expectPoint(bottomRight ?? { x: NaN, y: NaN }, 600, 400);
   });
 
-  it('uses the round’s own fraction and shape height', () => {
-    const shape = { type: 'rect', width: 200, height: 300, rotationDeg: 0 } as const;
-    expectPoint(opticalCenter(makeRound({ shape, opticalOffsetY: 0.1 }), content), 500, 270);
-  });
-
-  it('stays straight up on screen when the shape is rotated', () => {
-    const shape = { type: 'rect', width: 200, height: 200, rotationDeg: 30 } as const;
-    expectPoint(opticalCenter(makeRound({ shape, offset: { x: 20, y: 10 } }), content), 520, 300);
+  it('turns the corners with the shape', () => {
+    const shape = { type: 'rect', width: 200, height: 100, rotationDeg: 90 } as const;
+    const [topLeft] = shapePolygon(makeRound({ shape }), content);
+    // Top-left corner (−100, −50) turned 90° clockwise lands at (50, −100) from C.
+    expectPoint(topLeft ?? { x: NaN, y: NaN }, 550, 200);
   });
 });
 
@@ -96,6 +95,6 @@ describe('toShapeLocal', () => {
     const shape = { type: 'rect', width: 200, height: 200, rotationDeg: 90 } as const;
     const round = makeRound({ shape });
     // Screen-up is the shape's left (−x) after a 90° clockwise turn.
-    expectPoint(toShapeLocal(opticalCenter(round, content), round, content), -10, 0);
+    expectPoint(toShapeLocal(roundCenters(round, content).O, round, content), -10, 0);
   });
 });

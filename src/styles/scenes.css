@@ -118,8 +118,10 @@
   color: var(--screen-text-dim);
 }
 
-.round-tooltip {
+/* Shared tooltip (src/ui/tooltip.ts) */
+.tooltip {
   position: absolute;
+  z-index: 1;
   white-space: pre;
   font-family: var(--font-mono);
   font-weight: var(--weight-mono-regular);
@@ -128,19 +130,26 @@
   pointer-events: none;
 }
 
-.round-tooltip__title {
+.tooltip--wrap {
+  width: max-content;
+  white-space: normal;
+  pointer-events: auto;
+  user-select: text;
+}
+
+.tooltip__title {
   font-weight: var(--weight-mono-bold);
 }
 
-.round-tooltip--flip-x {
+.tooltip--flip-x {
   transform: translateX(-100%);
 }
 
-.round-tooltip--flip-y {
+.tooltip--flip-y {
   transform: translateY(-100%);
 }
 
-.round-tooltip--flip-x.round-tooltip--flip-y {
+.tooltip--flip-x.tooltip--flip-y {
   transform: translate(-100%, -100%);
 }
 
@@ -164,16 +173,106 @@
       var(--marker-stroke) 100% no-repeat;
 }
 
+.debug-marker--pole {
+  border: var(--marker-stroke) solid var(--debug-marker-pole);
+}
+
 .debug-marker--optical {
   border: var(--marker-stroke) solid var(--debug-marker-optical);
   border-radius: 50%;
 }
 
-/* Score table */
+/* Score — matches the Figma "Score" frame */
+.score {
+  position: absolute;
+  inset: 0;
+  color: var(--screen-text);
+}
+
+.score-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.score-label {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-mono-bold);
+  text-transform: uppercase;
+  color: var(--screen-text-dim);
+}
+
+.score-total {
+  font-weight: var(--weight-display-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--score-total);
+}
+
+.score-headline {
+  font-weight: var(--weight-display-bold);
+}
+
+.score-body {
+  font-weight: var(--weight-display-medium);
+}
+
+.score-speed-tag {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-mono-regular);
+  color: var(--screen-text-dim);
+}
+
+.score-links {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.score-link {
+  padding: 0;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-mono-bold);
+  letter-spacing: inherit;
+  text-transform: uppercase;
+  text-decoration: underline;
+  color: var(--screen-text-dim);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.score-link:hover {
+  color: var(--screen-text);
+}
+
+.score-sample-note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  color: var(--screen-text-dim);
+}
+
 .score-table {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   border-collapse: collapse;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+.score-table[hidden],
+.score-verdict[hidden] {
+  display: none;
 }
 
 .score-table th,

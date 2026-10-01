@@ -1,5 +1,6 @@
 import type { RoundConfig } from '../config/rounds.config';
 import type { Point } from '../core/stage';
+import type { Polygon } from './polygon';
 
 /**
  * Shape geometry. All points are in screen-content pixels (origin top-left of the
@@ -30,13 +31,20 @@ export function computedCenter(round: RoundConfig, content: Size): Point {
   };
 }
 
-/**
- * O, the optical center: C moved straight up on screen by `opticalOffsetY` × shape height.
- * "Up" is the screen's up, not the shape's, so it stays up when the shape is rotated.
- */
-export function opticalCenter(round: RoundConfig, content: Size): Point {
+/** The shape's outline in screen-content pixels, with its rotation applied. */
+export function shapePolygon(round: RoundConfig, content: Size): Polygon {
   const c = computedCenter(round, content);
-  return { x: c.x, y: c.y - round.opticalOffsetY * round.shape.height };
+  const { width, height, rotationDeg } = round.shape;
+  const corners: Point[] = [
+    { x: -width / 2, y: -height / 2 },
+    { x: width / 2, y: -height / 2 },
+    { x: width / 2, y: height / 2 },
+    { x: -width / 2, y: height / 2 },
+  ];
+  return corners.map((p) => {
+    const turned = rotate(p, rotationDeg);
+    return { x: c.x + turned.x, y: c.y + turned.y };
+  });
 }
 
 /**

@@ -45,6 +45,7 @@
   --tooltip-bg: var(--color-ink);
   --tooltip-text: var(--color-paper);
   --table-rule: color-mix(in srgb, var(--color-ink) 24%, transparent);
+  --score-total: var(--color-hazard);
 
   /* Buttons (interactive → hazard) */
   --button-bg: var(--color-hazard);
@@ -61,6 +62,7 @@
   --debug-button-active: var(--color-hazard);
   --debug-marker-computed: var(--color-paper);
   --debug-marker-optical: var(--color-hazard);
+  --debug-marker-pole: var(--color-ash);
 
   /* Focus ring */
   --focus-ring: var(--color-hazard);

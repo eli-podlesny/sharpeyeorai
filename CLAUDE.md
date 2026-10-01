@@ -12,7 +12,7 @@ The owner is a designer who is new to Claude Code. Explain what you are about to
 
 ## Current version
 
-**v0.2 — game skeleton.** See `docs/briefs/` for the active brief.
+**v1.0a — scoring, verdict, score screen.** See `docs/briefs/` for the active brief. (v1.0 is tagged when v1.0a and v1.0b are both done.)
 
 | Version | Scope                                                                                                                                      |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -116,31 +116,66 @@ Colors and type are not final. Always use tokens, never hard-coded values, so th
 
 ## Scoring model
 
-All scoring lives in `src/scoring/` as pure, tested functions. Every constant lives in config so it can be tuned without changing logic.
+All scoring lives in `src/scoring/` as pure, tested functions. Every constant lives in `game.config.ts` (`optical`, `scoring`, `persona`) so it can be tuned without changing logic. Coordinates are screen-content pixels.
 
-Each round has two reference points:
+### Optical center (`src/rounds/opticalCenter.ts`)
 
-- **C, the computed center:** the mathematical centroid of the shape.
-- **O, the optical center:** where a human perceives the center. For now O = C shifted upward by `opticalOffsetY` (a fraction of shape height, default 0.05, tunable per round).
+```
+C  = area centroid of the shape                     (the "computed" center)
+M  = pole of inaccessibility: the point inside the shape farthest from any edge
+B  = shape's axis-aligned bounding box in SCREEN space (after rotation)
 
-For a click P in each round:
+Base = C + w × (M − C)                               w = skeletonWeight, default 0.35
+O    = Base + ( −βx × B.width ,  −βy × B.height )    βy = 0.05 (up), βx = 0 (left; off by default)
+if O falls outside the shape → O = M
+```
 
-1. `dOptical = |P − O|` and `dComputed = |P − C|`.
-2. **Accuracy** `a = clamp(1 − dOptical / falloffRadius, 0, 1) ^ curve`. `falloffRadius` defaults to 0.5 × shape's shorter side, `curve` defaults to 1.5.
-3. **Speed** `s = clamp(1 − (latencyMs − graceMs) / (maxMs − graceMs), 0, 1)`.
-4. Round quality `q = a × (1 − timeWeight + timeWeight × s)`. Penalties (timeouts, system errors) set `q = 0`.
-5. **Total score** = `round(10000 × Σ q / roundCount)`. The maximum is exactly 10,000.
+- The shift uses screen axes: "up" is always up for the player, even on rotated shapes.
+- M is computed in-house (`src/rounds/polygon.ts`, polylabel approach). Rects return C directly.
+- `skeletonWeight`, `biasX`, `biasY` are global in `gameConfig.optical`, overridable per round via `optical` in `rounds.config.ts`.
 
-Scoring always uses distance to O. The C-vs-O comparison drives the verdict line only:
+### Points
 
-- **Lean** per round: project P onto the line from C to O. `t = ((P − C) · (O − C)) / |O − C|²`. t ≈ 0 means machine-like, t ≈ 1 means human-like. Clamp t to [−0.5, 1.5].
-- Ignore rounds where `|O − C|` is below `minSeparationPx` (the lean is meaningless there).
-- **Humanity index** = mean t over the valid rounds. Verdict persona = accuracy tier × humanity tier. Copy for the personas comes later.
-- Note: with 200 × 200 squares the C–O separation is only about 10px, so the lean will be noisy until rounds use more varied shapes. That is expected in v1.0.
+Per round, for click P and latency t (ms):
+
+```
+dO = |P − O|            dC = |P − C|
+accuracy  a = clamp(1 − dO / R, 0, 1) ^ k            R = falloffRadius = 0.5 × shorter side (100px), k = 1.5
+speed     s = clamp(1 − (t − grace) / (max − grace), 0, 1)     grace = 1500ms, max = 8000ms
+quality   q = a × (1 − timeWeight + timeWeight × s)            timeWeight = 0 for round 1, 0.2 for rounds 2–12
+penalty   q = 0  (timeouts / system errors — v1.0b; `RoundResult.penalty` is the hook)
+roundPts  = 10000 × q / roundCount                              (shown rounded to whole points)
+total     = round(10000 × Σq / roundCount)                      max exactly 10,000
+```
+
+Reference values for the 200 × 200 square: 0px → 100% accuracy, 10px → 85%, 25px → 65%, 50px → 35%, 100px+ → 0.
+
+### Humanity lean (verdict only, never affects points)
+
+```
+sep = |O − C|
+if sep < minSeparationPx (default 4) → round excluded from lean
+t_lean = clamp( ((P − C) · (O − C)) / sep² , −0.5, 1.5 )        0 = machine-like, 1 = human-like
+humanityIndex = mean t_lean over included rounds (null if none)
+```
+
+With 200 × 200 squares C and O are only 10px apart, so the lean is noisy until shapes vary.
+
+### Session summary (`src/scoring/summary.ts`)
+
+`{ total, rounds: [{ id, P, C, O, dO, dC, latencyMs, a, s, q, points, lean }], meanLatencyMs, humanityIndex, persona }`. `meanLatencyMs` is over the rounds that count time (2–12).
+
+### Verdict persona (`src/scoring/persona.ts`, text in `copy.persona`)
+
+- Accuracy tier by total: sharp ≥ 7500, decent 4500–7499, blurry < 4500.
+- Humanity tier by humanityIndex: machine < 0.35, hybrid 0.35–0.65, human > 0.65 (null → hybrid).
+- Speed tier by mean latency: fast < 1500ms, steady 1500–4000ms, slow > 4000ms.
+- Overrides first, in order: total ≥ 9800 (algorithm), fast + blurry (trigger), slow + sharp (sniper). Otherwise accuracy × humanity.
+- The speed tag is a third line, hidden when an override fired.
 
 ## Events (hooks for later versions)
 
-Emit typed events through the event bus even before anything listens to them, for example `door.open.start`, `door.open.end`, `round.start`, `round.click`, `round.logged`, `alert.show`, `score.reveal`. Sound (v1.3) and effects attach to these. Keep the event list in `src/core/events.ts`.
+Emit typed events through the event bus even before anything listens to them, for example `door.open.start`, `door.open.end`, `round.start`, `round.click`, `round.logged`, `alert.show`, `score.reveal`, `score.share`. Sound (v1.3) and effects attach to these. Keep the event list in `src/core/events.ts`.
 
 ## Working conventions
 
@@ -168,3 +203,5 @@ Mobile layout, leaderboard/database, sound playback, narrator/intro cinematic, f
 - Frame and screen are centered horizontally on the stage (Figma is not pixel-perfect).
 - Stage scales via rem (root font size), minimum window width 1024px, no page scroll.
 - Background image is multiplied over a room-color token, sized in vw/vh (min 110%).
+- Pole of inaccessibility (M) is written in-house, no `polylabel` dependency.
+- Score screen follows the Figma "Score" frame; Details (table only, no diagram), Play again and the speed tag are added in the same style.

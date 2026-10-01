@@ -7,9 +7,10 @@ import { contentSize, toContentCoords } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
 import type { Point } from '../core/stage';
 import { rem, setRem } from '../core/units';
-import { computedCenter, opticalCenter } from '../rounds/geometry';
+import { roundCenters } from '../rounds/opticalCenter';
 import { createResult, type RoundResult } from '../rounds/session';
 import { h } from '../ui/dom';
+import { showTooltip } from '../ui/tooltip';
 
 const { round: L } = layout;
 
@@ -61,50 +62,26 @@ function createShape(round: RoundConfig, c: Point): HTMLElement {
   return shape;
 }
 
-/** Debug markers: a cross at C and a circle at O. Hidden unless the debug toggle is on. */
-function createMarker(kind: 'computed' | 'optical', at: Point): HTMLElement {
+/** Debug markers: a cross at C, a circle at O, a square at M. Hidden unless the debug toggle is on. */
+function createMarker(kind: 'computed' | 'optical' | 'pole', at: Point): HTMLElement {
   const marker = h('div', `debug-marker debug-marker--${kind}`);
   setRem(marker, { left: at.x, top: at.y, width: L.markerSize, height: L.markerSize });
   marker.style.setProperty('--marker-stroke', rem(L.markerStroke));
   return marker;
 }
 
-/** "Sample 0X, logged" next to the click, flipped inward near the screen edges. */
-function createTooltip(result: RoundResult, content: HTMLElement): HTMLElement {
-  const { tooltip } = L;
-  const tip = h('div', 'round-tooltip');
-  setRem(tip, {
-    left: result.clickContent.x + tooltip.offsetX,
-    top: result.clickContent.y + tooltip.offsetY,
-    fontSize: tooltip.fontSize,
-    lineHeight: tooltip.lineHeight,
-  });
-  tip.style.padding = `${rem(tooltip.paddingY)} ${rem(tooltip.paddingX)}`;
-  tip.append(
-    h('div', 'round-tooltip__title', fill(copy.round.logged, { n: padRound(result.roundId) })),
-    h(
-      'div',
-      '',
+/** "Sample 0X, logged" next to the click. Position and time only: no points during the game. */
+function showLoggedTooltip(result: RoundResult, container: HTMLElement): void {
+  showTooltip(container, result.clickContent, {
+    title: fill(copy.round.logged, { n: padRound(result.roundId) }),
+    lines: [
       fill(copy.round.loggedPosition, {
         x: result.click.x.toFixed(1),
         y: result.click.y.toFixed(1),
       }),
-    ),
-    h('div', '', fill(copy.round.loggedTime, { ms: result.latencyMs })),
-  );
-  content.append(tip);
-
-  const box = tip.getBoundingClientRect();
-  const bounds = content.getBoundingClientRect();
-  if (box.right > bounds.right) {
-    tip.style.left = rem(result.clickContent.x - tooltip.offsetX);
-    tip.classList.add('round-tooltip--flip-x');
-  }
-  if (box.bottom > bounds.bottom) {
-    tip.style.top = rem(result.clickContent.y - tooltip.offsetY);
-    tip.classList.add('round-tooltip--flip-y');
-  }
-  return tip;
+      fill(copy.round.loggedTime, { ms: result.latencyMs }),
+    ],
+  });
 }
 
 /**
@@ -118,8 +95,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
     const { session } = ctx;
     const roundId = session.currentRound;
     const round = getRound(roundId);
-    const c = computedCenter(round, contentSize);
-    const o = opticalCenter(round, contentSize);
+    const { C: c, M: m, O: o } = roundCenters(round, contentSize);
 
     const root = h('div', 'round');
     setRem(root, { fontSize: L.textSize });
@@ -144,6 +120,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
       timer,
       createShape(round, c),
       createMarker('computed', c),
+      createMarker('pole', m),
       createMarker('optical', o),
       objectiveLabel,
       objective,
@@ -177,7 +154,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
       });
       session.results.push(result);
       ctx.bus.emit('round.logged', { result });
-      createTooltip(result, root);
+      showLoggedTooltip(result, root);
 
       scope.timeout(() => {
         ctx.bus.emit('round.end', { roundId });

@@ -1,4 +1,5 @@
 import type { ObjectiveKey } from './copy';
+import { gameConfig, type OpticalConfig } from './game.config';
 
 export type RectShape = {
   type: 'rect';
@@ -18,15 +19,15 @@ export type RoundConfig = {
   phase: RoundPhase;
   shape: ShapeConfig;
   offset: { x: number; y: number }; // from screen-content center, design px
-  opticalOffsetY: number; // fraction of shape height, default 0.05
+  /** Per-round overrides of `gameConfig.optical`; leave out to use the global default. */
+  optical?: Partial<OpticalConfig>;
   timeWeight: number; // 0–1
   timeLimitMs: number | null;
   effects: string[]; // effect ids, empty for now
   copyKey: ObjectiveKey;
 };
 
-const DEFAULT_OPTICAL_OFFSET_Y = 0.05;
-const DEFAULT_TIME_WEIGHT = 0.5;
+const DEFAULT_TIME_WEIGHT = 0.2;
 
 /** Shape placement from the Figma "Round" frame: 8px above the screen center. */
 const DEFAULT_OFFSET = { x: 0, y: -8 };
@@ -49,12 +50,16 @@ export const rounds: readonly RoundConfig[] = ROUND_IDS.map((id) => ({
   phase: phaseForRound(id),
   shape: { ...DEFAULT_SHAPE },
   offset: { ...DEFAULT_OFFSET },
-  opticalOffsetY: DEFAULT_OPTICAL_OFFSET_Y,
   timeWeight: id === 1 ? 0 : DEFAULT_TIME_WEIGHT,
   timeLimitMs: null,
   effects: [],
   copyKey: 'objective.rect',
 }));
+
+/** The optical settings a round actually uses: global defaults plus its own overrides. */
+export function opticalSettings(round: RoundConfig): OpticalConfig {
+  return { ...gameConfig.optical, ...round.optical };
+}
 
 /** Looks up a round by its 1-based id. */
 export function getRound(id: number): RoundConfig {
