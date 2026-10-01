@@ -2,10 +2,14 @@ import { copy } from '../config/copy';
 import { layout } from '../config/layout.config';
 import { APP_VERSION, formatVersionLabel } from '../core/version';
 import { rem } from '../core/units';
-import { createLayerElement } from './placeholder';
+import { createLayerElement, placeBox } from './placeholder';
 
-/** Logo (top center), version label (bottom center), and anything else outside the frame. */
-export function createHudLayer(): HTMLElement {
+/**
+ * Logo (top center), version label (bottom center), and anything else outside the frame.
+ * `screenSlot` covers the screen box above the doors and frame: scenes put controls
+ * there that must show while the doors are shut (the Start button).
+ */
+export function createHudLayer(): { el: HTMLElement; screenSlot: HTMLElement } {
   const el = createLayerElement('hud');
   const { hud } = layout;
 
@@ -24,6 +28,10 @@ export function createHudLayer(): HTMLElement {
   version.style.fontSize = rem(hud.versionFontSize);
   version.textContent = formatVersionLabel(APP_VERSION);
 
-  el.append(logo, version);
-  return el;
+  const screenSlot = document.createElement('div');
+  screenSlot.className = 'hud__screen-slot';
+  placeBox(screenSlot, layout.screen);
+
+  el.append(logo, version, screenSlot);
+  return { el, screenSlot };
 }

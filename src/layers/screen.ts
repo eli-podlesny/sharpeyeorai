@@ -2,7 +2,7 @@ import { layout } from '../config/layout.config';
 import { createLayerElement, createPlaceholderLabel, placeBox } from './placeholder';
 
 /** The panel surface: base color + texture overlay. Game content renders in `screen-content`. */
-export function createScreenLayer(): HTMLElement {
+export function createScreenLayer(): { el: HTMLElement; content: HTMLElement } {
   const el = createLayerElement('screen');
   placeBox(el, layout.screen);
 
@@ -15,6 +15,6 @@ export function createScreenLayer(): HTMLElement {
   const content = document.createElement('div');
   content.className = 'screen-content';
 
-  el.append(base, texture, content, createPlaceholderLabel('screen'));
-  return el;
+  el.append(base, texture, createPlaceholderLabel('screen'), content);
+  return { el, content };
 }

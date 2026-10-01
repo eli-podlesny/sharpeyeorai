@@ -27,7 +27,7 @@
   /* Placeholder block colors (v0.1 – v1.0 only) */
   --placeholder-vignette: color-mix(in srgb, var(--color-ink) 75%, transparent);
   --placeholder-frame-glow: var(--color-bone);
-  --placeholder-screen: var(--color-graphite);
+  --placeholder-screen: var(--color-bone);
   --placeholder-screen-texture: color-mix(in srgb, var(--color-paper) 6%, transparent);
   --placeholder-door: var(--color-ash);
   --placeholder-door-seam: var(--color-ink);
@@ -35,12 +35,32 @@
   --placeholder-frame-edge: var(--color-ash);
   --placeholder-label: var(--color-paper);
 
+  /* Screen content (round, loading, score…) */
+  --screen-text: var(--color-ink);
+  --screen-text-dim: color-mix(in srgb, var(--color-ink) 64%, transparent);
+  --progress-track: color-mix(in srgb, var(--color-ink) 48%, transparent);
+  --progress-fill: var(--color-ink);
+  --shape-fill: color-mix(in srgb, var(--color-graphite) 80%, transparent);
+  --shape-border: var(--color-ink);
+  --tooltip-bg: var(--color-ink);
+  --tooltip-text: var(--color-paper);
+  --table-rule: color-mix(in srgb, var(--color-ink) 24%, transparent);
+
+  /* Buttons (interactive → hazard) */
+  --button-bg: var(--color-hazard);
+  --button-text: var(--color-ink);
+  --button-border: var(--color-ink);
+
   /* HUD */
   --color-hud-text: var(--color-paper);
 
   /* Debug overlay */
   --debug-bg: color-mix(in srgb, var(--color-ink) 85%, transparent);
   --debug-text: var(--color-bone);
+  --debug-button-bg: var(--color-graphite);
+  --debug-button-active: var(--color-hazard);
+  --debug-marker-computed: var(--color-paper);
+  --debug-marker-optical: var(--color-hazard);
 
   /* Focus ring */
   --focus-ring: var(--color-hazard);
