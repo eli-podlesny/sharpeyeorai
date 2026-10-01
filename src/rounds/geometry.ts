@@ -3,7 +3,7 @@ import type { RoundConfig } from '../config/rounds.config';
 import { createRng } from '../core/rng';
 import type { Point } from '../core/stage';
 import type { Polygon } from './polygon';
-import { buildShape } from './shapes';
+import { buildShape, type Shape } from './shapes';
 
 /**
  * Shape geometry. All points are in screen-content pixels (origin top-left of the
@@ -19,7 +19,7 @@ export interface Size {
 export interface PlacedShape {
   outer: Polygon;
   holes: Polygon[];
-  /** Where the shape's (unrotated) bounding-box center lands; the rotation turns around it. */
+  /** Where the shape's (unrotated) bounding-box center lands; rotation and scale turn around it. */
   anchor: Point;
   rotationDeg: number;
   /** M, when the shape makes it obvious (symmetric shapes). */
@@ -43,20 +43,35 @@ export function shapeAnchor(round: RoundConfig, content: Size): Point {
 }
 
 /**
- * Builds a round's shape and puts it on the screen: turned by the round's rotation, then
- * moved to its anchor. The only place shape transforms are applied — rendering and
- * scoring both use the result. `seed` feeds shapes that are random (round 2's blob).
+ * One moment of a moving or morphing shape (see motion.ts): how far it has moved from its
+ * resting place, how much it has grown or shrunk, and, for morphing shapes, its outline.
+ */
+export interface ShapeFrame {
+  offset: Point;
+  scale: number;
+  /** The shape in its local space at this moment; leave out to build it from the config. */
+  local?: Shape;
+}
+
+/**
+ * Builds a round's shape and puts it on the screen: scaled, turned by the round's
+ * rotation, then moved to its anchor (plus the frame's offset). The only place shape
+ * transforms are applied — rendering and scoring both use the result. `seed` feeds
+ * shapes that are random (round 2's blob); `frame` is one moment of a moving shape.
  */
 export function placeShape(
   round: RoundConfig,
   content: Size,
   seed: number,
   spacing: number = gameConfig.shapePointSpacingPx,
+  frame?: ShapeFrame,
 ): PlacedShape {
-  const local = buildShape(round.shape, { rng: createRng(seed), spacing });
-  const anchor = shapeAnchor(round, content);
+  const local = frame?.local ?? buildShape(round.shape, { rng: createRng(seed), spacing });
+  const rest = shapeAnchor(round, content);
+  const anchor = frame ? { x: rest.x + frame.offset.x, y: rest.y + frame.offset.y } : rest;
+  const scale = frame?.scale ?? 1;
   const place = (p: Point): Point => {
-    const turned = rotate(p, round.rotationDeg);
+    const turned = rotate({ x: p.x * scale, y: p.y * scale }, round.rotationDeg);
     return { x: anchor.x + turned.x, y: anchor.y + turned.y };
   };
   return {

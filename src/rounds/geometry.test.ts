@@ -16,6 +16,8 @@ function makeRound(overrides: Partial<RoundConfig> = {}): RoundConfig {
     fill: 'default',
     timeWeight: 0,
     timeLimitMs: null,
+    showObjective: true,
+    clickFeedback: true,
     effects: [],
     copyKey: 'objective.shape',
     ...overrides,

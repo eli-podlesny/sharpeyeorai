@@ -3,11 +3,17 @@ import { rounds } from '../config/rounds.config';
 import { rangeOf } from '../core/rng';
 import type { Size } from './geometry';
 import { createResult, shapeSeed, type GameSession, type RoundResult } from './session';
-import { roundTarget } from './target';
+import { targetAt } from './target';
+import { acceptsClick, inputDeadlineMs } from './timing';
+
+/** Autoplay clicks this long before a round's deadline at the latest. */
+const DEADLINE_MARGIN_MS = 1;
 
 /**
  * Fake results for all rounds, following a preset (see autoplay.config.ts), on the
- * session's shapes. The session's rng makes them repeatable for a given seed.
+ * session's shapes. Moving shapes are clicked on the frame shown at the fake latency,
+ * which stays inside the round's deadline and input windows. The session's rng makes
+ * them repeatable for a given seed.
  */
 export function autoplayResults(
   preset: AutoplayPreset,
@@ -16,7 +22,12 @@ export function autoplayResults(
 ): RoundResult[] {
   const { rng } = session;
   return rounds.map((round) => {
-    const target = roundTarget(round, content, shapeSeed(session, round.id));
+    const wanted = Math.round(rangeOf(rng, preset.latencyMs.min, preset.latencyMs.max));
+    const deadline = inputDeadlineMs(round);
+    const latency = deadline === null ? wanted : Math.min(wanted, deadline - DEADLINE_MARGIN_MS);
+    const firstOpen = round.inputWindows?.find(([, to]) => to > latency)?.[0] ?? 0;
+    const clickMs = acceptsClick(round, latency) ? latency : firstOpen;
+    const target = targetAt(round, content, shapeSeed(session, round.id), clickMs);
     const { C, O } = target.centers;
     const dx = O.x - C.x;
     const dy = O.y - C.y;
@@ -28,8 +39,7 @@ export function autoplayResults(
       x: C.x + preset.lean * dx + preset.sidePx * side.x + rangeOf(rng, -j, j),
       y: C.y + preset.lean * dy + preset.sidePx * side.y + rangeOf(rng, -j, j),
     };
-    const latency = Math.round(rangeOf(rng, preset.latencyMs.min, preset.latencyMs.max));
-    return createResult(target, click, latency);
+    return createResult(target, click, clickMs);
   });
 }
 

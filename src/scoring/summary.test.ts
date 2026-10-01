@@ -34,14 +34,14 @@ describe('summarize', () => {
     summary.rounds.forEach((r, i) => {
       const target = targets[i];
       expect(r.dC).toBeCloseTo(0);
-      expect(r.a).toBeCloseTo(accuracy(r.dO, target?.falloffRadius ?? NaN), 9);
+      expect(r.a).toBeCloseTo(accuracy(r.dO ?? NaN, target?.falloffRadius ?? NaN), 9);
       expect(r.a).toBeLessThan(1);
     });
     expect(summary.persona.humanity).toBe('machine');
   });
 
-  it('on the 200 × 200 placeholder, clicking C costs ~15%', () => {
-    const r = summarize(play((_, C) => C, 500)).rounds[3];
+  it('on the 200 × 200 square (round 11 before it shrinks), clicking C costs ~15%', () => {
+    const r = summarize(play((_, C) => C, 500)).rounds[10];
     expect(r?.dO).toBeCloseTo(10);
     expect(r?.a).toBeCloseTo(0.854, 3);
   });

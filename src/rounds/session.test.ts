@@ -7,11 +7,11 @@ const content = { width: 1046, height: 676 };
 
 describe('createResult', () => {
   it('stores the click relative to C, with C at (0, 0) and O above it', () => {
-    // A 200 × 200 placeholder square, 8px above the content center → C = (523, 330).
-    const target = roundTarget(getRound(4), content, 1);
+    // Round 11 at t = 0: a 200 × 200 square, 8px above the content center → C = (523, 330).
+    const target = roundTarget(getRound(11), content, 1);
     const result = createResult(target, { x: 533, y: 320 }, 1500);
-    expect(result.click.x).toBeCloseTo(10);
-    expect(result.click.y).toBeCloseTo(-10);
+    expect(result.click?.x).toBeCloseTo(10);
+    expect(result.click?.y).toBeCloseTo(-10);
     expect(result.C).toEqual({ x: 0, y: 0 });
     expect(result.O.x).toBeCloseTo(0);
     expect(result.O.y).toBeCloseTo(-10);
