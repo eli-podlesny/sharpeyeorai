@@ -33,3 +33,11 @@ export function createShapeSvg(
   root.append(path);
   return root;
 }
+
+/** Redraws a shape SVG made by `createShapeSvg` with a new outline (moving and morphing shapes). */
+export function updateShapeSvg(
+  root: SVGSVGElement,
+  shape: Pick<PlacedShape, 'outer' | 'holes'>,
+): void {
+  root.querySelector('path')?.setAttribute('d', shapePath(shape));
+}

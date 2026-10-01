@@ -2,6 +2,8 @@ import { avocadoShape, type AvocadoParams } from './avocado';
 import { blobShape, type BlobParams } from './blob';
 import { circleShape, type CircleParams } from './circle';
 import { circleClusterShape, type CircleClusterParams } from './circleCluster';
+import { curveShape, type CurveParams } from './curve';
+import { ellipseShape, type EllipseParams } from './ellipse';
 import { rectShape, type RectParams } from './rect';
 import { rhombusShape, type RhombusParams } from './rhombus';
 import type { Shape, ShapeContext } from './shape';
@@ -14,8 +16,10 @@ export type { Shape, ShapeContext } from './shape';
 export type ShapeConfig =
   | ({ type: 'rect' } & RectParams)
   | ({ type: 'circle' } & CircleParams)
+  | ({ type: 'ellipse' } & EllipseParams)
   | ({ type: 'circleCluster' } & CircleClusterParams)
   | ({ type: 'blob' } & BlobParams)
+  | ({ type: 'curve' } & CurveParams)
   | ({ type: 'avocado' } & AvocadoParams)
   | ({ type: 'rhombus' } & RhombusParams)
   | ({ type: 'star' } & StarParams)
@@ -30,12 +34,16 @@ export function buildShape(config: ShapeConfig, ctx: ShapeContext): Shape {
       return rectShape(config, ctx);
     case 'circle':
       return circleShape(config, ctx);
+    case 'ellipse':
+      return ellipseShape(config, ctx);
     case 'circleCluster':
       return circleClusterShape(config, ctx);
     case 'star':
       return starShape(config, ctx);
     case 'blob':
       return blobShape(config, ctx);
+    case 'curve':
+      return curveShape(config, ctx);
     case 'avocado':
       return avocadoShape(config, ctx);
     case 'rhombus':

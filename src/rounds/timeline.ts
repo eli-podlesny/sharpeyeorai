@@ -21,8 +21,15 @@ export interface RoundTimelineContext {
 export interface RoundTimeline {
   onIntroStart?(ctx: RoundTimelineContext): void;
   onShapeVisible?(ctx: RoundTimelineContext): void;
-  /** Every animation frame from the start of the fade-in until the outro ends. */
-  onFrame?(ctx: RoundTimelineContext, frame: { elapsedMs: number; stage: RoundStage }): void;
+  /**
+   * Every animation frame from the start of the fade-in until the outro ends. `elapsedMs`
+   * counts from the start of the round; `roundMs` is the round clock (from
+   * `round.shape.visible`, paused while the tab is hidden; 0 before).
+   */
+  onFrame?(
+    ctx: RoundTimelineContext,
+    frame: { elapsedMs: number; roundMs: number; stage: RoundStage },
+  ): void;
   onClick?(ctx: RoundTimelineContext, click: { content: Point; latencyMs: number }): void;
   onOutroEnd?(ctx: RoundTimelineContext): void;
 }

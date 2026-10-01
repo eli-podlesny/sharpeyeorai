@@ -30,3 +30,24 @@ describe('starShape', () => {
     expect(maxGap(shape.outer)).toBeLessThanOrEqual(3 + 1e-9);
   });
 });
+
+describe('starShape with its own depth per inner corner', () => {
+  const params = { width: 300, height: 300, points: 7, innerRatio: 0.5 };
+  const radii = [0.46, 0.62, 0.38, 0.56, 0.42, 0.66, 0.5];
+  // With a huge spacing only the corners are left: tip, inner, tip, inner…
+  const corners = starShape({ ...params, innerRadii: radii }, ctx(1, 1000)).outer;
+  const depth = corners.filter((_, i) => i % 2 === 1).map((p) => Math.hypot(p.x, p.y));
+
+  it('puts the deepest and the shallowest inner corners where the radii say', () => {
+    expect(corners).toHaveLength(14);
+    expect(depth.indexOf(Math.min(...depth))).toBe(radii.indexOf(Math.min(...radii)));
+    expect(depth.indexOf(Math.max(...depth))).toBe(radii.indexOf(Math.max(...radii)));
+  });
+
+  it('fills its box and never crosses itself', () => {
+    const shape = starShape({ ...params, innerRadii: radii }, ctx());
+    expect(size(shape.outer).width).toBeCloseTo(300, 6);
+    expect(size(shape.outer).height).toBeCloseTo(300, 6);
+    expect(selfIntersects(shape.outer)).toBe(false);
+  });
+});

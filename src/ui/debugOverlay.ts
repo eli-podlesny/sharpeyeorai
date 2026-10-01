@@ -13,8 +13,10 @@ import { randomSeed } from '../core/rng';
 import { getScale, toStageCoords, type Point } from '../core/stage';
 import { GAME_STATES, SCENE_MODES, type GameState, type SceneMode } from '../core/state';
 import { autoplayResults } from '../rounds/autoplay';
+import { roundDebug } from '../rounds/clock';
 import { createResult, shapeSeed } from '../rounds/session';
-import { roundTarget } from '../rounds/target';
+import { targetAt } from '../rounds/target';
+import { acceptsClick, fixedRoundEndMs, inputDeadlineMs } from '../rounds/timing';
 import { scoreRound } from '../scoring/summary';
 import { h } from './dom';
 import { openShapeGallery } from './shapeGallery';
@@ -27,6 +29,8 @@ const EVENT_PAYLOAD_CHARS = 70;
 const MARKERS_ATTR = 'data-debug-markers';
 const CUSTOM_PRESET = 'custom';
 const DEFAULT_SPREAD_PX = 20;
+/** How often the panel refreshes while a round runs (round clock, deadline). */
+const LIVE_REFRESH_MS = 100;
 /** The round with a random (seeded) shape. */
 const REROLL_ROUND = 2;
 
@@ -48,7 +52,9 @@ function summarize(payload: unknown): string {
  * Developer panel, hidden by default. The backtick key (`) toggles it.
  * Shows scale, mouse position, current state and round, live dO / dC / q under the
  * cursor during a round, the last events, controls to jump anywhere in the game,
- * autoplay presets that fill all rounds and go straight to the score, and the scene mode.
+ * autoplay presets that fill all rounds and go straight to the score, the scene mode,
+ * and motion controls: pause/resume and step one frame of the round clock, with the
+ * round time, time left before the deadline and whether input is open.
  */
 export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void {
   const el = h('div', 'debug-overlay');
@@ -109,6 +115,24 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
   gallery.addEventListener('click', () => openShapeGallery(game.context.session));
   shapes.append(reroll, gallery);
 
+  // Motion: pause/resume the round clock, step one frame while paused
+  const motionRow = h('div', 'debug-overlay__row');
+  const pause = h('button', 'debug-overlay__button', 'pause motion');
+  pause.type = 'button';
+  const step = h('button', 'debug-overlay__button', 'step frame');
+  step.type = 'button';
+  step.disabled = true;
+  pause.addEventListener('click', () => {
+    roundDebug.paused = !roundDebug.paused;
+    pause.textContent = roundDebug.paused ? 'resume motion' : 'pause motion';
+    pause.classList.toggle('is-active', roundDebug.paused);
+    step.disabled = !roundDebug.paused;
+  });
+  step.addEventListener('click', () => {
+    roundDebug.steps++;
+  });
+  motionRow.append(pause, step);
+
   // Autoplay: fake all rounds with a preset, then show the score
   const autoplay = h('div', 'debug-overlay__row');
   const presetSelect = h('select', 'debug-overlay__input debug-overlay__select');
@@ -150,25 +174,47 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
   });
   modeRow.append('scene mode ', modeSelect);
 
-  el.append(info, states, controls, shapes, autoplay, modeRow, events);
+  el.append(info, states, controls, shapes, motionRow, autoplay, modeRow, events);
   document.body.append(el);
 
   let mouse = { x: NaN, y: NaN };
   let mouseContent: Point = { x: NaN, y: NaN };
   let state: GameState | null = null;
   let round: number | null = null;
-  /** When the current round's shape became fully visible; NaN during the intro. */
-  let roundStartedAt = NaN;
+  /** The shape of the current round is fully visible (its round clock runs). */
+  let roundVisible = false;
 
-  /** What a click right here, right now, would score. */
+  /** The live round's clock, in ms from `round.shape.visible`; null outside a round. */
+  const roundMs = (): number | null =>
+    state === 'round' && roundVisible && roundDebug.live?.roundId === round
+      ? roundDebug.live.elapsedMs()
+      : null;
+
+  /** What a click right here, right now, would score (on the frame of the moment). */
   const liveScore = (): string => {
     if (state !== 'round' || round === null || Number.isNaN(mouseContent.x)) return '—';
-    if (Number.isNaN(roundStartedAt)) return 'waiting for the shape';
-    const latency = Math.round(performance.now() - roundStartedAt);
+    const t = roundMs();
+    if (t === null) return 'waiting for the shape';
     const { session } = game.context;
-    const target = roundTarget(getRound(round), contentSize, shapeSeed(session, round));
-    const r = scoreRound(createResult(target, mouseContent, latency));
-    return `dO ${r.dO.toFixed(1)}  dC ${r.dC.toFixed(1)}  q ${r.q.toFixed(3)}`;
+    const target = targetAt(getRound(round), contentSize, shapeSeed(session, round), t);
+    const r = scoreRound(createResult(target, mouseContent, Math.round(t)));
+    return `dO ${r.dO?.toFixed(1)}  dC ${r.dC?.toFixed(1)}  q ${r.q.toFixed(3)}`;
+  };
+
+  /** Round time, the deadline countdown and the input window, for timed rounds. */
+  const liveClock = (): string => {
+    const t = roundMs();
+    if (t === null || round === null) return '—';
+    const r = getRound(round);
+    const parts = [`${Math.round(t)}ms${roundDebug.paused ? ' (paused)' : ''}`];
+    const deadline = inputDeadlineMs(r);
+    if (deadline !== null) parts.push(`left ${Math.max(Math.round(deadline - t), 0)}ms`);
+    if (deadline !== null || r.inputWindows) {
+      parts.push(`input ${acceptsClick(r, t) ? 'open' : 'closed'}`);
+    }
+    const end = fixedRoundEndMs(r);
+    if (end !== null) parts.push(`ends in ${Math.max(Math.round(end - t), 0)}ms`);
+    return parts.join('  ');
   };
   const log: string[] = [];
 
@@ -183,6 +229,7 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
       `state   ${state ?? '—'}${showRound ? `  (round ${round}/${gameConfig.roundCount})` : ''}`,
       `seed    ${game.context.session.seed}`,
       `shape   ${round === null ? '—' : shapeSeed(game.context.session, round)}`,
+      `clock   ${liveClock()}`,
       `live    ${liveScore()}`,
     ].join('\n');
     events.textContent = log.length ? log.join('\n') : 'no events yet';
@@ -195,9 +242,9 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
   bus.on('state.change', ({ to }) => (state = to));
   bus.on('round.intro.start', ({ roundId }) => {
     round = roundId;
-    roundStartedAt = NaN;
+    roundVisible = false;
   });
-  bus.on('round.shape.visible', () => (roundStartedAt = performance.now()));
+  bus.on('round.shape.visible', () => (roundVisible = true));
   bus.on('scene.mode', ({ mode }) => (modeSelect.value = mode));
   bus.onAny((name, payload) => {
     log.unshift(`${name.padEnd(20)}${summarize(payload)}`);
@@ -219,5 +266,9 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
   });
 
   window.addEventListener('resize', render);
+  // The round clock and deadline change without any event; refresh while a round runs.
+  window.setInterval(() => {
+    if (roundMs() !== null) render();
+  }, LIVE_REFRESH_MS);
   render();
 }

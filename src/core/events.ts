@@ -22,6 +22,8 @@ export interface GameEvents {
   'round.shape.visible': { roundId: number };
   /** The raw click: `content` is in screen-content pixels, `local` is relative to the shape. */
   'round.click': { roundId: number; content: Point; local: Point; latencyMs: number };
+  /** The round's deadline passed with no click (see src/rounds/timing.ts). */
+  'round.timeout': { roundId: number };
   'round.logged': { result: RoundResult };
   'round.outro.start': { roundId: number };
   'round.outro.end': { roundId: number };

@@ -52,6 +52,7 @@
   --shape-fill-light-pulse-high: var(--color-hud-text);
   --shape-border: var(--color-ink);
   --click-marker: var(--color-hazard);
+  --decoy-dot: var(--color-hazard);
   --tooltip-bg: var(--color-ink);
   --tooltip-text: var(--color-paper);
   --table-rule: color-mix(in srgb, var(--color-ink) 24%, transparent);
