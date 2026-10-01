@@ -117,7 +117,7 @@ export const gameConfig: GameConfig = {
     objectiveDelayMs: 200,
     objectiveInMs: 200,
     objectiveOutMs: 200,
-    postClickWaitMs: 500,
+    postClickWaitMs: 800,
     outroFadeMs: 400,
     betweenRoundsMs: 400,
     reducedMotionFadeMs: 150,
