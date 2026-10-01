@@ -12,12 +12,15 @@ export interface TooltipContent {
   lines?: readonly string[];
   /** Let long text wrap at `layout.tooltip.maxWidth` instead of staying on one line. */
   wrap?: boolean;
+  /** Open up-right of the point instead of down-right (e.g. above a row of buttons). */
+  above?: boolean;
 }
 
 /**
  * The one tooltip of the game (in-round "logged" sample, score screen "Copied").
- * Placed in `container` at a point in its design pixels, offset down-right, and flipped
- * to the other side of the point if it would stick out of the container.
+ * Placed in `container` at a point in its design pixels, offset down-right (or up-right
+ * with `above`), and flipped to the other side of the point if it would stick out of
+ * the container.
  */
 export function showTooltip(
   container: HTMLElement,
@@ -38,24 +41,27 @@ export function showTooltip(
   for (const line of content.lines ?? []) tip.append(h('div', '', line));
   container.append(tip);
 
+  const flipY = (): void => {
+    tip.style.top = rem(at.y - T.offsetY);
+    tip.classList.add('tooltip--flip-y');
+  };
+  if (content.above) flipY();
+
   const box = tip.getBoundingClientRect();
   const bounds = container.getBoundingClientRect();
   if (box.right > bounds.right) {
     tip.style.left = rem(at.x - T.offsetX);
     tip.classList.add('tooltip--flip-x');
   }
-  if (box.bottom > bounds.bottom) {
-    tip.style.top = rem(at.y - T.offsetY);
-    tip.classList.add('tooltip--flip-y');
-  }
+  if (!content.above && box.bottom > bounds.bottom) flipY();
   return tip;
 }
 
 /**
- * The point beside an element's right edge (vertically centered), in screen-content
- * pixels. Use it to anchor a tooltip next to a button.
+ * An element's top-right corner in screen-content pixels. Use it to anchor a tooltip
+ * next to a button.
  */
 export function besideElement(el: HTMLElement): Point {
   const box = el.getBoundingClientRect();
-  return toContentCoords(box.right, box.top + box.height / 2);
+  return toContentCoords(box.right, box.top);
 }

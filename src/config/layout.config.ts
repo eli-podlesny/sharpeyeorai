@@ -101,6 +101,19 @@ export const layout = {
     gap: 24,
     button: { fontSize: 20, paddingX: 40, paddingY: 14, border: 2 },
     loadingBar: { width: 320, height: 4 },
-    table: { fontSize: 14, rowHeight: 26, cellPaddingX: 16 },
+  },
+
+  /** Score scene, from the Figma "Score" frame. Tops are inside screen-content. */
+  score: {
+    label: { top: 80, fontSize: 16, lineHeight: 24, letterSpacing: 8 },
+    total: { top: 185, fontSize: 80, lineHeight: 88 },
+    headline: { top: 280, fontSize: 20, lineHeight: 24 },
+    line: { top: 312, fontSize: 16, lineHeight: 24, maxWidth: 440 },
+    /** Not in the Figma frame: placed under the two-line body. */
+    speedTag: { top: 372, fontSize: 14, lineHeight: 20 },
+    /** Details, Share result, Play again on one row. Share result's spot is from Figma. */
+    links: { top: 572, fontSize: 16, lineHeight: 24, letterSpacing: 8, gap: 56 },
+    /** Details table, shown in place of the verdict while open. */
+    table: { top: 136, fontSize: 14, rowHeight: 26, cellPaddingX: 20 },
   },
 } as const;

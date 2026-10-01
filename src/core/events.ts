@@ -1,4 +1,5 @@
 import type { RoundResult } from '../rounds/session';
+import type { SessionSummary } from '../scoring/summary';
 import type { Point } from './stage';
 import type { GameState } from './state';
 
@@ -16,7 +17,9 @@ export interface GameEvents {
   'round.logged': { result: RoundResult };
   'round.end': { roundId: number };
   'game.end': { results: readonly RoundResult[] };
-  'score.reveal': { results: readonly RoundResult[]; isSample: boolean };
+  'score.reveal': { summary: SessionSummary; isSample: boolean };
+  /** Share result was pressed; `copied` is false when the clipboard refused. */
+  'score.share': { text: string; copied: boolean };
 }
 
 export type EventName = keyof GameEvents;

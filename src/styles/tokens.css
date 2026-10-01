@@ -45,6 +45,7 @@
   --tooltip-bg: var(--color-ink);
   --tooltip-text: var(--color-paper);
   --table-rule: color-mix(in srgb, var(--color-ink) 24%, transparent);
+  --score-total: var(--color-hazard);
 
   /* Buttons (interactive → hazard) */
   --button-bg: var(--color-hazard);

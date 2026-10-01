@@ -19,6 +19,8 @@ export interface GameConfig {
   nextRoundDelayMs: number;
   /** How long the score counts up from 0 on the score screen. */
   scoreCountUpMs: number;
+  /** How long the "Copied" tooltip stays after Share result. */
+  copiedTooltipMs: number;
   optical: OpticalConfig;
   scoring: ScoringConfig;
   persona: PersonaConfig;
@@ -76,6 +78,7 @@ export const gameConfig: GameConfig = {
   roundCount: 12,
   nextRoundDelayMs: 900,
   scoreCountUpMs: 1200,
+  copiedTooltipMs: 2000,
   optical: {
     skeletonWeight: 0.35,
     biasX: 0,
