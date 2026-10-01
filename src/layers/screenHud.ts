@@ -1,4 +1,4 @@
-import { copy, fill, padRound, padTime } from '../config/copy';
+import { copy, fill, padDigits, padRound } from '../config/copy';
 import { gameConfig } from '../config/game.config';
 import { layout } from '../config/layout.config';
 import { setRem } from '../core/units';
@@ -9,9 +9,9 @@ import { h } from '../ui/dom';
 export interface ScreenHudControl {
   /** Shows "Test 04/12" and the matching progress. 0 = not started (00/12, empty bar). */
   setRound(roundId: number): void;
-  /** Shows the round time; 0 is the idle placeholder (0000ms). */
-  setTime(ms: number): void;
-  /** Back to 00/12, 0000ms, visible. */
+  /** Shows the round time; `null` is the idle placeholder (0000ms, dimmed like the label). */
+  setTime(ms: number | null): void;
+  /** Back to 00/12, idle 0000ms, visible. */
   reset(): void;
   setVisible(visible: boolean, fadeMs: number): void;
 }
@@ -57,11 +57,12 @@ export function createScreenHud(): { el: HTMLElement; control: ScreenHudControl 
       bar.style.width = `${(roundId / gameConfig.roundCount) * 100}%`;
     },
     setTime(ms) {
-      timerValue.textContent = fill(copy.round.timeValue, { ms: padTime(ms) });
+      timerValue.textContent = fill(copy.round.timeValue, { ms: padDigits(ms ?? 0) });
+      timerValue.classList.toggle('screen-hud__dim', ms === null);
     },
     reset() {
       control.setRound(0);
-      control.setTime(0);
+      control.setTime(null);
       control.setVisible(true, 0);
     },
     setVisible(visible, fadeMs) {

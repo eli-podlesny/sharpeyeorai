@@ -92,23 +92,10 @@
   pointer-events: none;
 }
 
-/* "Test #N", centered for the round intro */
-.round-title {
-  position: absolute;
-  left: 0;
-  right: 0;
-  margin: 0;
-  text-align: center;
-  font-weight: var(--weight-display-bold);
-}
-
 .round-objective {
   position: absolute;
   left: 0;
   right: 0;
-}
-
-.round-objective__text {
   margin: 0;
   text-align: center;
   font-family: var(--font-mono);

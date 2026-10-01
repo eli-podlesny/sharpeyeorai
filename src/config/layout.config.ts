@@ -83,9 +83,7 @@ export const layout = {
   round: {
     textSize: 20,
     lineHeight: 24,
-    /** "Test #N" at the start of each round; centered, with the objective `gap` below. */
-    title: { fontSize: 64, lineHeight: 72, gap: 16 },
-    /** Where the objective ends up after the intro. */
+    /** The objective line at the bottom of the screen. */
     objectiveText: { top: 596 },
     shapeBorder: 2,
     /** Dot left where the player clicked. */

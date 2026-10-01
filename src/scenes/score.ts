@@ -1,4 +1,4 @@
-import { copy, fill, padRound } from '../config/copy';
+import { copy, fill, padDigits, padRound } from '../config/copy';
 import { gameConfig } from '../config/game.config';
 import { layout } from '../config/layout.config';
 import type { SceneContext } from '../core/game';
@@ -36,7 +36,7 @@ function createLink(label: string): HTMLButtonElement {
 /** Counts the total up from 0 (eased), or shows it at once with reduced motion. */
 function countUp(scope: Scope, el: HTMLElement, total: number): void {
   const show = (n: number): void => {
-    el.textContent = fill(copy.score.total, { total: n });
+    el.textContent = fill(copy.score.total, { total: padDigits(n) });
   };
   if (prefersReducedMotion() || gameConfig.scoreCountUpMs <= 0) {
     show(total);
@@ -109,7 +109,12 @@ export function createScoreScene(ctx: SceneContext): Scene {
 
     // Verdict view
     const verdict = h('div', 'score-verdict');
-    const total = createLine('p', 'score-total', fill(copy.score.total, { total: 0 }), L.total);
+    const total = createLine(
+      'p',
+      'score-total',
+      fill(copy.score.total, { total: padDigits(0) }),
+      L.total,
+    );
     total.setAttribute('aria-label', fill(copy.score.total, { total: summary.total }));
     const line = createLine('p', 'score-body', persona.line, L.line);
     line.style.maxWidth = rem(L.line.maxWidth);
