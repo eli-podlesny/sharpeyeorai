@@ -15,7 +15,7 @@ npm install
 npm run dev
 ```
 
-Then open the address it prints (usually http://localhost:5173). Press the backtick key (`` ` ``) to toggle the debug panel.
+Then open the address it prints (usually http://localhost:5173). Press the backtick key (`` ` ``) to toggle the debug panel. It can show the C/O/M markers, the live score under the cursor, and **Autoplay**: pick a preset (one per persona and override, or a custom spread around O) to fill all 12 rounds and jump straight to the score screen.
 
 ### Review shortcuts (URL parameters)
 
