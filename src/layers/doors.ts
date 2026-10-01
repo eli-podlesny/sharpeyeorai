@@ -25,6 +25,8 @@ export function createDoorsLayer(): { el: HTMLElement; control: DoorsControl } {
 
   const control: DoorsControl = {
     setOpen(open, durationMs) {
+      // Settle any change made in the same frame, so this one animates from it.
+      void el.offsetWidth;
       el.style.setProperty('--door-duration', `${durationMs}ms`);
       el.classList.toggle('is-open', open);
     },

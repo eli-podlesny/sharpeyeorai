@@ -1,10 +1,12 @@
 import { gameConfig } from '../config/game.config';
+import type { DarknessControl } from '../layers/darkness';
 import type { DoorsControl } from '../layers/doors';
+import type { ScreenHudControl } from '../layers/screenHud';
 import { createSession, type GameSession } from '../rounds/session';
 import type { EventBus } from './events';
 import { randomSeed } from './rng';
 import { createSceneManager, type SceneMap } from './scenes';
-import { createStateMachine, type GameState, type StateMachine } from './state';
+import { createStateMachine, type GameState, type SceneMode, type StateMachine } from './state';
 
 /** What every scene gets to work with. */
 export interface SceneContext {
@@ -13,11 +15,18 @@ export interface SceneContext {
   /** Over the screen box, above doors and frame: controls shown while the doors are shut. */
   overlay: HTMLElement;
   doors: DoorsControl;
+  /** Counter, progress and timer inside the screen, below the doors. */
+  hud: ScreenHudControl;
+  /** Whole-window darkness (end of the game). */
+  darkness: DarknessControl;
   bus: EventBus;
   machine: StateMachine;
   /** The current play-through. Replaced by `newSession()`. */
   readonly session: GameSession;
   newSession(startRound?: number): void;
+  /** Scene-wide look; a placeholder with no visual effect yet. */
+  readonly sceneMode: SceneMode;
+  setSceneMode(mode: SceneMode): void;
 }
 
 export interface Game {
@@ -30,6 +39,8 @@ export interface GameOptions {
   content: HTMLElement;
   overlay: HTMLElement;
   doors: DoorsControl;
+  hud: ScreenHudControl;
+  darkness: DarknessControl;
   bus: EventBus;
   /** Fixed seed from `?seed=`; null picks a new random seed for every session. */
   seed: number | null;
@@ -43,6 +54,7 @@ function clampRound(round: number): number {
 export function createGame(options: GameOptions): Game {
   const { bus } = options;
   let session = createSession(options.seed ?? randomSeed());
+  let sceneMode: SceneMode = 'normal';
   // Assigned right below; scenes only read it once the machine starts.
   let showScene: (state: GameState) => void = () => {};
 
@@ -58,6 +70,8 @@ export function createGame(options: GameOptions): Game {
     content: options.content,
     overlay: options.overlay,
     doors: options.doors,
+    hud: options.hud,
+    darkness: options.darkness,
     bus,
     machine,
     get session() {
@@ -65,6 +79,14 @@ export function createGame(options: GameOptions): Game {
     },
     newSession(startRound = 1) {
       session = createSession(options.seed ?? randomSeed(), clampRound(startRound));
+    },
+    get sceneMode() {
+      return sceneMode;
+    },
+    setSceneMode(mode) {
+      if (mode === sceneMode) return;
+      sceneMode = mode;
+      bus.emit('scene.mode', { mode });
     },
   };
 

@@ -12,18 +12,26 @@ function setup(strict = true) {
 
 describe('transition table', () => {
   it('allows the full game loop', () => {
-    const path: GameState[] = ['intro', 'ready', 'opening', 'loading', 'round', 'round'];
+    const path: GameState[] = [
+      'intro',
+      'ready',
+      'loading',
+      'objective',
+      'round',
+      'round',
+      'ending',
+      'score',
+      'ready',
+    ];
     for (let i = 1; i < path.length; i++) {
       expect(canTransition(path[i - 1] as GameState, path[i] as GameState)).toBe(true);
     }
-    expect(canTransition('round', 'calculating')).toBe(true);
-    expect(canTransition('calculating', 'score')).toBe(true);
-    expect(canTransition('score', 'ready')).toBe(true);
   });
 
   it('blocks skipping ahead', () => {
     expect(canTransition('ready', 'round')).toBe(false);
     expect(canTransition('score', 'round')).toBe(false);
+    expect(canTransition('round', 'score')).toBe(false);
   });
 
   it('gives every state a way forward', () => {
@@ -45,8 +53,8 @@ describe('state machine', () => {
   it('follows allowed transitions', () => {
     const { machine } = setup();
     machine.force('ready');
-    machine.go('opening');
-    expect(machine.current).toBe('opening');
+    machine.go('loading');
+    expect(machine.current).toBe('loading');
   });
 
   it('throws on an illegal transition when strict (dev)', () => {

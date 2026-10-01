@@ -66,17 +66,45 @@ export const layout = {
     versionFontSize: 14,
   },
 
+  /**
+   * Counter, progress bar and timer: inside the screen, below the doors, visible all game.
+   * Positions are inside the screen viewport.
+   */
+  screenHud: {
+    textSize: 20,
+    lineHeight: 24,
+    /** "Test 04/12" with its progress bar beside it, `gap` apart. */
+    progress: { left: 180, top: 24, gap: 16, barWidth: 160, barHeight: 4 },
+    /** Timer, right-aligned. */
+    timer: { right: 180, top: 24 },
+    /** The objective line, centered at the bottom; it stays from the objective intro through round 12. */
+    objective: { top: 596 },
+  },
+
+  /** Before round 1: "Objective:" with the objective line below, centered as one group. */
+  objectiveIntro: {
+    titleFontSize: 64,
+    titleLineHeight: 72,
+    /** Space between "Objective:" and the objective line. */
+    gap: 16,
+    /** Both enter from this far below; "Objective:" also zooms in from `titleScale`. */
+    rise: 16,
+    titleScale: 0.8,
+    /** "Objective:" moves down this far as it fades out. */
+    titleDrop: 16,
+  },
+
   /** Round scene, from the Figma "Round" frame. Positions are inside screen-content. */
   round: {
     textSize: 20,
     lineHeight: 24,
-    /** "Test 04/12" and its progress bar, as one group. */
-    progress: { left: 180, top: 24, barOffsetX: 115, barOffsetY: 14, barWidth: 160, barHeight: 4 },
-    /** Live timer, right-aligned. */
-    timer: { right: 180, top: 24 },
-    objectiveLabel: { top: 568, fontSize: 16, letterSpacing: 8 },
-    objectiveText: { top: 596 },
+    /** The shape enters from `rise` px lower at `scale`, and leaves zooming back out to `scale`. */
+    shapeEnter: { rise: 32, scale: 0.8 },
     shapeBorder: 2,
+    /** Dot left where the player clicked. */
+    clickMarkerSize: 8,
+    /** The "Sample 0X, logged" tooltip: fixed in the top-right corner of the screen. */
+    loggedTooltip: { right: 24, top: 24 },
     /** Debug C (cross) and O (circle) markers. */
     markerSize: 16,
     markerStroke: 2,

@@ -30,6 +30,15 @@ body {
   outline-offset: 2px;
 }
 
+/* Transitions driven from code (src/ui/motion.ts): durations come in as variables */
+.fade {
+  transition: opacity var(--fade-ms, 0ms) var(--fade-ease, ease);
+}
+
+.move {
+  transition: transform var(--move-ms, 0ms) var(--move-ease, ease);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -37,5 +46,10 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Short fades stay (code already shortens them); moves stay instant */
+  .fade {
+    transition-duration: var(--fade-ms, 0ms) !important;
   }
 }

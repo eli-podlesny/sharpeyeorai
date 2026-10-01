@@ -12,7 +12,7 @@ The owner is a designer who is new to Claude Code. Explain what you are about to
 
 ## Current version
 
-**v1.0a — scoring, verdict, score screen.** See `docs/briefs/` for the active brief. (v1.0 is tagged when v1.0a and v1.0b are both done.)
+**v0.4 — game flow, persistent HUD, round choreography.** See `docs/briefs/` for the active brief. (Releases are now numbered 0.x by brief; the roadmap table below is kept for scope reference.)
 
 | Version | Scope                                                                                                                                      |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -58,8 +58,8 @@ src/
   config/            game.config.ts, rounds.config.ts, layout.config.ts
   rounds/            round logic (shape geometry, target computation)
   scoring/           pure scoring functions + tests
-  scenes/            intro, ready, loading, round, calculating, score
-  layers/            background, frame, doors, screen, hud
+  scenes/            intro, ready, loading, round, ending, score (calculating: kept, out of the flow)
+  layers/            background, frame, doors, screen, screen-hud, hud, darkness
   ui/                tooltips, popups, buttons
   fx/                effects (tint, distortion, shake) — v1.1+
   audio/             v1.3 only
@@ -85,10 +85,12 @@ Each layer is its own module with a stable name. Assets are **placeholders** unt
 1. `background` — room illustration, about 110% of stage width. Will be moved (parallax), scaled, rotated and distorted in later versions.
 2. `vignette` — soft darkening at the edges.
 3. `frame-glow` — blurred copy of the frame, behind it.
-4. `screen` — the panel surface: base color + texture overlay. Game content renders inside `screen-content`.
+4. `screen` — the panel surface: base color + texture overlay. Game content renders inside `screen-content`. The `screen-hud` (round counter, progress bar, timer) sits inside the screen above the content and below the doors, and stays visible from loading through the last round (hidden on the score screen).
 5. `doors` — left and right blast-door halves, clipped to the screen viewport. Slide apart to open.
 6. `frame` — the metal frame, on top of the screen edges.
 7. `hud` — logo (top center), version label, About link, and anything outside the frame.
+
+Above everything: `darkness`, a whole-window overlay for the end-of-game blackout (placeholder).
 
 Placeholder rule: flat blocks in palette colors with their layer name printed small inside, at the sizes and positions in `src/config/layout.config.ts`. Current values (from Figma, will change):
 
@@ -104,14 +106,18 @@ Colors and type are not final. Always use tokens, never hard-coded values, so th
 
 - Ink `#111`, Graphite `#333`, Ash `#777`, Concrete `#BEB8AD`, Bone `#E6E1D7`, Paper `#F6F4EE`
 - Hazard orange `#EE4D00`: only for interactive elements, click targets, system alerts, the score number, and the Drama-round tint
-- Display/UI font: Turret Road. Objective text: Kode Mono.
+- Display/UI font: Turret Road. Objective text and the screen-HUD counter and timer: Kode Mono (HUD in Bold, via `--font-hud` / `--weight-hud`).
 
 ## Gameplay rules (current decisions)
 
-- Flow: Intro → Ready (closed door + Start button) → doors open → Loading ("Initializing") → Test 01…12 → Calculating → Score.
+- Flow: Intro → Ready (closed doors + Start button) → Loading ("Initializing" starts behind the doors, doors open onto it after `loadingStartBeforeDoorsMs`) → Objective intro → Test 01…12 → Ending (doors close, darkness for `endDarknessMs`) → Score (rendered behind the doors, which open onto it). The Calculating scene is kept but out of the flow.
+- Before round 1, the objective intro (`gameConfig.objectiveIntro`, `layout.objectiveIntro`): "Objective:" (large) fades in at the center rising 16px and zooming 0.8 → 1 (400ms); the objective line follows below it (200ms delay, 200ms, rising 16px); hold 1200ms; then "Objective:" fades out moving down 16px while the objective line moves to its bottom place (400ms). The objective line lives in the screen HUD and stays there until it fades out with round 12's shape.
+- Every round follows one sequence (`src/rounds/sequence.ts`, timings in `gameConfig.roundSequence`): shape fades in (400ms) rising 32px and zooming 0.8 → 1 → timer starts when the shape is fully visible (earlier clicks ignored) and the shape fill pulses alpha 0.8 ↔ 1 (1s cycle) until the click → click: marker + "Sample 0X, logged" tooltip (fixed top-right, disappears instantly 500ms after the click) → shape stays 800ms → shape and marker fade out, zooming out to 0.8 in place (400ms) → 400ms pause → next round. Reduced motion: fades short, no movement or zoom.
+- Timer and score show at least 4 digits (`padDigits`): `0000ms` idle (dimmed like the "Time:" label), `0347ms`, `0636pts`. The timer freezes at the click time until the next round starts.
+- Rounds may have an optional `timeline` hook (intro start, shape visible, every frame, click, outro end); empty for now. `sceneMode` (normal / distorted / alert / blackout) is a placeholder with no visual effect, settable from the debug panel.
 - A `startMode` config flag: `"button"` (current) or `"auto"` (possible later). Build for both.
 - For now **every round uses the same shape: a 200 × 200 rectangle**. The round config must still support different shapes, rotations, positions and effects later.
-- One click per round. The click is final and the next round loads automatically.
+- One click per round. The click is final and the next round loads automatically. Latency is measured from `round.shape.visible`.
 - Round 1 ignores time in scoring. Every round has a configurable `timeWeight`.
 
 ## Scoring model
@@ -175,12 +181,13 @@ With 200 × 200 squares C and O are only 10px apart, so the lean is noisy until 
 
 ## Events (hooks for later versions)
 
-Emit typed events through the event bus even before anything listens to them, for example `door.open.start`, `door.open.end`, `round.start`, `round.click`, `round.logged`, `alert.show`, `score.reveal`, `score.share`. Sound (v1.3) and effects attach to these. Keep the event list in `src/core/events.ts`.
+Emit typed events through the event bus even before anything listens to them, for example `door.open.start/end`, `door.close.start/end`, `round.intro.start`, `round.intro.end`, `round.shape.visible`, `round.click`, `round.logged`, `round.outro.start`, `round.outro.end`, `scene.dark`, `scene.mode`, `alert.show`, `score.reveal`, `score.share`. Sound (v1.3) and effects attach to these. Keep the event list in `src/core/events.ts`.
 
 ## Working conventions
 
 - **Plan before building:** for any brief, first summarize your plan and list open questions. Wait for the owner's go-ahead.
 - **One brief = one branch** (`feat/<short-name>`). Small commits with conventional messages (`feat:`, `fix:`, `chore:`, `docs:`).
+- **Version on the branch:** when starting a brief's branch, bump `package.json` to that brief's version first (e.g. `0.4.0` on `feat/v0.4-…`), so the label at the bottom of the preview shows the version being worked on. Tag after the owner merges.
 - **Never push to `main`** without the owner saying so. The owner reviews on the Vercel preview link first.
 - **No magic numbers.** Layout goes in `layout.config.ts`, gameplay in `game.config.ts` / `rounds.config.ts`, visuals in tokens.
 - **Accessibility floor:** visible keyboard focus, `prefers-reduced-motion` respected, and no flashing faster than 3 Hz without a warning.
@@ -205,3 +212,7 @@ Mobile layout, leaderboard/database, sound playback, narrator/intro cinematic, f
 - Background image is multiplied over a room-color token, sized in vw/vh (min 110%).
 - Pole of inaccessibility (M) is written in-house, no `polylabel` dependency.
 - Score screen follows the Figma "Score" frame; Details (table only, no diagram), Play again and the speed tag are added in the same style.
+- v0.4: the screen is live behind the doors (loading starts before they open); the screen HUD is persistent and below the doors; the game ends with doors closing, darkness and doors opening on the score; Calculating is out of the flow.
+- v0.4: the "OBJECTIVE:" label is dropped; only the objective sentence shows. Loading runs 2500ms in total.
+- v0.4 review: no round intro and no "Test #N" title; shape fades in, objective slides up 16px (200ms delay, 200ms); 400ms between rounds; score padded to 4 digits like the timer.
+- v0.4 review: the objective is introduced once before round 1 ("Objective:" + objective line) and stays at the bottom through round 12; between rounds only the shape comes and goes. Score label is "Your score".

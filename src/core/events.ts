@@ -1,7 +1,7 @@
 import type { RoundResult } from '../rounds/session';
 import type { SessionSummary } from '../scoring/summary';
 import type { Point } from './stage';
-import type { GameState } from './state';
+import type { GameState, SceneMode } from './state';
 
 /**
  * Every game event and its payload. Sound (v1.3) and effects attach to these later.
@@ -11,12 +11,24 @@ export interface GameEvents {
   'state.change': { from: GameState | null; to: GameState };
   'door.open.start': { durationMs: number };
   'door.open.end': Record<string, never>;
-  'round.start': { roundId: number };
+  'door.close.start': { durationMs: number };
+  'door.close.end': Record<string, never>;
+  /** Round sequence steps, in order (see src/rounds/sequence.ts). The intro is the fade-in of shape and objective. */
+  'objective.intro.start': Record<string, never>;
+  'objective.intro.end': Record<string, never>;
+  'round.intro.start': { roundId: number };
+  'round.intro.end': { roundId: number };
+  /** The shape is fully visible: the timer starts and clicks count from here. */
+  'round.shape.visible': { roundId: number };
   /** The raw click: `content` is in screen-content pixels, `local` is relative to the shape. */
   'round.click': { roundId: number; content: Point; local: Point; latencyMs: number };
   'round.logged': { result: RoundResult };
-  'round.end': { roundId: number };
+  'round.outro.start': { roundId: number };
+  'round.outro.end': { roundId: number };
   'game.end': { results: readonly RoundResult[] };
+  /** The end-of-game darkness fades in (`dark: true`) or out. */
+  'scene.dark': { dark: boolean; durationMs: number };
+  'scene.mode': { mode: SceneMode };
   'score.reveal': { summary: SessionSummary; isSample: boolean };
   /** Share result was pressed; `copied` is false when the clipboard refused. */
   'score.share': { text: string; copied: boolean };

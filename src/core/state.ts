@@ -1,14 +1,16 @@
 /**
  * The game's states and which state may follow which.
  * `intro` exists but is skipped for now (it is built in v1.4).
+ * `loading` also opens the doors; `objective` introduces the objective before round 1;
+ * `ending` closes the doors and goes dark before the score.
  */
 export const GAME_STATES = [
   'intro',
   'ready',
-  'opening',
   'loading',
+  'objective',
   'round',
-  'calculating',
+  'ending',
   'score',
 ] as const;
 
@@ -17,13 +19,21 @@ export type GameState = (typeof GAME_STATES)[number];
 /** Allowed transitions. `round → round` moves to the next round. */
 export const TRANSITIONS: Readonly<Record<GameState, readonly GameState[]>> = {
   intro: ['ready'],
-  ready: ['opening'],
-  opening: ['loading'],
-  loading: ['round'],
-  round: ['round', 'calculating'],
-  calculating: ['score'],
+  ready: ['loading'],
+  loading: ['objective'],
+  objective: ['round'],
+  round: ['round', 'ending'],
+  ending: ['score'],
   score: ['ready'],
 };
+
+/**
+ * Scene-wide look (placeholder until the effects land in v0.5–v0.7). Changing it has no
+ * visual effect yet; it is mirrored to `data-scene-mode` on the stage for later CSS.
+ */
+export const SCENE_MODES = ['normal', 'distorted', 'alert', 'blackout'] as const;
+
+export type SceneMode = (typeof SCENE_MODES)[number];
 
 export function canTransition(from: GameState, to: GameState): boolean {
   return TRANSITIONS[from].includes(to);

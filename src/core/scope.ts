@@ -14,6 +14,8 @@ export interface Scope {
   ): void;
   /** Appends `el` to `parent`; it is removed again on dispose. */
   mount(parent: HTMLElement, el: HTMLElement): void;
+  /** Runs `fn` on dispose, for state outside the scene that must be put back. */
+  onDispose(fn: () => void): void;
   dispose(): void;
 }
 
@@ -21,6 +23,7 @@ export function createScope(): Scope {
   const timeouts = new Set<number>();
   const frames = new Set<number>();
   const mounted: HTMLElement[] = [];
+  const cleanups: (() => void)[] = [];
   const listeners = new AbortController();
   let disposed = false;
 
@@ -49,15 +52,20 @@ export function createScope(): Scope {
       parent.append(el);
       mounted.push(el);
     },
+    onDispose(fn) {
+      cleanups.push(fn);
+    },
     dispose() {
       disposed = true;
       for (const id of timeouts) clearTimeout(id);
       for (const id of frames) cancelAnimationFrame(id);
       listeners.abort();
       for (const el of mounted) el.remove();
+      for (const fn of cleanups) fn();
       timeouts.clear();
       frames.clear();
       mounted.length = 0;
+      cleanups.length = 0;
     },
   };
 }

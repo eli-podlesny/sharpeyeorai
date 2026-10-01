@@ -14,12 +14,15 @@ export const copy = {
   loading: {
     title: 'Initializing',
   },
+  objectiveIntro: {
+    title: 'Objective:',
+  },
   round: {
     counter: 'Test {n}',
     counterTotal: '/{total}',
     timeLabel: 'Time: ',
-    timeValue: '+{ms}ms',
-    objectiveLabel: 'OBJECTIVE:',
+    /** `{ms}` is padded with `padDigits()`, so the idle timer reads 0000ms. */
+    timeValue: '{ms}ms',
     logged: 'Sample {n}, logged',
     loggedPosition: 'x {x}  y {y}',
     loggedTime: 't {ms}ms',
@@ -32,7 +35,8 @@ export const copy = {
     title: 'Calculating',
   },
   score: {
-    label: 'Your medical summary',
+    label: 'Your score',
+    /** `{total}` is padded with `padDigits()`: 0636pts. */
     total: '{total}pts',
     sampleNote: 'Sample data — no rounds played',
     details: 'Details',
@@ -132,4 +136,12 @@ export function fill(template: string, values: Record<string, string | number>):
 /** Two-digit round number, as shown in "Test 04". */
 export function padRound(n: number): string {
   return String(n).padStart(2, '0');
+}
+
+/** Minimum digits shown by the timer and the score: 0000ms, 0347ms, 0636pts, 10000pts. */
+export const DISPLAY_DIGITS = 4;
+
+/** A whole number padded to `DISPLAY_DIGITS`, as in "0347ms" or "0636pts". */
+export function padDigits(n: number): string {
+  return String(Math.max(Math.round(n), 0)).padStart(DISPLAY_DIGITS, '0');
 }

@@ -5,25 +5,55 @@ import type { SceneContext } from '../core/game';
 import { defineScene, type Scene } from '../core/scenes';
 import { setRem } from '../core/units';
 import { h } from '../ui/dom';
+import { commitStyles, fadeTo } from '../ui/motion';
 import { createPanel, createTitle } from './layout';
 
-/** "Initializing" and a progress bar that fills over `loadingMs`, then round 1. */
+/**
+ * "Initializing" starts behind the shut doors, the doors open onto it after
+ * `loadingStartBeforeDoorsMs`, and round 1 follows once both the bar and the doors
+ * are done.
+ */
 export function createLoadingScene(ctx: SceneContext): Scene {
   return defineScene((scope) => {
-    ctx.doors.setOpen(true, 0);
+    ctx.doors.setOpen(false, 0);
+    ctx.hud.reset();
 
     const panel = createPanel('loading');
+    panel.classList.add('fade');
     const track = h('div', 'progress-track');
     setRem(track, layout.scenes.loadingBar);
-    const fill = h('div', 'progress-fill');
-    fill.style.transitionDuration = `${gameConfig.loadingMs}ms`;
-    track.append(fill);
+    const bar = h('div', 'progress-fill');
+    bar.style.transitionDuration = `${gameConfig.loadingMs}ms`;
+    track.append(bar);
     panel.append(createTitle(copy.loading.title), track);
     scope.mount(ctx.content, panel);
 
-    // Read the layout once so the browser sees the empty bar before it fills.
-    void fill.offsetWidth;
-    fill.classList.add('is-full');
-    scope.timeout(() => ctx.machine.go('round'), gameConfig.loadingMs);
+    // Lay out the empty bar first so the browser animates it filling.
+    commitStyles(bar);
+    bar.classList.add('is-full');
+
+    let loaded = false;
+    let doorsOpen = false;
+    const next = (): void => {
+      if (!loaded || !doorsOpen) return;
+      fadeTo(panel, 0, gameConfig.loadingFadeOutMs);
+      scope.timeout(() => ctx.machine.go('objective'), gameConfig.loadingFadeOutMs);
+    };
+
+    scope.timeout(() => {
+      const durationMs = gameConfig.doorOpenMs;
+      ctx.bus.emit('door.open.start', { durationMs });
+      ctx.doors.setOpen(true, durationMs);
+      scope.timeout(() => {
+        ctx.bus.emit('door.open.end', {});
+        doorsOpen = true;
+        next();
+      }, durationMs);
+    }, gameConfig.loadingStartBeforeDoorsMs);
+
+    scope.timeout(() => {
+      loaded = true;
+      next();
+    }, gameConfig.loadingMs);
   });
 }

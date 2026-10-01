@@ -73,28 +73,9 @@
   user-select: none;
 }
 
-.round-text-dim {
-  color: var(--screen-text-dim);
-}
-
-.round-progress,
-.round-timer {
+.round-play {
   position: absolute;
-  white-space: nowrap;
-}
-
-.round-timer {
-  font-variant-numeric: tabular-nums;
-}
-
-.round-progress__track {
-  position: absolute;
-  background: var(--progress-track);
-}
-
-.round-progress__bar {
-  height: 100%;
-  background: var(--progress-fill);
+  inset: 0;
 }
 
 .round-shape {
@@ -103,19 +84,47 @@
   border: solid var(--shape-border);
 }
 
-.round-objective-label,
-.round-objective {
+/* While the timer runs the fill pulses (--pulse-ms per cycle); on the click it freezes */
+.round-shape.is-pulsing {
+  animation: shape-pulse var(--pulse-ms, 1000ms) ease-in-out infinite;
+}
+
+.round-shape.is-pulse-stopped {
+  animation-play-state: paused;
+}
+
+@keyframes shape-pulse {
+  0%,
+  100% {
+    background-color: var(--shape-fill-pulse-low);
+  }
+
+  50% {
+    background-color: var(--shape-fill-pulse-high);
+  }
+}
+
+.round-click-marker {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--click-marker);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Objective intro before round 1: "Objective:" (the objective line is in the screen HUD) */
+.objective-intro {
   position: absolute;
   left: 0;
   right: 0;
-  margin: 0;
-  text-align: center;
-  font-family: var(--font-mono);
-  font-weight: var(--weight-mono-bold);
+  transform-origin: center;
 }
 
-.round-objective-label {
-  color: var(--screen-text-dim);
+.objective-intro__title {
+  margin: 0;
+  text-align: center;
+  color: var(--screen-text);
+  font-weight: var(--weight-display-bold);
 }
 
 /* Shared tooltip (src/ui/tooltip.ts) */
