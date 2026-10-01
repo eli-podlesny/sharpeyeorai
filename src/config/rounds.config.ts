@@ -128,19 +128,20 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
   },
   7: { ...largeRect(), falloffRadius: REFERENCE_FALLOFF_PX },
   9: {
-    // Three overlapping circles of different sizes, merged into one lopsided outline.
+    // A big circle with a medium and a small one bulging out of its upper right, merged into
+    // one lopsided outline. All three must overlap in one spot (see circleCluster.ts).
     shape: {
       type: 'circleCluster',
       circles: [
-        { x: -34, y: 51, r: 128 },
-        { x: 77, y: -38, r: 90 },
-        { x: -26, y: -102, r: 76 },
+        { x: 0, y: 0, r: 150 },
+        { x: 175, y: -55, r: 85 },
+        { x: 118, y: -118, r: 50 },
       ],
     },
   },
   10: {
     // A five-point star, stretched sideways.
-    shape: { type: 'star', width: 380, height: 240, points: 5, innerRatio: 0.45 },
+    shape: { type: 'star', width: 380, height: 240, points: 5, innerRatio: 0.6 },
     rotationDeg: 14,
     offset: { x: -120, y: DEFAULT_OFFSET.y },
   },
