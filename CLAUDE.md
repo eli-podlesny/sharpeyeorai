@@ -12,7 +12,7 @@ The owner is a designer who is new to Claude Code. Explain what you are about to
 
 ## Current version
 
-**v0.1 — infrastructure and skeleton.** See `docs/briefs/` for the active brief.
+**v0.2 — game skeleton.** See `docs/briefs/` for the active brief.
 
 | Version | Scope                                                                                                                                      |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -95,8 +95,8 @@ Placeholder rule: flat blocks in palette colors with their layer name printed sm
 | Layer           | Size        | Position (design px)                               |
 | --------------- | ----------- | -------------------------------------------------- |
 | background      | 1976 × 1078 | art size; shown min 110vw × 110vh, window-centered |
-| frame           | 1165 × 841  | centered horizontally, top 44                      |
-| screen viewport | 1032 × 682  | centered, top 106                                  |
+| frame           | 1158 × 772  | centered horizontally, top 80                      |
+| screen viewport | 1046 × 676  | centered, top 128                                  |
 
 ## Design tokens (temporary)
 
