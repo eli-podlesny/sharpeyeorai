@@ -4,15 +4,7 @@ import type { Point } from '../core/stage';
 import type { RoundResult } from '../rounds/session';
 import { humanityIndex, lean } from './lean';
 import { pickPersona, type Persona } from './persona';
-import {
-  accuracy,
-  distance,
-  falloffRadius,
-  quality,
-  roundPoints,
-  speed,
-  totalScore,
-} from './score';
+import { accuracy, distance, quality, roundPoints, speed, totalScore } from './score';
 
 /** One scored round. Points are screen-content pixels. */
 export interface RoundSummary {
@@ -52,7 +44,7 @@ export function scoreRound(
   const { C, O } = result.centers;
   const P = result.clickContent;
   const dO = distance(P, O);
-  const a = accuracy(dO, falloffRadius(round.shape, cfg), cfg);
+  const a = accuracy(dO, result.falloffRadius, cfg);
   const s = speed(result.latencyMs, cfg);
   const q = quality(a, s, round.timeWeight, result.penalty);
   return {

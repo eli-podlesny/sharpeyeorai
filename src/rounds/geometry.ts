@@ -1,6 +1,9 @@
+import { gameConfig } from '../config/game.config';
 import type { RoundConfig } from '../config/rounds.config';
+import { createRng } from '../core/rng';
 import type { Point } from '../core/stage';
 import type { Polygon } from './polygon';
+import { buildShape } from './shapes';
 
 /**
  * Shape geometry. All points are in screen-content pixels (origin top-left of the
@@ -12,6 +15,17 @@ export interface Size {
   height: number;
 }
 
+/** A round's shape as it sits on the screen: everything here is in screen-content px. */
+export interface PlacedShape {
+  outer: Polygon;
+  holes: Polygon[];
+  /** Where the shape's (unrotated) bounding-box center lands; the rotation turns around it. */
+  anchor: Point;
+  rotationDeg: number;
+  /** M, when the shape makes it obvious (symmetric shapes). */
+  pole?: Point;
+}
+
 /** Rotates a point around the origin. Positive degrees turn clockwise on screen, like CSS. */
 export function rotate(p: Point, deg: number): Point {
   const rad = (deg * Math.PI) / 180;
@@ -20,38 +34,51 @@ export function rotate(p: Point, deg: number): Point {
   return { x: p.x * cos - p.y * sin, y: p.x * sin + p.y * cos };
 }
 
-/**
- * C, the computed center: the centroid of the shape. For a rectangle that is its middle,
- * which sits at the content center plus the round's offset (rotation turns around it).
- */
-export function computedCenter(round: RoundConfig, content: Size): Point {
+/** Where a round's shape is centered: the content center plus the round's offset. */
+export function shapeAnchor(round: RoundConfig, content: Size): Point {
   return {
     x: content.width / 2 + round.offset.x,
     y: content.height / 2 + round.offset.y,
   };
 }
 
-/** The shape's outline in screen-content pixels, with its rotation applied. */
-export function shapePolygon(round: RoundConfig, content: Size): Polygon {
-  const c = computedCenter(round, content);
-  const { width, height, rotationDeg } = round.shape;
-  const corners: Point[] = [
-    { x: -width / 2, y: -height / 2 },
-    { x: width / 2, y: -height / 2 },
-    { x: width / 2, y: height / 2 },
-    { x: -width / 2, y: height / 2 },
-  ];
-  return corners.map((p) => {
-    const turned = rotate(p, rotationDeg);
-    return { x: c.x + turned.x, y: c.y + turned.y };
-  });
+/**
+ * Builds a round's shape and puts it on the screen: turned by the round's rotation, then
+ * moved to its anchor. The only place shape transforms are applied — rendering and
+ * scoring both use the result. `seed` feeds shapes that are random (round 2's blob).
+ */
+export function placeShape(
+  round: RoundConfig,
+  content: Size,
+  seed: number,
+  spacing: number = gameConfig.shapePointSpacingPx,
+): PlacedShape {
+  const local = buildShape(round.shape, { rng: createRng(seed), spacing });
+  const anchor = shapeAnchor(round, content);
+  const place = (p: Point): Point => {
+    const turned = rotate(p, round.rotationDeg);
+    return { x: anchor.x + turned.x, y: anchor.y + turned.y };
+  };
+  return {
+    outer: local.outer.map(place),
+    holes: local.holes.map((hole) => hole.map(place)),
+    anchor,
+    rotationDeg: round.rotationDeg,
+    ...(local.pole ? { pole: place(local.pole) } : {}),
+  };
 }
 
 /**
- * Converts a screen-content point into shape-local coordinates: measured from C,
+ * Converts a screen-content point into shape-local coordinates: measured from `origin`,
  * along the shape's own axes (x to its right edge, y to its bottom edge).
  */
-export function toShapeLocal(p: Point, round: RoundConfig, content: Size): Point {
-  const c = computedCenter(round, content);
-  return rotate({ x: p.x - c.x, y: p.y - c.y }, -round.shape.rotationDeg);
+export function toShapeLocal(p: Point, origin: Point, rotationDeg: number): Point {
+  return rotate({ x: p.x - origin.x, y: p.y - origin.y }, -rotationDeg);
+}
+
+/** SVG path data for a placed shape: outline and holes, for `fill-rule="evenodd"`. */
+export function shapePath(shape: Pick<PlacedShape, 'outer' | 'holes'>): string {
+  const ring = (poly: Polygon): string =>
+    poly.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join('') + 'Z';
+  return [shape.outer, ...shape.holes].map(ring).join('');
 }

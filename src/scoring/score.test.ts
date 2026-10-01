@@ -3,7 +3,7 @@ import { gameConfig } from '../config/game.config';
 import { humanityIndex, lean } from './lean';
 import { accuracy, falloffRadius, quality, roundPoints, speed, totalScore } from './score';
 
-const square = { type: 'rect', width: 200, height: 200, rotationDeg: 0 } as const;
+const square = { width: 200, height: 200 };
 
 describe('falloffRadius', () => {
   it('is half the shorter side', () => {

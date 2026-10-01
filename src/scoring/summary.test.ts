@@ -2,17 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { gameConfig } from '../config/game.config';
 import { rounds } from '../config/rounds.config';
 import type { Point } from '../core/stage';
-import { roundCenters } from '../rounds/opticalCenter';
-import { createResult } from '../rounds/session';
+import { createResult, createSession, shapeSeed } from '../rounds/session';
+import { roundTarget } from '../rounds/target';
+import { accuracy } from './score';
 import { summarize } from './summary';
 
 const content = { width: 1046, height: 676 };
+const session = createSession(42);
+const targets = rounds.map((round) => roundTarget(round, content, shapeSeed(session, round.id)));
 
 /** One result per round, clicking `at(O, C)` after `latencyMs`. */
 function play(at: (O: Point, C: Point) => Point, latencyMs: number) {
-  return rounds.map((round) => {
-    const { O, C } = roundCenters(round, content);
-    return createResult(round.id, at(O, C), latencyMs, content);
+  return targets.map((target) => {
+    const { O, C } = target.centers;
+    return createResult(target, at(O, C), latencyMs);
   });
 }
 
@@ -25,15 +28,22 @@ describe('summarize', () => {
     expect(summary.persona.override).toBe('algorithm');
   });
 
-  it('clicking C on the square is machine-like and costs ~15% accuracy', () => {
+  it('clicking C is machine-like and costs accuracy by the C–O distance', () => {
     const summary = summarize(play((_, C) => C, 500));
     expect(summary.humanityIndex).toBeCloseTo(0);
-    for (const r of summary.rounds) {
-      expect(r.dO).toBeCloseTo(10);
+    summary.rounds.forEach((r, i) => {
+      const target = targets[i];
       expect(r.dC).toBeCloseTo(0);
-      expect(r.a).toBeCloseTo(0.854, 3);
-    }
+      expect(r.a).toBeCloseTo(accuracy(r.dO, target?.falloffRadius ?? NaN), 9);
+      expect(r.a).toBeLessThan(1);
+    });
     expect(summary.persona.humanity).toBe('machine');
+  });
+
+  it('on the 200 × 200 placeholder, clicking C costs ~15%', () => {
+    const r = summarize(play((_, C) => C, 500)).rounds[3];
+    expect(r?.dO).toBeCloseTo(10);
+    expect(r?.a).toBeCloseTo(0.854, 3);
   });
 
   it('slow clicks cost round 1 nothing and rounds 2–12 up to 20%', () => {

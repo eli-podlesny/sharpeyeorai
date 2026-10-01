@@ -1,17 +1,23 @@
 import { SAMPLE_SPREAD_PX, spreadPreset, type AutoplayPreset } from '../config/autoplay.config';
 import { rounds } from '../config/rounds.config';
-import { rangeOf, type Rng } from '../core/rng';
+import { rangeOf } from '../core/rng';
 import type { Size } from './geometry';
-import { roundCenters } from './opticalCenter';
-import { createResult, type RoundResult } from './session';
+import { createResult, shapeSeed, type GameSession, type RoundResult } from './session';
+import { roundTarget } from './target';
 
 /**
- * Fake results for all rounds, following a preset (see autoplay.config.ts).
- * The rng makes them repeatable for a given seed.
+ * Fake results for all rounds, following a preset (see autoplay.config.ts), on the
+ * session's shapes. The session's rng makes them repeatable for a given seed.
  */
-export function autoplayResults(preset: AutoplayPreset, rng: Rng, content: Size): RoundResult[] {
+export function autoplayResults(
+  preset: AutoplayPreset,
+  session: GameSession,
+  content: Size,
+): RoundResult[] {
+  const { rng } = session;
   return rounds.map((round) => {
-    const { C, O } = roundCenters(round, content);
+    const target = roundTarget(round, content, shapeSeed(session, round.id));
+    const { C, O } = target.centers;
     const dx = O.x - C.x;
     const dy = O.y - C.y;
     const sep = Math.hypot(dx, dy);
@@ -23,11 +29,11 @@ export function autoplayResults(preset: AutoplayPreset, rng: Rng, content: Size)
       y: C.y + preset.lean * dy + preset.sidePx * side.y + rangeOf(rng, -j, j),
     };
     const latency = Math.round(rangeOf(rng, preset.latencyMs.min, preset.latencyMs.max));
-    return createResult(round.id, click, latency, content);
+    return createResult(target, click, latency);
   });
 }
 
 /** Sample data for the score screen when it is opened without playing (debug jumps). */
-export function createSampleResults(rng: Rng, content: Size): RoundResult[] {
-  return autoplayResults(spreadPreset(SAMPLE_SPREAD_PX), rng, content);
+export function createSampleResults(session: GameSession, content: Size): RoundResult[] {
+  return autoplayResults(spreadPreset(SAMPLE_SPREAD_PX), session, content);
 }
