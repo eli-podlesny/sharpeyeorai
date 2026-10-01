@@ -33,25 +33,53 @@ describe('rounds config', () => {
     expect(opticalSettings(custom)).toEqual({ ...gameConfig.optical, biasY: 0.1 });
   });
 
-  it('gives the static rounds their shapes; 4, 5, 6, 8 and 11 keep the placeholder', () => {
+  it('gives every round its own shape', () => {
     expect(rounds.map((r) => r.shape.type)).toEqual([
       'rect',
       'blob',
       'avocado',
+      'curve',
+      'curve',
+      'ellipse',
       'rect',
-      'rect',
-      'rect',
-      'rect',
-      'rect',
+      'star',
       'circleCluster',
       'star',
       'rect',
       'smiley',
     ]);
-    for (const id of [4, 5, 6, 8, 11]) {
-      expect(getRound(id).shape).toEqual({ type: 'rect', width: 200, height: 200 });
-    }
     expect(getRound(1).shape).toEqual({ type: 'rect', width: 360, height: 360 });
+    expect(getRound(11).shape).toEqual({ type: 'rect', width: 200, height: 200 });
+  });
+
+  it('moves rounds 4, 5, 6, 8 and 11 only', () => {
+    expect(rounds.filter((r) => r.motion).map((r) => r.id)).toEqual([4, 5, 6, 8, 11]);
+    expect(getRound(4).motion?.type).toBe('morph');
+    expect(getRound(5).motion?.type).toBe('morph');
+    expect(getRound(6).motion?.type).toBe('wave');
+    expect(getRound(8).motion?.type).toBe('jump');
+    expect(getRound(11).motion?.type).toBe('shrink');
+  });
+
+  it('round 5 alone has the decoy, on C, blinking no faster than 3 Hz', () => {
+    expect(rounds.filter((r) => r.decoy).map((r) => r.id)).toEqual([5]);
+    const decoy = getRound(5).decoy;
+    expect(decoy?.target).toBe('computed');
+    expect(decoy?.blinks).toBe(2);
+    expect(1000 / ((decoy?.onMs ?? 0) + (decoy?.offMs ?? 0))).toBeLessThanOrEqual(3);
+  });
+
+  it('round 11 times out at 10s; round 12 takes clicks for 5s, then idles 4s', () => {
+    expect(getRound(11).timeLimitMs).toBe(10000);
+    const r12 = getRound(12);
+    expect(r12.inputWindows).toEqual([[0, 5000]]);
+    expect(r12.postRoundIdleMs).toBe(4000);
+    expect(r12.hideAfter).toEqual({ visibleMs: 1000, fadeMs: 200 });
+  });
+
+  it('round 12 alone hides the objective line and the click feedback', () => {
+    expect(rounds.filter((r) => !r.showObjective).map((r) => r.id)).toEqual([12]);
+    expect(rounds.filter((r) => !r.clickFeedback).map((r) => r.id)).toEqual([12]);
   });
 
   it('round 10 (star) is turned about 14° and moved about 120px left', () => {

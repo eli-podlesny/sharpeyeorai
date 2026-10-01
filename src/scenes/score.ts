@@ -77,8 +77,8 @@ function createDetailsTable(summary: SessionSummary): HTMLTableElement {
     const row = h('tr', '');
     row.append(
       h('td', '', padRound(r.id)),
-      h('td', '', r.dO.toFixed(1)),
-      h('td', '', String(r.latencyMs)),
+      h('td', '', r.dO === null ? copy.score.noInput : r.dO.toFixed(1)),
+      h('td', '', r.latencyMs === null ? copy.score.noValue : String(r.latencyMs)),
       h('td', '', String(Math.round(r.points))),
     );
     body.append(row);

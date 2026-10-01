@@ -129,6 +129,18 @@
   pointer-events: none;
 }
 
+/* Round 5: the decoy dot that blinks on C */
+.round-decoy {
+  position: absolute;
+  background: var(--decoy-dot);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.round-decoy[hidden] {
+  display: none;
+}
+
 /* Objective intro before round 1: "Objective:" (the objective line is in the screen HUD) */
 .objective-intro {
   position: absolute;

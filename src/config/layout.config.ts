@@ -110,6 +110,10 @@ export const layout = {
     markerStroke: 2,
     /** Round 7's large shape keeps this far from the HUD row, the objective line and the screen edges. */
     largeShapeMargin: 40,
+    /** Moving shapes (rounds 6 and 8) keep this far from the HUD row, the objective line and the screen edges. */
+    motionMargin: 48,
+    /** Round 5's decoy dot. */
+    decoySize: 2,
   },
 
   /** The shared tooltip (in-round "logged" sample, "Copied"), placed this far from its point. */

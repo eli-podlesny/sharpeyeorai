@@ -1,25 +1,39 @@
 import { copy, fill, padRound } from '../config/copy';
 import { gameConfig } from '../config/game.config';
 import { layout } from '../config/layout.config';
-import { getRound } from '../config/rounds.config';
+import { getRound, opticalSettings } from '../config/rounds.config';
 import type { SceneContext } from '../core/game';
 import { contentSize, toContentCoords } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
 import type { Point } from '../core/stage';
 import { rem, setRem } from '../core/units';
+import { createRoundClock, DEBUG_STEP_MS, roundDebug } from '../rounds/clock';
+import type { PlacedShape } from '../rounds/geometry';
+import { shapeAt } from '../rounds/motion';
+import { shapeCenters, type Centers } from '../rounds/opticalCenter';
+import { materialCentroid } from '../rounds/polygon';
 import { buildRoundSequence } from '../rounds/sequence';
-import { createResult, shapeSeed, type RoundResult } from '../rounds/session';
-import { roundTarget } from '../rounds/target';
+import { createResult, createTimeoutResult, shapeSeed, type RoundResult } from '../rounds/session';
+import { roundTarget, targetAt } from '../rounds/target';
 import type { RoundStage, RoundTimelineContext } from '../rounds/timeline';
+import {
+  acceptsClick,
+  decoyLitAt,
+  fixedRoundEndMs,
+  inputDeadlineMs,
+  shapeOpacityAt,
+} from '../rounds/timing';
 import { h } from '../ui/dom';
-import { createShapeSvg } from '../ui/shapeSvg';
+import { createShapeSvg, updateShapeSvg } from '../ui/shapeSvg';
 import { commitStyles, fadeTo, moveTo, prefersReducedMotion } from '../ui/motion';
 import { showTooltipAtCorner } from '../ui/tooltip';
 
 const { round: L } = layout;
 
+type MarkerKind = 'computed' | 'optical' | 'pole';
+
 /** Debug markers: a cross at C, a circle at O, a square at M. Hidden unless the debug toggle is on. */
-function createMarker(kind: 'computed' | 'optical' | 'pole', at: Point): HTMLElement {
+function createMarker(kind: MarkerKind, at: Point): HTMLElement {
   const marker = h('div', `debug-marker debug-marker--${kind}`);
   setRem(marker, { left: at.x, top: at.y, width: L.markerSize, height: L.markerSize });
   marker.style.setProperty('--marker-stroke', rem(L.markerStroke));
@@ -39,25 +53,34 @@ function createClickMarker(at: Point): HTMLElement {
 }
 
 /** "Sample 0X, logged", pinned to the top-right corner. Position and time only: no points during the game. */
-function showLoggedTooltip(result: RoundResult, container: HTMLElement): HTMLElement {
+function showLoggedTooltip(
+  roundId: number,
+  click: Point,
+  latencyMs: number,
+  container: HTMLElement,
+): HTMLElement {
   return showTooltipAtCorner(container, L.loggedTooltip, {
-    title: fill(copy.round.logged, { n: padRound(result.roundId) }),
+    title: fill(copy.round.logged, { n: padRound(roundId) }),
     lines: [
-      fill(copy.round.loggedPosition, {
-        x: result.click.x.toFixed(1),
-        y: result.click.y.toFixed(1),
-      }),
-      fill(copy.round.loggedTime, { ms: result.latencyMs }),
+      fill(copy.round.loggedPosition, { x: click.x.toFixed(1), y: click.y.toFixed(1) }),
+      fill(copy.round.loggedTime, { ms: latencyMs }),
     ],
   });
 }
+
+const markersOn = (): boolean => document.documentElement.hasAttribute('data-debug-markers');
 
 /**
  * One test round, following the shared sequence (src/rounds/sequence.ts):
  * shape fades in → one click → fade out → pause → next round. The objective line stays
  * put in the screen HUD (shown by the objective intro before round 1).
- * The timer and the latency count from the moment the shape is fully visible; clicks
- * before that are ignored. Counter, progress and timer live in the screen HUD.
+ *
+ * From the moment the shape is fully visible, everything runs on the round clock
+ * (src/rounds/clock.ts), which pauses while the tab is hidden: the timer, latency, motion
+ * (src/rounds/motion.ts) and deadlines (src/rounds/timing.ts). On the click, motion
+ * freezes and the round is scored against the frame on screen. A round whose deadline
+ * passes with no click logs a timeout and moves on. Rounds with `postRoundIdleMs`
+ * (round 12) run their fixed length, click or not.
  */
 export function createRoundScene(ctx: SceneContext): Scene {
   return defineScene((scope) => {
@@ -66,10 +89,12 @@ export function createRoundScene(ctx: SceneContext): Scene {
     const { session, hud, bus } = ctx;
     const roundId = session.currentRound;
     const round = getRound(roundId);
-    const target = roundTarget(round, contentSize, shapeSeed(session, roundId));
-    const { C: c, M: m, O: o } = target.centers;
-    const { anchor } = target.shape;
+    const seed = shapeSeed(session, roundId);
+    const restTarget = roundTarget(round, contentSize, seed);
+    const { anchor } = restTarget.shape;
     const seq = buildRoundSequence(gameConfig.roundSequence, prefersReducedMotion());
+    const deadline = inputDeadlineMs(round);
+    const fixedEnd = fixedRoundEndMs(round);
 
     const root = h('div', 'round');
     setRem(root, { fontSize: L.textSize, lineHeight: L.lineHeight });
@@ -82,17 +107,24 @@ export function createRoundScene(ctx: SceneContext): Scene {
     playMotion.style.transformOrigin = `${rem(anchor.x)} ${rem(anchor.y)}`;
     moveTo(playMotion, { y: L.shapeEnter.rise, scale: L.shapeEnter.scale }, 0);
     play.append(playMotion);
-    const shape = createShapeSvg(target.shape, contentSize, {
+    const shape = createShapeSvg(restTarget.shape, contentSize, {
       fill: round.fill,
       strokeWidth: L.shapeBorder,
       type: round.shape.type,
     });
-    playMotion.append(
-      shape,
-      createMarker('computed', c),
-      createMarker('pole', m),
-      createMarker('optical', o),
-    );
+    const markers: Record<MarkerKind, HTMLElement> = {
+      computed: createMarker('computed', restTarget.centers.C),
+      pole: createMarker('pole', restTarget.centers.M),
+      optical: createMarker('optical', restTarget.centers.O),
+    };
+    playMotion.append(shape, markers.computed, markers.pole, markers.optical);
+
+    const decoy = round.decoy ? h('div', 'round-decoy') : null;
+    if (decoy) {
+      setRem(decoy, { width: L.decoySize, height: L.decoySize });
+      decoy.hidden = true;
+      playMotion.append(decoy);
+    }
 
     root.append(play);
     scope.mount(ctx.content, root);
@@ -102,18 +134,85 @@ export function createRoundScene(ctx: SceneContext): Scene {
     hud.setRound(roundId);
     hud.setTime(null);
     // The objective line is already in place after the objective intro; this also
-    // covers starting at a round directly (debug jump).
+    // covers starting at a round directly (debug jump). Round 12 has none.
     hud.setObjective(copy.objectives[round.copyKey]);
     hud.moveObjective(0, 0);
-    hud.fadeObjective(1, 0);
+    hud.fadeObjective(round.showObjective ? 1 : 0, 0);
+
+    // The round clock pauses while the tab is hidden and when the debug panel says so.
+    const clock = createRoundClock();
+    const syncHidden = (): void => clock.setPaused('hidden', document.hidden, performance.now());
+    syncHidden();
+    document.addEventListener('visibilitychange', syncHidden);
+    const live = { roundId, elapsedMs: () => clock.elapsed(performance.now()) };
+    roundDebug.live = live;
+    scope.onDispose(() => {
+      document.removeEventListener('visibilitychange', syncHidden);
+      if (roundDebug.live === live) roundDebug.live = null;
+    });
 
     const timeline = round.timeline;
     const tl: RoundTimelineContext = { roundId, root, shape, bus };
     const startedAt = performance.now();
     let stage: RoundStage = 'intro';
-    let shapeVisibleAt: number | null = null;
-    let clicked = false;
+    /** The frame on screen: its round time and its shape. Frozen once the round is decided. */
+    let shownMs = 0;
+    let shown: PlacedShape = restTarget.shape;
+    let markersAtMs = 0;
+    /** A click or a timeout decided the round. */
+    let decided = false;
+    let outroStarted = false;
     let finished = false;
+
+    const placeMarkers = (centers: Centers): void => {
+      setRem(markers.computed, { left: centers.C.x, top: centers.C.y });
+      setRem(markers.pole, { left: centers.M.x, top: centers.M.y });
+      setRem(markers.optical, { left: centers.O.x, top: centers.O.y });
+    };
+
+    // 5. Shape and marker fade out, the shape zooming out in place. After the last round,
+    // or before a round without one, the objective line fades out too.
+    // 6. Pause, then the next round or the end of the game.
+    const startOutro = (): void => {
+      if (outroStarted) return;
+      outroStarted = true;
+      stage = 'outro';
+      bus.emit('round.outro.start', { roundId });
+      playMotion.style.transformOrigin = `${rem(shown.anchor.x)} ${rem(shown.anchor.y)}`;
+      fadeTo(play, 0, seq.outroFadeMs, seq.fadeEasing);
+      moveTo(playMotion, { scale: L.shapeEnter.scale }, seq.shapeMoveOutMs, seq.fadeEasing);
+      const isLast = roundId === gameConfig.roundCount;
+      if (round.showObjective && (isLast || !getRound(roundId + 1).showObjective)) {
+        hud.fadeObjective(0, seq.outroFadeMs, seq.fadeEasing);
+      }
+
+      scope.timeout(() => {
+        finished = true;
+        bus.emit('round.outro.end', { roundId });
+        timeline?.onOutroEnd?.(tl);
+      }, seq.outroFadeMs);
+
+      scope.timeout(() => {
+        if (!isLast) {
+          session.currentRound = roundId + 1;
+          ctx.machine.go('round');
+        } else {
+          bus.emit('game.end', { results: session.results });
+          ctx.machine.go('ending');
+        }
+      }, seq.outroFadeMs + seq.betweenRoundsMs);
+    };
+
+    /** The round is decided: motion freezes, the pulse stops, and the round heads for its outro. */
+    const decide = (result: RoundResult, outroAfterMs: number): void => {
+      decided = true;
+      shape.classList.add('is-pulse-stopped');
+      if (decoy) decoy.hidden = true;
+      session.results.push(result);
+      bus.emit('round.logged', { result });
+      // Fixed-length rounds wait for their end on the clock instead (see the frame loop).
+      if (fixedEnd === null) scope.timeout(startOutro, outroAfterMs);
+    };
 
     // 1. The shape fades in, rising and zooming in.
     bus.emit('round.intro.start', { roundId });
@@ -121,9 +220,10 @@ export function createRoundScene(ctx: SceneContext): Scene {
     fadeTo(play, 1, seq.shapeFadeInMs, seq.fadeEasing);
     moveTo(playMotion, {}, seq.shapeMoveInMs, seq.slideEasing);
 
-    // 2. The shape is fully visible: the timer starts, the fill pulses and clicks count.
+    // 2. The shape is fully visible: the round clock starts, the fill pulses, clicks count
+    // and moving shapes start moving.
     scope.timeout(() => {
-      shapeVisibleAt = performance.now();
+      clock.start(performance.now());
       shape.style.setProperty('--pulse-ms', `${seq.shapePulseMs}ms`);
       shape.classList.add('is-pulsing');
       stage = 'play';
@@ -133,59 +233,75 @@ export function createRoundScene(ctx: SceneContext): Scene {
     }, seq.shapeFadeInMs);
 
     scope.frame((now) => {
-      if (shapeVisibleAt !== null && !clicked) hud.setTime(now - shapeVisibleAt);
-      timeline?.onFrame?.(tl, { elapsedMs: now - startedAt, stage });
+      clock.setPaused('debug', roundDebug.paused, now);
+      if (roundDebug.steps > 0) {
+        if (clock.paused) clock.advance(roundDebug.steps * DEBUG_STEP_MS);
+        roundDebug.steps = 0;
+      }
+      const t = clock.elapsed(now);
+
+      if (!decided) {
+        if (clock.started) hud.setTime(t);
+        if (round.motion && t !== shownMs) {
+          shownMs = t;
+          shown = shapeAt(round, contentSize, seed, t);
+          updateShapeSvg(shape, shown);
+        }
+      }
+      if (round.motion && markersOn() && markersAtMs !== shownMs) {
+        markersAtMs = shownMs;
+        placeMarkers(shapeCenters(shown, opticalSettings(round)));
+      }
+      if (round.hideAfter) shape.style.opacity = String(shapeOpacityAt(round, t));
+
+      // The decoy blinks on the shape's C (or O) as it is right now.
+      if (decoy && round.decoy) {
+        const lit = clock.started && !decided && decoyLitAt(round.decoy, t);
+        if (lit) {
+          const at =
+            round.decoy.target === 'computed'
+              ? materialCentroid(shown.outer, shown.holes)
+              : shapeCenters(shown, opticalSettings(round)).O;
+          setRem(decoy, { left: at.x, top: at.y });
+        }
+        decoy.hidden = !lit;
+      }
+
+      // No click by the deadline: a timeout. The timer stops at the deadline.
+      if (clock.started && !decided && deadline !== null && t >= deadline) {
+        hud.setTime(deadline);
+        bus.emit('round.timeout', { roundId });
+        decide(createTimeoutResult(targetAt(round, contentSize, seed, shownMs)), 0);
+      }
+      if (clock.started && fixedEnd !== null && t >= fixedEnd) startOutro();
+
+      timeline?.onFrame?.(tl, { elapsedMs: now - startedAt, roundMs: t, stage });
       return !finished;
     });
 
-    // 3. The click: marker + tooltip. The timer freezes at the click time.
+    // 3. The click: marker + tooltip (unless the round hides them). Motion and timer freeze.
     scope.listen(ctx.content, 'pointerdown', (e) => {
-      if (shapeVisibleAt === null || clicked || e.button !== 0) return;
-      clicked = true;
-      shape.classList.add('is-pulse-stopped');
-
+      if (!clock.started || decided || e.button !== 0) return;
       // The event's own timestamp is when the press happened, not when we handled it.
-      const latencyMs = Math.max(Math.round(e.timeStamp - shapeVisibleAt), 0);
+      const clickMs = clock.elapsed(e.timeStamp);
+      if (!acceptsClick(round, clickMs)) return;
+
+      const latencyMs = Math.max(Math.round(clickMs), 0);
       const point = toContentCoords(e.clientX, e.clientY);
+      // Scored against the frame on screen at the click.
+      const target = targetAt(round, contentSize, seed, shownMs);
       const result = createResult(target, point, latencyMs);
+      const local = result.click ?? point;
       hud.setTime(latencyMs);
-      playMotion.append(createClickMarker(point));
-
-      bus.emit('round.click', { roundId, content: point, local: result.click, latencyMs });
-      session.results.push(result);
-      bus.emit('round.logged', { result });
-      const tip = showLoggedTooltip(result, root);
-      scope.timeout(() => tip.remove(), seq.loggedTooltipMs);
+      bus.emit('round.click', { roundId, content: point, local, latencyMs });
+      if (round.clickFeedback) {
+        playMotion.append(createClickMarker(point));
+        const tip = showLoggedTooltip(roundId, local, latencyMs, root);
+        scope.timeout(() => tip.remove(), seq.loggedTooltipMs);
+      }
       timeline?.onClick?.(tl, { content: point, latencyMs });
-
-      // 4. Wait; 5. shape and marker fade out, the shape zooming out in place.
-      // After the last round the objective line fades out too.
-      scope.timeout(() => {
-        stage = 'outro';
-        bus.emit('round.outro.start', { roundId });
-        fadeTo(play, 0, seq.outroFadeMs, seq.fadeEasing);
-        moveTo(playMotion, { scale: L.shapeEnter.scale }, seq.shapeMoveOutMs, seq.fadeEasing);
-        if (roundId === gameConfig.roundCount) {
-          hud.fadeObjective(0, seq.outroFadeMs, seq.fadeEasing);
-        }
-
-        scope.timeout(() => {
-          finished = true;
-          bus.emit('round.outro.end', { roundId });
-          timeline?.onOutroEnd?.(tl);
-        }, seq.outroFadeMs);
-
-        // 6. Pause, then the next round or the end of the game.
-        scope.timeout(() => {
-          if (roundId < gameConfig.roundCount) {
-            session.currentRound = roundId + 1;
-            ctx.machine.go('round');
-          } else {
-            bus.emit('game.end', { results: session.results });
-            ctx.machine.go('ending');
-          }
-        }, seq.outroFadeMs + seq.betweenRoundsMs);
-      }, seq.postClickWaitMs);
+      // 4. Wait, then the outro.
+      decide(result, seq.postClickWaitMs);
     });
   });
 }

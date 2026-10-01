@@ -47,6 +47,9 @@ export const copy = {
     colOffset: 'Offset (px)',
     colLatency: 'Time (ms)',
     colPoints: 'Points',
+    /** Details row of a round that timed out. */
+    noInput: 'no input',
+    noValue: '—',
     shareText: 'I scored {total}/{max} on SharpEyeOrAI — "{headline}" {url}',
     shareUrl: 'sharpeyeorai.vercel.app',
     copied: 'Copied',
