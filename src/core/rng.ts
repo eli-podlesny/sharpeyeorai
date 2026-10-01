@@ -28,3 +28,12 @@ export function randomSeed(): number {
 export function rangeOf(rng: Rng, min: number, max: number): number {
   return min + rng() * (max - min);
 }
+
+/** A seed for one part of a game (e.g. one round's shape), derived from the game seed. */
+export function mixSeed(seed: number, salt: number): number {
+  let h = Math.imul((seed ^ Math.imul(salt, 0x9e3779b1)) >>> 0, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return h >>> 0;
+}
