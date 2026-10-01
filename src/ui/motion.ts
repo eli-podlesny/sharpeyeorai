@@ -13,11 +13,20 @@ export function fadeTo(el: HTMLElement, opacity: number, ms: number, easing = 'e
   el.style.opacity = String(opacity);
 }
 
-/** Moves an element (it needs the `move` class) vertically by `designPx` over `ms`. 0 = home. */
-export function moveY(el: HTMLElement, designPx: number, ms: number, easing = 'ease'): void {
+/**
+ * Moves an element (it needs the `move` class) down by `y` design px and scales it,
+ * over `ms`. `{ y: 0, scale: 1 }` is home.
+ */
+export function moveTo(
+  el: HTMLElement,
+  { y = 0, scale = 1 }: { y?: number; scale?: number },
+  ms: number,
+  easing = 'ease',
+): void {
   el.style.setProperty('--move-ms', `${ms}ms`);
   el.style.setProperty('--move-ease', easing);
-  el.style.transform = designPx === 0 ? '' : `translateY(${rem(designPx)})`;
+  const parts = [y !== 0 && `translateY(${rem(y)})`, scale !== 1 && `scale(${scale})`];
+  el.style.transform = parts.filter(Boolean).join(' ');
 }
 
 /** Makes the browser lay out `el` now, so a transition that follows starts from its current look. */

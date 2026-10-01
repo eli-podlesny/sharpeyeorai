@@ -18,6 +18,8 @@ describe('round sequence', () => {
   it('uses the configured timings', () => {
     expect(buildRoundSequence(config, false)).toEqual({
       shapeFadeInMs: 400,
+      shapeMoveInMs: 400,
+      shapeMoveOutMs: 400,
       objectiveDelayMs: 200,
       objectiveFadeInMs: 200,
       objectiveSlideMs: 200,
@@ -35,9 +37,11 @@ describe('round sequence', () => {
     expect(s.betweenRoundsMs).toBe(1000);
   });
 
-  it('with reduced motion shortens the fades and drops the slide', () => {
+  it('with reduced motion shortens the fades and drops all movement', () => {
     const s = buildRoundSequence(config, true);
     expect(s.shapeFadeInMs).toBe(150);
+    expect(s.shapeMoveInMs).toBe(0);
+    expect(s.shapeMoveOutMs).toBe(0);
     expect(s.objectiveFadeInMs).toBe(150);
     expect(s.objectiveSlideMs).toBe(0);
     expect(s.outroFadeMs).toBe(150);

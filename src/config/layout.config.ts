@@ -87,6 +87,8 @@ export const layout = {
     objectiveText: { top: 596 },
     /** The objective slides up into place from this far below. */
     objectiveSlide: 16,
+    /** The shape enters from `rise` px lower at `scale`, and leaves zooming back out to `scale`. */
+    shapeEnter: { rise: 32, scale: 0.8 },
     shapeBorder: 2,
     /** Dot left where the player clicked. */
     clickMarkerSize: 8,
