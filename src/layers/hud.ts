@@ -1,3 +1,4 @@
+import { copy } from '../config/copy';
 import { layout } from '../config/layout.config';
 import { APP_VERSION, formatVersionLabel } from '../core/version';
 import { rem } from '../core/units';
@@ -14,8 +15,8 @@ export function createHudLayer(): HTMLElement {
   logo.style.fontSize = rem(hud.logoFontSize);
   const logoAccent = document.createElement('span');
   logoAccent.className = 'hud__logo-accent';
-  logoAccent.textContent = 'orAI';
-  logo.append('SharpEye', logoAccent);
+  logoAccent.textContent = copy.hud.logoAccent;
+  logo.append(copy.hud.logo, logoAccent);
 
   const version = document.createElement('div');
   version.className = 'hud__version';
