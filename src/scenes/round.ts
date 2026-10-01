@@ -7,7 +7,7 @@ import { contentSize, toContentCoords } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
 import type { Point } from '../core/stage';
 import { rem, setRem } from '../core/units';
-import { computedCenter, opticalCenter } from '../rounds/geometry';
+import { roundCenters } from '../rounds/opticalCenter';
 import { createResult, type RoundResult } from '../rounds/session';
 import { h } from '../ui/dom';
 
@@ -118,8 +118,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
     const { session } = ctx;
     const roundId = session.currentRound;
     const round = getRound(roundId);
-    const c = computedCenter(round, contentSize);
-    const o = opticalCenter(round, contentSize);
+    const { C: c, O: o } = roundCenters(round, contentSize);
 
     const root = h('div', 'round');
     setRem(root, { fontSize: L.textSize });

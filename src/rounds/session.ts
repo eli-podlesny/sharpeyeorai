@@ -1,7 +1,8 @@
 import { getRound, rounds } from '../config/rounds.config';
 import { createRng, rangeOf, type Rng } from '../core/rng';
 import type { Point } from '../core/stage';
-import { opticalCenter, toShapeLocal, type Size } from './geometry';
+import { toShapeLocal, type Size } from './geometry';
+import { roundCenters } from './opticalCenter';
 
 /**
  * One logged click. `click`, `C` and `O` are shape-local (relative to C, along the
@@ -43,7 +44,7 @@ export function createResult(
     clickContent,
     latencyMs,
     C: { x: 0, y: 0 },
-    O: toShapeLocal(opticalCenter(round, content), round, content),
+    O: toShapeLocal(roundCenters(round, content).O, round, content),
   };
 }
 
@@ -56,7 +57,7 @@ const SAMPLE_LATENCY_MS = { min: 600, max: 4000 };
  */
 export function createSampleResults(rng: Rng, content: Size): RoundResult[] {
   return rounds.map((round) => {
-    const o = opticalCenter(round, content);
+    const o = roundCenters(round, content).O;
     const click = {
       x: o.x + rangeOf(rng, -SAMPLE_SPREAD_PX, SAMPLE_SPREAD_PX),
       y: o.y + rangeOf(rng, -SAMPLE_SPREAD_PX, SAMPLE_SPREAD_PX),

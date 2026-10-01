@@ -15,6 +15,18 @@ export interface Bounds {
   height: number;
 }
 
+/** Every edge as a pair of vertices, including the closing edge from last back to first. */
+function edges(poly: Polygon): Array<[Point, Point]> {
+  const last = poly.at(-1);
+  if (!last) return [];
+  let prev = last;
+  return poly.map((p) => {
+    const edge: [Point, Point] = [prev, p];
+    prev = p;
+    return edge;
+  });
+}
+
 /** Axis-aligned bounding box. */
 export function bounds(poly: Polygon): Bounds {
   let minX = Infinity;
@@ -35,24 +47,20 @@ export function centroid(poly: Polygon): Point {
   let area = 0;
   let x = 0;
   let y = 0;
-  for (let i = 0; i < poly.length; i++) {
-    const a = poly[i];
-    const b = poly[(i + 1) % poly.length];
+  for (const [a, b] of edges(poly)) {
     const cross = a.x * b.y - b.x * a.y;
     area += cross;
     x += (a.x + b.x) * cross;
     y += (a.y + b.y) * cross;
   }
-  if (area === 0) return poly[0];
+  if (area === 0) return poly[0] ?? { x: 0, y: 0 };
   return { x: x / (3 * area), y: y / (3 * area) };
 }
 
 /** True when the point is inside the polygon (even-odd rule). */
 export function contains(poly: Polygon, p: Point): boolean {
   let inside = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const a = poly[i];
-    const b = poly[j];
+  for (const [a, b] of edges(poly)) {
     if (a.y > p.y !== b.y > p.y && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) {
       inside = !inside;
     }
@@ -72,9 +80,7 @@ function distanceToSegment(p: Point, a: Point, b: Point): number {
 /** Distance to the nearest edge: positive inside the polygon, negative outside. */
 export function signedDistance(poly: Polygon, p: Point): number {
   let min = Infinity;
-  for (let i = 0; i < poly.length; i++) {
-    min = Math.min(min, distanceToSegment(p, poly[i], poly[(i + 1) % poly.length]));
-  }
+  for (const [a, b] of edges(poly)) min = Math.min(min, distanceToSegment(p, a, b));
   return contains(poly, p) ? min : -min;
 }
 
