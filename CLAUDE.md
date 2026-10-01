@@ -111,8 +111,8 @@ Colors and type are not final. Always use tokens, never hard-coded values, so th
 ## Gameplay rules (current decisions)
 
 - Flow: Intro → Ready (closed doors + Start button) → Loading ("Initializing" starts behind the doors, doors open onto it after `loadingStartBeforeDoorsMs`) → Test 01…12 → Ending (doors close, darkness for `endDarknessMs`) → Score (rendered behind the doors, which open onto it). The Calculating scene is kept but out of the flow.
-- Every round follows one sequence (`src/rounds/sequence.ts`, timings in `gameConfig.roundSequence`): "Test #N" + objective fade in at the center → hold → title fades out while the objective moves to the bottom → shape fades in → timer starts when the shape is fully visible (earlier clicks ignored) → click: marker + "Sample 0X, logged" tooltip (fixed top-right) → wait → objective, shape and marker fade out → next round. Reduced motion: moves instant, fades short.
-- Timer shows 4 digits, `0000ms` when idle; it freezes at the click time until the next round's intro.
+- Every round follows one sequence (`src/rounds/sequence.ts`, timings in `gameConfig.roundSequence`): shape and objective (at its bottom position) fade in together → timer starts when they are fully visible (earlier clicks ignored) → click: marker + "Sample 0X, logged" tooltip (fixed top-right) → wait 400ms → objective, shape and marker fade out → 400ms pause → next round. No "Test #N" title. Reduced motion: fades short.
+- Timer and score show at least 4 digits (`padDigits`): `0000ms` idle (dimmed like the "Time:" label), `0347ms`, `0636pts`. The timer freezes at the click time until the next round starts.
 - Rounds may have an optional `timeline` hook (intro start, shape visible, every frame, click, outro end); empty for now. `sceneMode` (normal / distorted / alert / blackout) is a placeholder with no visual effect, settable from the debug panel.
 - A `startMode` config flag: `"button"` (current) or `"auto"` (possible later). Build for both.
 - For now **every round uses the same shape: a 200 × 200 rectangle**. The round config must still support different shapes, rotations, positions and effects later.
@@ -186,6 +186,7 @@ Emit typed events through the event bus even before anything listens to them, fo
 
 - **Plan before building:** for any brief, first summarize your plan and list open questions. Wait for the owner's go-ahead.
 - **One brief = one branch** (`feat/<short-name>`). Small commits with conventional messages (`feat:`, `fix:`, `chore:`, `docs:`).
+- **Version on the branch:** when starting a brief's branch, bump `package.json` to that brief's version first (e.g. `0.4.0` on `feat/v0.4-…`), so the label at the bottom of the preview shows the version being worked on. Tag after the owner merges.
 - **Never push to `main`** without the owner saying so. The owner reviews on the Vercel preview link first.
 - **No magic numbers.** Layout goes in `layout.config.ts`, gameplay in `game.config.ts` / `rounds.config.ts`, visuals in tokens.
 - **Accessibility floor:** visible keyboard focus, `prefers-reduced-motion` respected, and no flashing faster than 3 Hz without a warning.
@@ -212,3 +213,4 @@ Mobile layout, leaderboard/database, sound playback, narrator/intro cinematic, f
 - Score screen follows the Figma "Score" frame; Details (table only, no diagram), Play again and the speed tag are added in the same style.
 - v0.4: the screen is live behind the doors (loading starts before they open); the screen HUD is persistent and below the doors; the game ends with doors closing, darkness and doors opening on the score; Calculating is out of the flow.
 - v0.4: the "OBJECTIVE:" label is dropped; only the objective sentence shows. Loading runs 2500ms in total.
+- v0.4 review: no round intro and no "Test #N" title; shape and objective fade in together; 400ms between rounds; score padded to 4 digits like the timer.
