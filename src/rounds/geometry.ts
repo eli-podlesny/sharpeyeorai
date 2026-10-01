@@ -1,4 +1,4 @@
-import type { RoundConfig } from '../config/rounds.config';
+import { opticalSettings, type RoundConfig } from '../config/rounds.config';
 import type { Point } from '../core/stage';
 
 /**
@@ -31,12 +31,12 @@ export function computedCenter(round: RoundConfig, content: Size): Point {
 }
 
 /**
- * O, the optical center: C moved straight up on screen by `opticalOffsetY` × shape height.
+ * O, the optical center: C moved straight up on screen by `biasY` × shape height.
  * "Up" is the screen's up, not the shape's, so it stays up when the shape is rotated.
  */
 export function opticalCenter(round: RoundConfig, content: Size): Point {
   const c = computedCenter(round, content);
-  return { x: c.x, y: c.y - round.opticalOffsetY * round.shape.height };
+  return { x: c.x, y: c.y - opticalSettings(round).biasY * round.shape.height };
 }
 
 /**

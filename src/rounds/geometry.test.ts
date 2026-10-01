@@ -10,7 +10,6 @@ function makeRound(overrides: Partial<RoundConfig> = {}): RoundConfig {
     phase: 1,
     shape: { type: 'rect', width: 200, height: 200, rotationDeg: 0 },
     offset: { x: 0, y: 0 },
-    opticalOffsetY: 0.05,
     timeWeight: 0,
     timeLimitMs: null,
     effects: [],
@@ -53,7 +52,7 @@ describe('opticalCenter (O)', () => {
 
   it('uses the round’s own fraction and shape height', () => {
     const shape = { type: 'rect', width: 200, height: 300, rotationDeg: 0 } as const;
-    expectPoint(opticalCenter(makeRound({ shape, opticalOffsetY: 0.1 }), content), 500, 270);
+    expectPoint(opticalCenter(makeRound({ shape, optical: { biasY: 0.1 } }), content), 500, 270);
   });
 
   it('stays straight up on screen when the shape is rotated', () => {
