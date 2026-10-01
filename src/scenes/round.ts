@@ -10,6 +10,7 @@ import { rem, setRem } from '../core/units';
 import { roundCenters } from '../rounds/opticalCenter';
 import { createResult, type RoundResult } from '../rounds/session';
 import { h } from '../ui/dom';
+import { showTooltip } from '../ui/tooltip';
 
 const { round: L } = layout;
 
@@ -69,42 +70,18 @@ function createMarker(kind: 'computed' | 'optical', at: Point): HTMLElement {
   return marker;
 }
 
-/** "Sample 0X, logged" next to the click, flipped inward near the screen edges. */
-function createTooltip(result: RoundResult, content: HTMLElement): HTMLElement {
-  const { tooltip } = L;
-  const tip = h('div', 'round-tooltip');
-  setRem(tip, {
-    left: result.clickContent.x + tooltip.offsetX,
-    top: result.clickContent.y + tooltip.offsetY,
-    fontSize: tooltip.fontSize,
-    lineHeight: tooltip.lineHeight,
-  });
-  tip.style.padding = `${rem(tooltip.paddingY)} ${rem(tooltip.paddingX)}`;
-  tip.append(
-    h('div', 'round-tooltip__title', fill(copy.round.logged, { n: padRound(result.roundId) })),
-    h(
-      'div',
-      '',
+/** "Sample 0X, logged" next to the click. Position and time only: no points during the game. */
+function showLoggedTooltip(result: RoundResult, container: HTMLElement): void {
+  showTooltip(container, result.clickContent, {
+    title: fill(copy.round.logged, { n: padRound(result.roundId) }),
+    lines: [
       fill(copy.round.loggedPosition, {
         x: result.click.x.toFixed(1),
         y: result.click.y.toFixed(1),
       }),
-    ),
-    h('div', '', fill(copy.round.loggedTime, { ms: result.latencyMs })),
-  );
-  content.append(tip);
-
-  const box = tip.getBoundingClientRect();
-  const bounds = content.getBoundingClientRect();
-  if (box.right > bounds.right) {
-    tip.style.left = rem(result.clickContent.x - tooltip.offsetX);
-    tip.classList.add('round-tooltip--flip-x');
-  }
-  if (box.bottom > bounds.bottom) {
-    tip.style.top = rem(result.clickContent.y - tooltip.offsetY);
-    tip.classList.add('round-tooltip--flip-y');
-  }
-  return tip;
+      fill(copy.round.loggedTime, { ms: result.latencyMs }),
+    ],
+  });
 }
 
 /**
@@ -176,7 +153,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
       });
       session.results.push(result);
       ctx.bus.emit('round.logged', { result });
-      createTooltip(result, root);
+      showLoggedTooltip(result, root);
 
       scope.timeout(() => {
         ctx.bus.emit('round.end', { roundId });

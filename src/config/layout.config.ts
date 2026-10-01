@@ -77,11 +77,21 @@ export const layout = {
     objectiveLabel: { top: 568, fontSize: 16, letterSpacing: 8 },
     objectiveText: { top: 596 },
     shapeBorder: 2,
-    /** "Sample 0X, logged" tooltip, placed this far from the click. */
-    tooltip: { offsetX: 16, offsetY: 16, fontSize: 12, lineHeight: 16, paddingX: 8, paddingY: 6 },
     /** Debug C (cross) and O (circle) markers. */
     markerSize: 16,
     markerStroke: 2,
+  },
+
+  /** The shared tooltip (in-round "logged" sample, "Copied"), placed this far from its point. */
+  tooltip: {
+    offsetX: 16,
+    offsetY: 16,
+    fontSize: 12,
+    lineHeight: 16,
+    paddingX: 8,
+    paddingY: 6,
+    /** Width limit for tooltips with wrapping text. */
+    maxWidth: 280,
   },
 
   /** Ready, loading, calculating and score scenes (placeholder layouts). */
