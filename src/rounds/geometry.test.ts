@@ -1,27 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import type { RoundConfig } from '../config/rounds.config';
-import { computedCenter, rotate, shapePolygon, toShapeLocal } from './geometry';
-import { roundCenters } from './opticalCenter';
+import { placeShape, rotate, shapeAnchor, shapePath, toShapeLocal } from './geometry';
+import { bounds } from './polygon';
 
 const content = { width: 1000, height: 600 };
+const SEED = 1;
 
 function makeRound(overrides: Partial<RoundConfig> = {}): RoundConfig {
   return {
     id: 1,
     phase: 1,
-    shape: { type: 'rect', width: 200, height: 200, rotationDeg: 0 },
+    shape: { type: 'rect', width: 200, height: 200 },
     offset: { x: 0, y: 0 },
+    rotationDeg: 0,
+    fill: 'default',
     timeWeight: 0,
     timeLimitMs: null,
     effects: [],
-    copyKey: 'objective.rect',
+    copyKey: 'objective.shape',
     ...overrides,
   };
 }
 
-const expectPoint = (actual: { x: number; y: number }, x: number, y: number): void => {
-  expect(actual.x).toBeCloseTo(x, 9);
-  expect(actual.y).toBeCloseTo(y, 9);
+const expectPoint = (actual: { x: number; y: number } | undefined, x: number, y: number): void => {
+  expect(actual?.x).toBeCloseTo(x, 9);
+  expect(actual?.y).toBeCloseTo(y, 9);
 };
 
 describe('rotate', () => {
@@ -31,70 +34,85 @@ describe('rotate', () => {
   });
 });
 
-describe('computedCenter (C)', () => {
-  it('is the content center when there is no offset', () => {
-    expectPoint(computedCenter(makeRound(), content), 500, 300);
-  });
-
-  it('follows the offset', () => {
-    expectPoint(computedCenter(makeRound({ offset: { x: 30, y: -8 } }), content), 530, 292);
-  });
-
-  it('does not move when the shape rotates', () => {
-    const shape = { type: 'rect', width: 200, height: 100, rotationDeg: 37 } as const;
-    expectPoint(computedCenter(makeRound({ shape }), content), 500, 300);
+describe('shapeAnchor', () => {
+  it('is the content center plus the offset', () => {
+    expectPoint(shapeAnchor(makeRound(), content), 500, 300);
+    expectPoint(shapeAnchor(makeRound({ offset: { x: 30, y: -8 } }), content), 530, 292);
   });
 });
 
-describe('shapePolygon', () => {
-  it('lists the rectangle corners around C', () => {
-    const [topLeft, , bottomRight] = shapePolygon(makeRound(), content);
-    expectPoint(topLeft ?? { x: NaN, y: NaN }, 400, 200);
-    expectPoint(bottomRight ?? { x: NaN, y: NaN }, 600, 400);
+describe('placeShape', () => {
+  it('centers the shape on its anchor', () => {
+    const shape = placeShape(makeRound({ offset: { x: 30, y: -8 } }), content, SEED);
+    const box = bounds(shape.outer);
+    expect(box.minX).toBeCloseTo(430, 9);
+    expect(box.minY).toBeCloseTo(192, 9);
+    expect(box.width).toBeCloseTo(200, 9);
+    expect(box.height).toBeCloseTo(200, 9);
+    expectPoint(shape.pole, 530, 292);
   });
 
-  it('turns the corners with the shape', () => {
-    const shape = { type: 'rect', width: 200, height: 100, rotationDeg: 90 } as const;
-    const [topLeft] = shapePolygon(makeRound({ shape }), content);
-    // Top-left corner (−100, −50) turned 90° clockwise lands at (50, −100) from C.
-    expectPoint(topLeft ?? { x: NaN, y: NaN }, 550, 200);
+  it('turns the outline and the holes around the anchor', () => {
+    const round = makeRound({ shape: { type: 'rect', width: 200, height: 100 }, rotationDeg: 90 });
+    const box = bounds(placeShape(round, content, SEED).outer);
+    expect(box.width).toBeCloseTo(100, 9);
+    expect(box.height).toBeCloseTo(200, 9);
+    // Top-left corner (−100, −50) turned 90° clockwise lands at (50, −100) from the anchor.
+    expectPoint(placeShape(round, content, SEED).outer[0], 550, 200);
+  });
+
+  it('moves holes with the shape', () => {
+    const round = makeRound({ shape: { type: 'smiley', diameter: 300 }, offset: { x: 100, y: 0 } });
+    const shape = placeShape(round, content, SEED);
+    expect(shape.holes).toHaveLength(3);
+    for (const hole of shape.holes) {
+      const box = bounds(hole);
+      expect(box.minX).toBeGreaterThan(450);
+      expect(box.maxX).toBeLessThan(750);
+    }
   });
 });
 
 describe('toShapeLocal', () => {
-  it('measures from C without rotation', () => {
-    const round = makeRound({ offset: { x: 0, y: -8 } });
-    expectPoint(toShapeLocal({ x: 510, y: 282 }, round, content), 10, -10);
-  });
-
-  it('maps C to (0, 0) and corners to ± half size', () => {
-    const round = makeRound();
-    expectPoint(toShapeLocal({ x: 500, y: 300 }, round, content), 0, 0);
-    expectPoint(toShapeLocal({ x: 400, y: 200 }, round, content), -100, -100);
+  it('measures from the origin without rotation', () => {
+    expectPoint(toShapeLocal({ x: 510, y: 282 }, { x: 500, y: 292 }, 0), 10, -10);
   });
 
   it('undoes the shape rotation', () => {
-    const shape = { type: 'rect', width: 200, height: 100, rotationDeg: 90 } as const;
-    const round = makeRound({ shape });
-    // Turned 90° clockwise, the shape's right edge now points down on screen.
-    expectPoint(toShapeLocal({ x: 500, y: 400 }, round, content), 100, 0);
-    // And its top edge points right.
-    expectPoint(toShapeLocal({ x: 550, y: 300 }, round, content), 0, -50);
+    const origin = { x: 500, y: 300 };
+    // Turned 90° clockwise, the shape's right edge now points down on screen…
+    expectPoint(toShapeLocal({ x: 500, y: 400 }, origin, 90), 100, 0);
+    // …and its top edge points right.
+    expectPoint(toShapeLocal({ x: 550, y: 300 }, origin, 90), 0, -50);
   });
 
   it('is the inverse of placing a local point on a rotated shape', () => {
-    const shape = { type: 'rect', width: 200, height: 200, rotationDeg: 30 } as const;
-    const round = makeRound({ shape, offset: { x: 40, y: -20 } });
-    const c = computedCenter(round, content);
-    const local = { x: 60, y: -25 };
-    const turned = rotate(local, 30);
-    expectPoint(toShapeLocal({ x: c.x + turned.x, y: c.y + turned.y }, round, content), 60, -25);
+    const origin = { x: 540, y: 280 };
+    const turned = rotate({ x: 60, y: -25 }, 30);
+    expectPoint(
+      toShapeLocal({ x: origin.x + turned.x, y: origin.y + turned.y }, origin, 30),
+      60,
+      -25,
+    );
   });
+});
 
-  it('puts O 10px straight up from C, turned into the rotated shape’s axes', () => {
-    const shape = { type: 'rect', width: 200, height: 200, rotationDeg: 90 } as const;
-    const round = makeRound({ shape });
-    // Screen-up is the shape's left (−x) after a 90° clockwise turn.
-    expectPoint(toShapeLocal(roundCenters(round, content).O, round, content), -10, 0);
+describe('shapePath', () => {
+  it('draws one closed sub-path per ring', () => {
+    const d = shapePath({
+      outer: [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+        { x: 10, y: 10 },
+      ],
+      holes: [
+        [
+          { x: 2, y: 2 },
+          { x: 3, y: 2 },
+          { x: 3, y: 3 },
+        ],
+      ],
+    });
+    expect(d).toBe('M0.00 0.00L10.00 0.00L10.00 10.00ZM2.00 2.00L3.00 2.00L3.00 3.00Z');
   });
 });

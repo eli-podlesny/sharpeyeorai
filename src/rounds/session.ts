@@ -1,8 +1,8 @@
-import { getRound } from '../config/rounds.config';
-import { createRng, type Rng } from '../core/rng';
+import { createRng, mixSeed, type Rng } from '../core/rng';
 import type { Point } from '../core/stage';
-import { toShapeLocal, type Size } from './geometry';
-import { roundCenters, type Centers } from './opticalCenter';
+import { toShapeLocal } from './geometry';
+import type { Centers } from './opticalCenter';
+import type { RoundTarget } from './target';
 
 /**
  * One logged click. `click`, `C` and `O` are shape-local (relative to C, along the
@@ -17,6 +17,8 @@ export interface RoundResult {
   C: Point;
   O: Point;
   centers: Centers;
+  /** Accuracy reaches 0 this far from O (px). */
+  falloffRadius: number;
   /** Timeout or system error (v1.0b): the round scores 0. */
   penalty: boolean;
 }
@@ -28,29 +30,45 @@ export interface GameSession {
   /** 1-based id of the round being played (or about to be). */
   currentRound: number;
   results: RoundResult[];
+  /** Shape seeds set by hand (debug reroll); other rounds derive theirs from `seed`. */
+  shapeSeeds: Map<number, number>;
 }
 
 export function createSession(seed: number, startRound = 1): GameSession {
-  return { seed, rng: createRng(seed), currentRound: startRound, results: [] };
+  return {
+    seed,
+    rng: createRng(seed),
+    currentRound: startRound,
+    results: [],
+    shapeSeeds: new Map(),
+  };
 }
 
-/** Builds the logged result for a click at `clickContent` in a round. */
-export function createResult(
+/** The seed for a round's shape: the same game seed always gives the same shapes. */
+export function shapeSeed(
+  session: Pick<GameSession, 'seed' | 'shapeSeeds'>,
   roundId: number,
+): number {
+  return session.shapeSeeds.get(roundId) ?? mixSeed(session.seed, roundId);
+}
+
+/** Builds the logged result for a click at `clickContent` on a round's target. */
+export function createResult(
+  target: RoundTarget,
   clickContent: Point,
   latencyMs: number,
-  content: Size,
 ): RoundResult {
-  const round = getRound(roundId);
-  const centers = roundCenters(round, content);
+  const { centers, shape } = target;
+  const local = (p: Point): Point => toShapeLocal(p, centers.C, shape.rotationDeg);
   return {
-    roundId,
-    click: toShapeLocal(clickContent, round, content),
+    roundId: target.round.id,
+    click: local(clickContent),
     clickContent,
     latencyMs,
     C: { x: 0, y: 0 },
-    O: toShapeLocal(centers.O, round, content),
+    O: local(centers.O),
     centers,
+    falloffRadius: target.falloffRadius,
     penalty: false,
   };
 }

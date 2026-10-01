@@ -145,3 +145,56 @@ export function poleOfInaccessibility(poly: Polygon, precision = POLE_PRECISION_
   }
   return { x: best.x, y: best.y };
 }
+
+/** Signed area (positive or negative depending on winding order). */
+export function signedArea(poly: Polygon): number {
+  let sum = 0;
+  for (const [a, b] of edges(poly)) sum += a.x * b.y - b.x * a.y;
+  return sum / 2;
+}
+
+/**
+ * Area centroid of the material: the outer ring minus its holes (holes are assumed to
+ * sit inside the outer ring and not overlap each other).
+ */
+export function materialCentroid(outer: Polygon, holes: readonly Polygon[]): Point {
+  const parts = [
+    { area: Math.abs(signedArea(outer)), c: centroid(outer) },
+    ...holes.map((hole) => ({ area: -Math.abs(signedArea(hole)), c: centroid(hole) })),
+  ];
+  const total = parts.reduce((acc, p) => acc + p.area, 0);
+  if (total <= 0) return centroid(outer);
+  return {
+    x: parts.reduce((acc, p) => acc + p.area * p.c.x, 0) / total,
+    y: parts.reduce((acc, p) => acc + p.area * p.c.y, 0) / total,
+  };
+}
+
+function cross(o: Point, a: Point, b: Point): number {
+  return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+}
+
+/** True when segments ab and cd cross or touch. */
+function segmentsMeet(a: Point, b: Point, c: Point, d: Point): boolean {
+  const d1 = cross(c, d, a);
+  const d2 = cross(c, d, b);
+  const d3 = cross(a, b, c);
+  const d4 = cross(a, b, d);
+  return d1 > 0 !== d2 > 0 && d3 > 0 !== d4 > 0 && d1 !== 0 && d3 !== 0;
+}
+
+/** True when any two non-neighbouring edges of the ring cross each other. */
+export function selfIntersects(poly: Polygon): boolean {
+  const list = edges(poly);
+  const n = list.length;
+  for (let i = 0; i < n; i++) {
+    const [a, b] = list[i] as [Point, Point];
+    // Neighbouring edges share a vertex; skip them (and the wrap-around pair).
+    for (let j = i + 2; j < n; j++) {
+      if (i === 0 && j === n - 1) continue;
+      const [c, d] = list[j] as [Point, Point];
+      if (segmentsMeet(a, b, c, d)) return true;
+    }
+  }
+  return false;
+}

@@ -3,6 +3,9 @@ import {
   bounds,
   centroid,
   contains,
+  materialCentroid,
+  selfIntersects,
+  signedArea,
   poleOfInaccessibility,
   signedDistance,
   type Polygon,
@@ -91,5 +94,48 @@ describe('poleOfInaccessibility (M)', () => {
       { x: 10, y: 0 },
     ];
     expect(poleOfInaccessibility(line)).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe('signedArea', () => {
+  it('has the size of the area, with the sign of the winding', () => {
+    expect(Math.abs(signedArea(square))).toBe(40000);
+    expect(signedArea([...square].reverse())).toBe(-signedArea(square));
+  });
+});
+
+describe('materialCentroid', () => {
+  it('is the plain centroid without holes', () => {
+    expect(materialCentroid(square, [])).toEqual(centroid(square));
+  });
+
+  it('moves away from a hole', () => {
+    // A 50 × 50 hole in the top-left quarter pushes C down and right.
+    const hole: Polygon = [
+      { x: 25, y: 25 },
+      { x: 75, y: 25 },
+      { x: 75, y: 75 },
+      { x: 25, y: 75 },
+    ];
+    const c = materialCentroid(square, [hole]);
+    // (40000 × 100 − 2500 × 50) / 37500
+    expect(c.x).toBeCloseTo(103.333, 3);
+    expect(c.y).toBeCloseTo(103.333, 3);
+  });
+});
+
+describe('selfIntersects', () => {
+  it('is false for a simple polygon', () => {
+    expect(selfIntersects(square)).toBe(false);
+  });
+
+  it('is true for a bow tie', () => {
+    const bowTie: Polygon = [
+      { x: 0, y: 0 },
+      { x: 100, y: 100 },
+      { x: 100, y: 0 },
+      { x: 0, y: 100 },
+    ];
+    expect(selfIntersects(bowTie)).toBe(true);
   });
 });

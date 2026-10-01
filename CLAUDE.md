@@ -12,7 +12,7 @@ The owner is a designer who is new to Claude Code. Explain what you are about to
 
 ## Current version
 
-**v0.4 — game flow, persistent HUD, round choreography.** See `docs/briefs/` for the active brief. (Releases are now numbered 0.x by brief; the roadmap table below is kept for scope reference.)
+**v0.5 — shape library and static rounds.** See `docs/briefs/` for the active brief. (Releases are now numbered 0.x by brief; the roadmap table below is kept for scope reference.)
 
 | Version | Scope                                                                                                                                      |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -57,6 +57,7 @@ src/
   core/              state machine, scene manager, event bus, rng, input, stage scaling
   config/            game.config.ts, rounds.config.ts, layout.config.ts
   rounds/            round logic (shape geometry, target computation)
+    shapes/          one pure generator per shape type + tests
   scoring/           pure scoring functions + tests
   scenes/            intro, ready, loading, round, ending, score (calculating: kept, out of the flow)
   layers/            background, frame, doors, screen, screen-hud, hud, darkness
@@ -112,11 +113,14 @@ Colors and type are not final. Always use tokens, never hard-coded values, so th
 
 - Flow: Intro → Ready (closed doors + Start button) → Loading ("Initializing" starts behind the doors, doors open onto it after `loadingStartBeforeDoorsMs`) → Objective intro → Test 01…12 → Ending (doors close, darkness for `endDarknessMs`) → Score (rendered behind the doors, which open onto it). The Calculating scene is kept but out of the flow.
 - Before round 1, the objective intro (`gameConfig.objectiveIntro`, `layout.objectiveIntro`): "Objective:" (large) fades in at the center rising 16px and zooming 0.8 → 1 (400ms); the objective line follows below it (200ms delay, 200ms, rising 16px); hold 1200ms; then "Objective:" fades out moving down 16px while the objective line moves to its bottom place (400ms). The objective line lives in the screen HUD and stays there until it fades out with round 12's shape.
-- Every round follows one sequence (`src/rounds/sequence.ts`, timings in `gameConfig.roundSequence`): shape fades in (400ms) rising 32px and zooming 0.8 → 1 → timer starts when the shape is fully visible (earlier clicks ignored) and the shape fill pulses alpha 0.8 ↔ 1 (1s cycle) until the click → click: marker + "Sample 0X, logged" tooltip (fixed top-right, disappears instantly 500ms after the click) → shape stays 800ms → shape and marker fade out, zooming out to 0.8 in place (400ms) → 400ms pause → next round. Reduced motion: fades short, no movement or zoom.
+- Every round follows one sequence (`src/rounds/sequence.ts`, timings in `gameConfig.roundSequence`): shape fades in (400ms) rising 32px and zooming 0.8 → 1 → timer starts when the shape is fully visible (earlier clicks ignored) and the shape fill pulses alpha 0.8 ↔ 1 (1s cycle) until the click → click: marker + "Sample 0X, logged" tooltip (fixed top-right, disappears instantly 500ms after the click) → shape stays 1600ms → shape and marker fade out, zooming out to 0.8 in place (400ms) → 400ms pause → next round. Reduced motion: fades short, no movement or zoom.
 - Timer and score show at least 4 digits (`padDigits`): `0000ms` idle (dimmed like the "Time:" label), `0347ms`, `0636pts`. The timer freezes at the click time until the next round starts.
 - Rounds may have an optional `timeline` hook (intro start, shape visible, every frame, click, outro end); empty for now. `sceneMode` (normal / distorted / alert / blackout) is a placeholder with no visual effect, settable from the debug panel.
 - A `startMode` config flag: `"button"` (current) or `"auto"` (possible later). Build for both.
-- For now **every round uses the same shape: a 200 × 200 rectangle**. The round config must still support different shapes, rotations, positions and effects later.
+- Shapes (`src/rounds/shapes/`): a shape is `{ outer, holes }`, closed rings sampled about every `gameConfig.shapePointSpacingPx` (3px). Generators are pure functions of `(params, { rng, spacing })`, centered on their bounding box. `placeShape` (`src/rounds/geometry.ts`) is the one place offset and rotation are applied; rendering (one SVG `<path>`, even-odd fill, so holes are cutouts) and scoring both use its output. `roundTarget` (`src/rounds/target.ts`) bundles the placed shape, C/M/O and the falloff radius.
+- Round shapes (`rounds.config.ts`): 1 rectangle 360 × 360; 2 seeded upright blob 300 × 440 (8–10 points around an ellipse, smooth closed curve, never self-crossing); 3 lopsided avocado 280 × 380 (neck and top bulb lean right, big bulb left) with an oval pit (35% of its width, 1.3× as tall, tilted 20°, 8% left of the bulb's middle); 7 rectangle turned 10° clockwise, sized (`rectForRotatedBox`) so its on-screen box exactly fills the free screen area (`layout.round.largeShapeMargin` = 40px from the HUD row, the objective line and the screen edges, via `freeScreenArea()`), about 926 × 312; 9 three overlapping circles of very different sizes (radius 150, 85, 50) merged into one asymmetric outline (`circleCluster`), C and O about 17px apart; 10 five-point star (inner corners at 60% of the tip radius) stretched to 380 × 240, rotated 14°, 120px left; 12 smiley 100 (disc with eye and mouth holes), in the light logo color (`--shape-fill-light`). Rounds 4, 5, 6, 8, 11 keep the 200 × 200 placeholder until v0.6. All other shapes are 8px above center. The rhombus generator stays in the library, unused.
+- Shape seeds: each round's shape seed is `mixSeed(game seed, round id)` (`shapeSeed` in `src/rounds/session.ts`), so `?seed=` replays the same blob. The debug panel's "reroll round 2" sets a new seed for round 2 only; "shape gallery" shows all 12 shapes with C/O/M markers and the free area.
+- Objective line (all rounds): "Find the optical center of the shape".
 - One click per round. The click is final and the next round loads automatically. Latency is measured from `round.shape.visible`.
 - Round 1 ignores time in scoring. Every round has a configurable `timeWeight`.
 
@@ -127,17 +131,19 @@ All scoring lives in `src/scoring/` as pure, tested functions. Every constant li
 ### Optical center (`src/rounds/opticalCenter.ts`)
 
 ```
-C  = area centroid of the shape                     (the "computed" center)
-M  = pole of inaccessibility: the point inside the shape farthest from any edge
+C  = area centroid of the material (outer minus holes)   (the "computed" center)
+M  = pole of inaccessibility of the OUTER contour: the point farthest from any outer edge
 B  = shape's axis-aligned bounding box in SCREEN space (after rotation)
 
 Base = C + w × (M − C)                               w = skeletonWeight, default 0.35
 O    = Base + ( −βx × B.width ,  −βy × B.height )    βy = 0.05 (up), βx = 0 (left; off by default)
-if O falls outside the shape → O = M
+if O falls outside the outer contour → O = M
 ```
 
+- O and M come from the outer contour only, as if the holes were filled, so O may sit inside a hole (owner decision). Only C sees the holes.
+
 - The shift uses screen axes: "up" is always up for the player, even on rotated shapes.
-- M is computed in-house (`src/rounds/polygon.ts`, polylabel approach). Rects return C directly.
+- M is computed in-house (`src/rounds/polygon.ts`, polylabel approach). Rects, circles and the smiley disc return their middle directly.
 - `skeletonWeight`, `biasX`, `biasY` are global in `gameConfig.optical`, overridable per round via `optical` in `rounds.config.ts`.
 
 ### Points
@@ -146,7 +152,7 @@ Per round, for click P and latency t (ms):
 
 ```
 dO = |P − O|            dC = |P − C|
-accuracy  a = clamp(1 − dO / R, 0, 1) ^ k            R = falloffRadius = 0.5 × shorter side (100px), k = 1.5
+accuracy  a = clamp(1 − dO / R, 0, 1) ^ k            R = 0.5 × shorter side of the on-screen bbox, k = 1.5
 speed     s = clamp(1 − (t − grace) / (max − grace), 0, 1)     grace = 1500ms, max = 8000ms
 quality   q = a × (1 − timeWeight + timeWeight × s)            timeWeight = 0 for round 1, 0.2 for rounds 2–12
 penalty   q = 0  (timeouts / system errors — v1.0b; `RoundResult.penalty` is the hook)
@@ -154,7 +160,7 @@ roundPts  = 10000 × q / roundCount                              (shown rounded 
 total     = round(10000 × Σq / roundCount)                      max exactly 10,000
 ```
 
-Reference values for the 200 × 200 square: 0px → 100% accuracy, 10px → 85%, 25px → 65%, 50px → 35%, 100px+ → 0.
+Rounds can set `falloffRadius` in `rounds.config.ts`: rounds 1 and 7 use 100px (no extra forgiveness for big shapes). Reference values for R = 100 (e.g. the 200 × 200 square): 0px → 100% accuracy, 10px → 85%, 25px → 65%, 50px → 35%, 100px+ → 0.
 
 ### Humanity lean (verdict only, never affects points)
 
@@ -165,7 +171,7 @@ t_lean = clamp( ((P − C) · (O − C)) / sep² , −0.5, 1.5 )        0 = mach
 humanityIndex = mean t_lean over included rounds (null if none)
 ```
 
-With 200 × 200 squares C and O are only 10px apart, so the lean is noisy until shapes vary.
+C and O are about 10–40px apart on most shapes (avocado ≈ 19px, by design of its lean and pit placement).
 
 ### Session summary (`src/scoring/summary.ts`)
 
@@ -204,7 +210,7 @@ Mobile layout, leaderboard/database, sound playback, narrator/intro cinematic, f
 - Hosting: GitHub (public repo `sharpeyeorai`) + Vercel Hobby at `sharpeyeorai.vercel.app`.
 - Visual direction: dark illustrated facility, sci-fi metal frame, blast door. Arm and CRT concept dropped.
 - Score maximum 10,000, based on distance to the optical center. Computed-vs-optical lean drives the human/AI verdict.
-- All rounds use a 200 × 200 rectangle until further notice.
+- v0.5: rounds 1, 2, 3, 7, 9, 10, 12 get their real shapes; the rest keep the 200 × 200 placeholder until v0.6.
 - Start with a button; auto-start may replace it. Round 1 ignores time.
 - Assets and colors are placeholders until the owner finalizes Figma.
 - Frame and screen are centered horizontally on the stage (Figma is not pixel-perfect).
@@ -216,3 +222,6 @@ Mobile layout, leaderboard/database, sound playback, narrator/intro cinematic, f
 - v0.4: the "OBJECTIVE:" label is dropped; only the objective sentence shows. Loading runs 2500ms in total.
 - v0.4 review: no round intro and no "Test #N" title; shape fades in, objective slides up 16px (200ms delay, 200ms); 400ms between rounds; score padded to 4 digits like the timer.
 - v0.4 review: the objective is introduced once before round 1 ("Objective:" + objective line) and stays at the bottom through round 12; between rounds only the shape comes and goes. Score label is "Your score".
+- v0.5: O is computed from the outer contour (holes filled) and may sit in a hole; C is the centroid of the material. Falloff defaults to half the shorter side of the on-screen bbox; rounds 1 and 7 keep 100px. Objective text is generic. Round 12's smiley uses the light logo color.
+- v0.5 review: the avocado is strongly lopsided (neck and top bulb lean right, big bulb left) with an oval pit (35% of the width, 1.3× as tall, tilted 20°, set 8% left), so C and O land about 19px apart, both on the material. The shape stays 1600ms after the click before fading.
+- v0.5 review 2: round 2 blob upright (300 × 440); round 7 rectangle turned 10° clockwise and shrunk so its turned box fills the free area; round 9 is three merged circles of very different sizes (asymmetric); round 10 is a stretched, softer five-point star; the smiley is 100 × 100 (fine for now, even though it drops out of the lean).

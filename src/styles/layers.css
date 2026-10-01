@@ -309,3 +309,71 @@
   gap: 4px;
   cursor: pointer;
 }
+
+/* Debug shape gallery: every round's shape as a screen thumbnail, with C/O/M markers */
+.shape-gallery {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  overflow: auto;
+  padding: 12px 16px;
+  background: var(--debug-bg);
+  color: var(--debug-text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.shape-gallery__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.shape-gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.shape-gallery__cell {
+  margin: 0;
+}
+
+.shape-gallery .shape-gallery__art {
+  position: static;
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.shape-gallery__screen {
+  fill: var(--placeholder-screen);
+}
+
+.shape-gallery__free {
+  fill: none;
+  stroke: var(--debug-marker-pole);
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+}
+
+.gallery-marker {
+  fill: none;
+}
+
+.gallery-marker--computed {
+  stroke: var(--debug-marker-computed);
+}
+
+.gallery-marker--optical {
+  stroke: var(--debug-marker-optical);
+}
+
+.gallery-marker--pole {
+  stroke: var(--debug-marker-pole);
+}
+
+.gallery-marker__halo {
+  stroke: var(--color-ink);
+}

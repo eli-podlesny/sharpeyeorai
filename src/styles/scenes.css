@@ -78,29 +78,46 @@
   inset: 0;
 }
 
+/* The shape: one SVG path covering screen-content; holes are cut out (even-odd fill) */
 .round-shape {
   position: absolute;
-  background: var(--shape-fill);
-  border: solid var(--shape-border);
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.round-shape__path {
+  fill: var(--shape-fill);
+  fill-rule: evenodd;
+  stroke: var(--shape-border);
+  stroke-linejoin: miter;
+}
+
+/* Round 12: the light logo color instead of graphite */
+.round-shape--light {
+  --shape-fill: var(--shape-fill-light);
+  --shape-fill-pulse-low: var(--shape-fill-light);
+  --shape-fill-pulse-high: var(--shape-fill-light-pulse-high);
 }
 
 /* While the timer runs the fill pulses (--pulse-ms per cycle); on the click it freezes */
-.round-shape.is-pulsing {
+.round-shape.is-pulsing .round-shape__path {
   animation: shape-pulse var(--pulse-ms, 1000ms) ease-in-out infinite;
 }
 
-.round-shape.is-pulse-stopped {
+.round-shape.is-pulse-stopped .round-shape__path {
   animation-play-state: paused;
 }
 
 @keyframes shape-pulse {
   0%,
   100% {
-    background-color: var(--shape-fill-pulse-low);
+    fill: var(--shape-fill-pulse-low);
   }
 
   50% {
-    background-color: var(--shape-fill-pulse-high);
+    fill: var(--shape-fill-pulse-high);
   }
 }
 

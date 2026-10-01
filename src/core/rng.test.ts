@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createRng } from './rng';
+import { createRng, mixSeed } from './rng';
 
 const take = (rng: () => number, n: number): number[] => Array.from({ length: n }, rng);
 
@@ -17,5 +17,13 @@ describe('seeded rng', () => {
       expect(n).toBeGreaterThanOrEqual(0);
       expect(n).toBeLessThan(1);
     }
+  });
+});
+
+describe('mixSeed', () => {
+  it('is stable and differs per salt and per seed', () => {
+    expect(mixSeed(123, 2)).toBe(mixSeed(123, 2));
+    expect(mixSeed(123, 2)).not.toBe(mixSeed(123, 3));
+    expect(mixSeed(123, 2)).not.toBe(mixSeed(124, 2));
   });
 });

@@ -1,5 +1,4 @@
 import { gameConfig, type ScoringConfig } from '../config/game.config';
-import type { ShapeConfig } from '../config/rounds.config';
 import type { Point } from '../core/stage';
 
 /**
@@ -11,9 +10,15 @@ const clamp01 = (v: number): number => Math.min(Math.max(v, 0), 1);
 
 export const distance = (a: Point, b: Point): number => Math.hypot(a.x - b.x, a.y - b.y);
 
-/** R: accuracy reaches 0 this far from O (half the shorter side by default). */
-export function falloffRadius(shape: ShapeConfig, cfg: ScoringConfig = gameConfig.scoring): number {
-  return cfg.falloffFraction * Math.min(shape.width, shape.height);
+/**
+ * R: accuracy reaches 0 this far from O. By default half the shorter side of the shape's
+ * on-screen bounding box; rounds can set their own radius instead.
+ */
+export function falloffRadius(
+  box: { width: number; height: number },
+  cfg: ScoringConfig = gameConfig.scoring,
+): number {
+  return cfg.falloffFraction * Math.min(box.width, box.height);
 }
 
 /** a = clamp(1 − dO / R, 0, 1) ^ curve. 1 on O, 0 at R or farther. */

@@ -33,6 +33,8 @@ export interface GameConfig {
   scoreCountUpMs: number;
   /** How long the "Copied" tooltip stays after Share result. */
   copiedTooltipMs: number;
+  /** Shape outlines are sampled about this many px apart (curves and straight edges). */
+  shapePointSpacingPx: number;
   optical: OpticalConfig;
   scoring: ScoringConfig;
   persona: PersonaConfig;
@@ -93,7 +95,7 @@ export interface OpticalConfig {
 }
 
 export interface ScoringConfig {
-  /** Accuracy falls to 0 at this fraction of the shape's shorter side. */
+  /** Accuracy falls to 0 at this fraction of the shorter side of the shape's on-screen bounding box (rounds can override the radius). */
   falloffFraction: number;
   /** Accuracy curve exponent: higher punishes near-misses harder. */
   curve: number;
@@ -145,7 +147,7 @@ export const gameConfig: GameConfig = {
     shapeFadeInMs: 400,
     loggedTooltipMs: 500,
     shapePulseMs: 1000,
-    postClickWaitMs: 800,
+    postClickWaitMs: 1600,
     outroFadeMs: 400,
     betweenRoundsMs: 400,
     reducedMotionFadeMs: 150,
@@ -156,6 +158,7 @@ export const gameConfig: GameConfig = {
   endDarknessFadeMs: 300,
   scoreCountUpMs: 1200,
   copiedTooltipMs: 2000,
+  shapePointSpacingPx: 3,
   optical: {
     skeletonWeight: 0.35,
     biasX: 0,

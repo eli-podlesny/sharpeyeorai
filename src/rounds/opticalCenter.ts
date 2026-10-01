@@ -1,14 +1,20 @@
 import type { OpticalConfig } from '../config/game.config';
-import { opticalSettings, type RoundConfig } from '../config/rounds.config';
 import type { Point } from '../core/stage';
-import { computedCenter, shapePolygon, type Size } from './geometry';
-import { bounds, centroid, contains, poleOfInaccessibility, type Polygon } from './polygon';
+import type { PlacedShape } from './geometry';
+import {
+  bounds,
+  centroid,
+  contains,
+  materialCentroid,
+  poleOfInaccessibility,
+  type Polygon,
+} from './polygon';
 
 /** The three reference points of a shape, all in screen-content pixels. */
 export interface Centers {
-  /** Computed center: the area centroid. */
+  /** Computed center: the area centroid of the material (holes cut out). */
   C: Point;
-  /** Pole of inaccessibility: the point farthest from every edge. */
+  /** Pole of inaccessibility of the outline: the point farthest from every outer edge. */
   M: Point;
   /** Optical center: where a person sees the middle. Scoring measures from here. */
   O: Point;
@@ -22,7 +28,7 @@ export interface Centers {
  *   if O falls outside the shape, O = M
  *
  * The shift uses the screen's axes, so "up" stays up for the player when the shape turns.
- * Pass `pole` when M is already known (rectangles: M = C) to skip the search.
+ * Pass `pole` when M is already known (rectangles, circles: M = C) to skip the search.
  */
 export function opticalCenters(poly: Polygon, settings: OpticalConfig, pole?: Point): Centers {
   const C = centroid(poly);
@@ -36,10 +42,11 @@ export function opticalCenters(poly: Polygon, settings: OpticalConfig, pole?: Po
   return { C, M, O: contains(poly, O) ? O : M };
 }
 
-/** C, M and O for a round's shape as placed on the screen. */
-export function roundCenters(round: RoundConfig, content: Size): Centers {
-  const poly = shapePolygon(round, content);
-  // Rectangles are symmetric, so the farthest-from-edges point is their middle.
-  const pole = round.shape.type === 'rect' ? computedCenter(round, content) : undefined;
-  return opticalCenters(poly, opticalSettings(round), pole);
+/**
+ * C, M and O for a placed shape. O (and M) come from the outline alone, as if the holes
+ * were filled, so O may sit inside a hole. C is the centroid of the actual material.
+ */
+export function shapeCenters(shape: PlacedShape, settings: OpticalConfig): Centers {
+  const { M, O } = opticalCenters(shape.outer, settings, shape.pole);
+  return { C: materialCentroid(shape.outer, shape.holes), M, O };
 }
