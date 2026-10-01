@@ -1,0 +1,190 @@
+/* Scene looks. Sizes and positions come from layout.config.ts (set inline in rem). */
+
+/* Simple centered column: ready, loading, calculating, score */
+.scene-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--screen-text);
+}
+
+.scene-title {
+  margin: 0;
+  font-weight: var(--weight-display-bold);
+  line-height: 1;
+}
+
+.scene-text {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-mono-bold);
+}
+
+.scene-text--note {
+  color: var(--screen-text-dim);
+}
+
+/* Ready sits above the closed doors */
+.scene-panel--ready {
+  color: var(--color-paper);
+}
+
+.scene-button {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display-bold);
+  line-height: 1;
+  color: var(--button-text);
+  background: var(--button-bg);
+  border: solid var(--button-border);
+  cursor: pointer;
+}
+
+.scene-button:hover {
+  filter: brightness(1.1);
+}
+
+.progress-track {
+  position: relative;
+  background: var(--progress-track);
+}
+
+.progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: var(--progress-fill);
+  transition-property: width;
+  transition-timing-function: linear;
+}
+
+.progress-fill.is-full {
+  width: 100%;
+}
+
+/* Round — matches the Figma "Round" frame */
+.round {
+  position: absolute;
+  inset: 0;
+  color: var(--screen-text);
+  font-weight: var(--weight-display-bold);
+  user-select: none;
+}
+
+.round-text-dim {
+  color: var(--screen-text-dim);
+}
+
+.round-progress,
+.round-timer {
+  position: absolute;
+  white-space: nowrap;
+}
+
+.round-timer {
+  font-variant-numeric: tabular-nums;
+}
+
+.round-progress__track {
+  position: absolute;
+  background: var(--progress-track);
+}
+
+.round-progress__bar {
+  height: 100%;
+  background: var(--progress-fill);
+}
+
+.round-shape {
+  position: absolute;
+  background: var(--shape-fill);
+  border: solid var(--shape-border);
+}
+
+.round-objective-label,
+.round-objective {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-mono-bold);
+}
+
+.round-objective-label {
+  color: var(--screen-text-dim);
+}
+
+.round-tooltip {
+  position: absolute;
+  white-space: pre;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-mono-regular);
+  color: var(--tooltip-text);
+  background: var(--tooltip-bg);
+  pointer-events: none;
+}
+
+.round-tooltip__title {
+  font-weight: var(--weight-mono-bold);
+}
+
+.round-tooltip--flip-x {
+  transform: translateX(-100%);
+}
+
+.round-tooltip--flip-y {
+  transform: translateY(-100%);
+}
+
+.round-tooltip--flip-x.round-tooltip--flip-y {
+  transform: translate(-100%, -100%);
+}
+
+/* Debug markers: C = cross, O = circle. Shown only with the debug toggle on. */
+.debug-marker {
+  position: absolute;
+  display: none;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+:root[data-debug-markers] .debug-marker {
+  display: block;
+}
+
+.debug-marker--computed {
+  background:
+    linear-gradient(var(--debug-marker-computed), var(--debug-marker-computed)) center / 100%
+      var(--marker-stroke) no-repeat,
+    linear-gradient(var(--debug-marker-computed), var(--debug-marker-computed)) center /
+      var(--marker-stroke) 100% no-repeat;
+}
+
+.debug-marker--optical {
+  border: var(--marker-stroke) solid var(--debug-marker-optical);
+  border-radius: 50%;
+}
+
+/* Score table */
+.score-table {
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.score-table th,
+.score-table td {
+  height: var(--row-height);
+  padding: 0 var(--cell-padding-x);
+  text-align: right;
+  border-bottom: 1px solid var(--table-rule);
+}
+
+.score-table th {
+  font-weight: var(--weight-mono-bold);
+  color: var(--screen-text-dim);
+}

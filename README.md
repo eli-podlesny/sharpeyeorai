@@ -15,7 +15,15 @@ npm install
 npm run dev
 ```
 
-Then open the address it prints (usually http://localhost:5173). Press the backtick key (`` ` ``) to toggle the debug overlay.
+Then open the address it prints (usually http://localhost:5173). Press the backtick key (`` ` ``) to toggle the debug panel.
+
+### Review shortcuts (URL parameters)
+
+| Parameter              | Effect                                           |
+| ---------------------- | ------------------------------------------------ |
+| `?debug=1`             | Opens the debug panel on load                    |
+| `?state=round&round=7` | Starts directly in a state (here: round 7)       |
+| `?seed=123`            | Fixes the random seed so a session is repeatable |
 
 ## Scripts
 

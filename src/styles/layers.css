@@ -79,6 +79,10 @@
   inset: 0;
 }
 
+.screen-content {
+  overflow: hidden;
+}
+
 .screen__base {
   background: var(--placeholder-screen);
 }
@@ -92,9 +96,13 @@
   pointer-events: none;
 }
 
-/* 5. doors — clipped to the screen viewport */
+/* 5. doors — clipped to the screen viewport. --door-duration is set by the doors control. */
 .layer--doors {
   overflow: hidden;
+}
+
+.layer--doors.is-open {
+  pointer-events: none; /* clicks reach the screen content */
 }
 
 .door {
@@ -103,6 +111,15 @@
   width: 50%;
   height: 100%;
   background: var(--placeholder-door);
+  transition: transform var(--door-duration, 0ms);
+}
+
+.is-open .door--left {
+  transform: translateX(-100%);
+}
+
+.is-open .door--right {
+  transform: translateX(100%);
 }
 
 .door--left {
@@ -155,9 +172,19 @@
 }
 
 .hud__version {
-  font-weight: var(--weight-display-medium);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-mono-regular);
   line-height: 1;
-  opacity: 0.7;
+  opacity: 0.64;
+}
+
+/* Over the screen box, above doors and frame; only its children take clicks */
+.hud__screen-slot {
+  position: absolute;
+}
+
+.hud__screen-slot > * {
+  pointer-events: auto;
 }
 
 /* Debug overlay — fixed screen pixels, not scaled with the stage */
@@ -172,10 +199,55 @@
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.5;
-  white-space: pre;
-  pointer-events: none;
+  max-width: calc(100vw - 16px);
 }
 
 .debug-overlay[hidden] {
   display: none;
+}
+
+.debug-overlay pre {
+  margin: 0;
+  font: inherit;
+}
+
+.debug-overlay__events {
+  margin-top: 6px !important;
+  opacity: 0.8;
+}
+
+.debug-overlay__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.debug-overlay__button,
+.debug-overlay__input {
+  font: inherit;
+  color: var(--debug-text);
+  background: var(--debug-button-bg);
+  border: 1px solid transparent;
+  padding: 1px 6px;
+}
+
+.debug-overlay__button {
+  cursor: pointer;
+}
+
+.debug-overlay__button.is-active {
+  border-color: var(--debug-button-active);
+}
+
+.debug-overlay__input {
+  width: 4em;
+}
+
+.debug-overlay__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
 }

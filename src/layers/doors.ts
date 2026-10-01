@@ -1,11 +1,17 @@
 import { layout } from '../config/layout.config';
 import { createLayerElement, createPlaceholderLabel, placeBox } from './placeholder';
 
+/** Opens and closes the blast doors. */
+export interface DoorsControl {
+  /** Slides the doors open or shut over `durationMs` (0 = instantly). */
+  setOpen(open: boolean, durationMs: number): void;
+}
+
 /**
  * Left and right blast-door halves, clipped to the screen viewport.
- * Each half fills 50% of the viewport. Opening (sliding apart) arrives in a later version.
+ * Each half fills 50% of the viewport and slides out sideways to open.
  */
-export function createDoorsLayer(): HTMLElement {
+export function createDoorsLayer(): { el: HTMLElement; control: DoorsControl } {
   const el = createLayerElement('doors');
   placeBox(el, layout.screen);
 
@@ -16,5 +22,12 @@ export function createDoorsLayer(): HTMLElement {
     door.append(createPlaceholderLabel(`doors · ${side}`));
     el.append(door);
   }
-  return el;
+
+  const control: DoorsControl = {
+    setOpen(open, durationMs) {
+      el.style.setProperty('--door-duration', `${durationMs}ms`);
+      el.classList.toggle('is-open', open);
+    },
+  };
+  return { el, control };
 }
