@@ -44,9 +44,11 @@ export interface RoundSequenceConfig {
   objectiveDelayMs: number;
   /** …over this time (slide distance: `layout.round.objectiveSlide`). */
   objectiveInMs: number;
-  /** 4. Pause after the click (marker and tooltip showing). */
+  /** 3. On the click the objective fades out over this time. */
+  objectiveOutMs: number;
+  /** 4. The shape stays this long after the click (marker and tooltip showing). */
   postClickWaitMs: number;
-  /** 5. Objective, shape and marker fade out together. */
+  /** 5. Shape and marker fade out over this time. */
   outroFadeMs: number;
   /** 6. Empty screen between one round's fade-out and the next round's fade-in. */
   betweenRoundsMs: number;
@@ -114,7 +116,8 @@ export const gameConfig: GameConfig = {
     shapeFadeInMs: 400,
     objectiveDelayMs: 200,
     objectiveInMs: 200,
-    postClickWaitMs: 400,
+    objectiveOutMs: 200,
+    postClickWaitMs: 500,
     outroFadeMs: 400,
     betweenRoundsMs: 400,
     reducedMotionFadeMs: 150,

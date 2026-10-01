@@ -6,7 +6,8 @@ const config: RoundSequenceConfig = {
   shapeFadeInMs: 400,
   objectiveDelayMs: 200,
   objectiveInMs: 200,
-  postClickWaitMs: 400,
+  objectiveOutMs: 200,
+  postClickWaitMs: 500,
   outroFadeMs: 400,
   betweenRoundsMs: 400,
   reducedMotionFadeMs: 150,
@@ -23,7 +24,8 @@ describe('round sequence', () => {
       objectiveDelayMs: 200,
       objectiveFadeInMs: 200,
       objectiveSlideMs: 200,
-      postClickWaitMs: 400,
+      objectiveFadeOutMs: 200,
+      postClickWaitMs: 500,
       outroFadeMs: 400,
       betweenRoundsMs: 400,
       fadeEasing: 'ease',
@@ -45,7 +47,8 @@ describe('round sequence', () => {
     expect(s.objectiveFadeInMs).toBe(150);
     expect(s.objectiveSlideMs).toBe(0);
     expect(s.outroFadeMs).toBe(150);
-    expect(s.postClickWaitMs).toBe(400);
+    expect(s.objectiveFadeOutMs).toBe(150);
+    expect(s.postClickWaitMs).toBe(500);
     expect(s.betweenRoundsMs).toBe(400);
   });
 

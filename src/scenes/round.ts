@@ -161,6 +161,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
       const result = createResult(roundId, point, latencyMs, contentSize);
       hud.setTime(latencyMs);
       playMotion.append(createClickMarker(point));
+      fadeTo(objectiveText, 0, seq.objectiveFadeOutMs, seq.fadeEasing);
 
       bus.emit('round.click', { roundId, content: point, local: result.click, latencyMs });
       session.results.push(result);
@@ -168,14 +169,13 @@ export function createRoundScene(ctx: SceneContext): Scene {
       showLoggedTooltip(result, root);
       timeline?.onClick?.(tl, { content: point, latencyMs });
 
-      // 4. Wait; 5. objective, shape and marker fade out, the shape zooming out in place
+      // 4. Wait; 5. shape and marker fade out, the shape zooming out in place
       // (the tooltip stays).
       scope.timeout(() => {
         stage = 'outro';
         bus.emit('round.outro.start', { roundId });
         fadeTo(play, 0, seq.outroFadeMs, seq.fadeEasing);
         moveTo(playMotion, { scale: L.shapeEnter.scale }, seq.shapeMoveOutMs, seq.fadeEasing);
-        fadeTo(objectiveText, 0, seq.outroFadeMs, seq.fadeEasing);
 
         scope.timeout(() => {
           finished = true;

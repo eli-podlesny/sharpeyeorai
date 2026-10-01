@@ -6,9 +6,9 @@ import type { RoundSequenceConfig } from '../config/game.config';
  *   1. the shape fades in, rising and zooming in; a moment later the objective fades in and slides up
  *      into its bottom position
  *   2. the round timer starts once the shape is fully visible (clicks before are ignored)
- *   3. the click: marker + tooltip
+ *   3. the click: marker + tooltip; the objective starts fading out right away
  *   4. wait
- *   5. objective, shape and marker fade out together, the shape zooming out in place
+ *   5. shape and marker fade out together, the shape zooming out in place
  *   6. pause, then the next round starts at step 1
  *
  * Step 1 counts from the start of the round; steps 4–6 count from the click.
@@ -23,6 +23,7 @@ export interface RoundSequence {
   objectiveFadeInMs: number;
   /** 0 with reduced motion: the objective appears in place. */
   objectiveSlideMs: number;
+  objectiveFadeOutMs: number;
   postClickWaitMs: number;
   outroFadeMs: number;
   betweenRoundsMs: number;
@@ -45,6 +46,7 @@ export function buildRoundSequence(
     objectiveDelayMs: config.objectiveDelayMs,
     objectiveFadeInMs: fade(config.objectiveInMs),
     objectiveSlideMs: reducedMotion ? 0 : config.objectiveInMs,
+    objectiveFadeOutMs: fade(config.objectiveOutMs),
     postClickWaitMs: config.postClickWaitMs,
     outroFadeMs: fade(config.outroFadeMs),
     betweenRoundsMs: config.betweenRoundsMs,
