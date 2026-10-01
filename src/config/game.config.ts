@@ -147,7 +147,7 @@ export const gameConfig: GameConfig = {
     shapeFadeInMs: 400,
     loggedTooltipMs: 500,
     shapePulseMs: 1000,
-    postClickWaitMs: 800,
+    postClickWaitMs: 1600,
     outroFadeMs: 400,
     betweenRoundsMs: 400,
     reducedMotionFadeMs: 150,
