@@ -32,7 +32,6 @@ import {
 import { h } from '../ui/dom';
 import { addShapeMark, createShapeSvg, updateShapeSvg } from '../ui/shapeSvg';
 import { commitStyles, fadeTo, moveTo, prefersReducedMotion } from '../ui/motion';
-import { createChatStack, showChatSequence } from '../ui/chatMessage';
 import { showSampleTooltip, type SampleData } from '../ui/sampleTooltip';
 
 const { round: L } = layout;
@@ -223,24 +222,10 @@ export function createRoundScene(ctx: SceneContext): Scene {
       else if (endNow) startOutro();
     };
 
-    // 0. A round may open with a chat (10: "What's going on?!"…; 11: "…Hurry Up!"; 12:
-    // "Last chance...", lit in the dark with the round's content, the triangle waiting
-    // `shapeDelayMs` for it).
+    // 0. A round may open with a chat (src/ui/chatDirector.ts listens for this); round 12's
+    // triangle waits `shapeDelayMs` for its "Last chance...".
     bus.emit('round.intro.start', { roundId });
     timeline?.onIntroStart?.(tl);
-    if (round.chat) {
-      let anchor: HTMLElement | undefined;
-      if (round.aboveDarkness) {
-        anchor = createChatStack();
-        root.append(anchor);
-      }
-      showChatSequence({
-        variant: round.chat.variant,
-        lines: round.chat.lines.map((key) => copy.chat[key]),
-        holdMs: round.chat.holdMs,
-        anchor,
-      });
-    }
     const shapeStartMs = round.shapeDelayMs ?? 0;
 
     // 1. The shape fades in, rising and zooming in.

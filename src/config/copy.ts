@@ -47,9 +47,60 @@ export const copy = {
     brokeSomething: 'Did we break anything?',
     /** Round 11, as the doors start to close. */
     doorsClosing: 'Oh, the doors are closing fast',
+    reallyClosing: "They're really closing!",
     hurryUp: 'Hurry Up!',
     /** Before round 12's triangle, lit in the dark. */
     lastChance: 'Last chance...',
+  },
+  /**
+   * Chat pools (src/ui/chatDirector.ts): one entry is picked at random, never twice in a
+   * row of the same pool until all were used. An entry of `idle` is a little chat (up to 3
+   * lines, 1.2s apart); the others are single lines.
+   */
+  chatPools: {
+    /** No click 7s into a round. */
+    idle: [
+      ['Ptss...', 'Wake Up'],
+      ['Hello?', 'Anyone in there?'],
+      ['Is it frozen?', 'Blink if you can hear us'],
+      ['Take your time.', 'We have all day.', "We don't."],
+      ['Subject idle.', 'Poking the subject...', 'Poke.'],
+    ],
+    /** A click within 1s of the shape showing. */
+    fast: [
+      'Whoa, easy there',
+      'Speedrun?',
+      'That was quick. Suspiciously quick.',
+      'Did you even look?',
+      'Fast hands.',
+      'Blink and you miss it',
+      "Someone's eager",
+      'Lightning reflexes, huh?',
+      'Faster than our sensors',
+      'Was that a guess?',
+      'Too fast to be human?',
+      'Slow down, cowboy',
+    ],
+    /** A click outside the shape. */
+    miss: [
+      'Missed that haha',
+      'Are you blind or what?',
+      "That's not even on the shape",
+      'Wrong spot, genius',
+      'The shape is over there',
+      'Bold choice. Wrong, but bold.',
+      'Did your hand slip?',
+      'Clicking the void again?',
+      'Nope. Outside.',
+      'We saw that.',
+    ],
+    /** After round 3. */
+    easy: [
+      'Seems easy, huh?',
+      'Warming up nicely',
+      "Too easy? It won't last.",
+      'Enjoying yourself?',
+    ],
   },
   /** Objective lines, referenced by `copyKey` in rounds.config.ts. */
   objectives: {

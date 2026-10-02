@@ -35,6 +35,14 @@ export interface ChatMessage {
 
 let defaultStack: HTMLElement | null = null;
 
+/** Every message on screen, to clear them (the alert) or drop the oldest (the cap). */
+const live = new Map<HTMLElement, ChatMessage>();
+
+/** Removes every message now, in every stack (the alert cuts in). */
+export function clearChatMessages(): void {
+  for (const message of [...live.values()]) message.hide(true);
+}
+
 /**
  * The chat spot: a box over the screen opening (`openingBox`, inside the screen, above its
  * content and below the doors) holding a stack in its bottom-right corner, where messages
@@ -94,6 +102,14 @@ export function showChatMessage(options: ChatMessageOptions): ChatMessage {
   el.style.opacity = '0';
   // The new message goes in at the bottom and pushes the others up: they glide there
   // (`pushMs`) from where they were, instead of jumping.
+  // At most `maxVisible` at once: the oldest goes, at once.
+  const shown = [...stack.children].filter((c): c is HTMLElement => live.has(c as HTMLElement));
+  for (const old of shown.slice(
+    0,
+    Math.max(shown.length - gameConfig.chatMessage.maxVisible + 1, 0),
+  )) {
+    live.get(old)?.hide(true);
+  }
   const before = new Map([...stack.children].map((c) => [c, c.getBoundingClientRect().top]));
   stack.append(el);
   if (!reduced) {
@@ -115,6 +131,7 @@ export function showChatMessage(options: ChatMessageOptions): ChatMessage {
   const remove = (): void => {
     fit.disconnect();
     el.remove();
+    live.delete(el);
   };
   const fadeOut = (): void => {
     if (ms === 0) return remove();
@@ -137,7 +154,9 @@ export function showChatMessage(options: ChatMessageOptions): ChatMessage {
   if (options.durationMs !== undefined) {
     timer = window.setTimeout(() => hide(), Math.max(options.durationMs, minVisibleMs));
   }
-  return { el, hide };
+  const message = { el, hide };
+  live.set(el, message);
+  return message;
 }
 
 /** Pure: when each line of a chat sequence shows, and how long it stays so all go together. */
@@ -157,29 +176,50 @@ export function chatSequenceTimes(
  * A little conversation: one message every `chatMessage.sequenceIntervalMs`, each pushing
  * the ones before it up; once the last is in, the whole chat stays `holdMs` and fades out
  * together. Runs on its own timers, so it plays out even when the round ends first.
+ * `cancel()` drops the lines not shown yet; `pending` tells whether any are left.
  */
+export interface ChatSequence {
+  readonly pending: boolean;
+  cancel(): void;
+}
+
 export function showChatSequence(options: {
   variant: ChatVariant;
   lines: readonly string[];
   holdMs?: number;
   anchor?: HTMLElement;
-}): void {
+  /** The first line comes this long from now. */
+  delayMs?: number;
+}): ChatSequence {
   const { sequenceIntervalMs, sequenceHoldMs } = gameConfig.chatMessage;
   const times = chatSequenceTimes(
     options.lines.length,
     sequenceIntervalMs,
     options.holdMs ?? sequenceHoldMs,
   );
-  options.lines.forEach((title, i) => {
-    const t = times[i];
-    if (!t) return;
-    window.setTimeout(() => {
-      showChatMessage({
-        variant: options.variant,
-        title,
-        anchor: options.anchor,
-        durationMs: t.durationMs,
-      });
-    }, t.atMs);
+  let left = options.lines.length;
+  const timers = options.lines.map((title, i) => {
+    const t = times[i] ?? { atMs: 0, durationMs: sequenceHoldMs };
+    return window.setTimeout(
+      () => {
+        left--;
+        showChatMessage({
+          variant: options.variant,
+          title,
+          anchor: options.anchor,
+          durationMs: t.durationMs,
+        });
+      },
+      (options.delayMs ?? 0) + t.atMs,
+    );
   });
+  return {
+    get pending() {
+      return left > 0;
+    },
+    cancel() {
+      for (const id of timers) window.clearTimeout(id);
+      left = 0;
+    },
+  };
 }

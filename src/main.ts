@@ -25,6 +25,8 @@ import { allArtImages } from './layers/art';
 import { createScenes } from './scenes';
 import { initCursors } from './ui/cursors';
 import { initDebugOverlay } from './ui/debugOverlay';
+import { createChatStack } from './ui/chatMessage';
+import { createChatDirector } from './ui/chatDirector';
 import { createScreenCursor } from './ui/screenCursor';
 
 const app = document.querySelector<HTMLElement>('#app');
@@ -85,6 +87,12 @@ createParallax([
 initCursors();
 createNoise();
 createScreenCursor(bus);
+
+// What the chat says and when (alert, round chats, idle, fast, missed). Round 12's chat
+// shows lit, above the darkness, in the spotlight box.
+const litChat = createChatStack();
+layers.spotlight.append(litChat);
+createChatDirector(bus, litChat);
 
 initDebugOverlay({ game, bus, fx, open: params.debug, outlineHost: layers.hudUnit });
 

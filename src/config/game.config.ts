@@ -97,6 +97,14 @@ export interface ChatMessageConfig {
   /** Round chats (rounds 10–12): one line every `sequenceIntervalMs`; `sequenceHoldMs` after the last, all fade out. */
   sequenceIntervalMs: number;
   sequenceHoldMs: number;
+  /** At most this many messages show at once in a stack; a new one removes the oldest. */
+  maxVisible: number;
+  /** The chat director (src/ui/chatDirector.ts): no click this long into a round (round clock) → an idle chat. */
+  idleAfterMs: number;
+  /** A click this soon after the shape is fully visible → a "too fast" line. */
+  fastBeforeMs: number;
+  /** After this round's outro, an "easy, huh?" line. */
+  easyAfterRound: number;
 }
 
 /**
@@ -364,6 +372,10 @@ export const gameConfig: GameConfig = {
     pushMs: 200,
     sequenceIntervalMs: 1200,
     sequenceHoldMs: 4000,
+    maxVisible: 6,
+    idleAfterMs: 7000,
+    fastBeforeMs: 1000,
+    easyAfterRound: 3,
   },
   sampleTooltipFadeMs: 120,
   screenEntrance: {

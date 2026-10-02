@@ -29,8 +29,8 @@ describe('chat sequences', () => {
     }
   });
 
-  it('rounds 10 and 11 have their two-line chats', () => {
+  it('rounds 10 and 11 have their chats', () => {
     expect(getRound(10).chat?.lines).toEqual(['whatsGoingOn', 'brokeSomething']);
-    expect(getRound(11).chat?.lines).toEqual(['doorsClosing', 'hurryUp']);
+    expect(getRound(11).chat?.lines).toEqual(['doorsClosing', 'reallyClosing', 'hurryUp']);
   });
 });

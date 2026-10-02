@@ -72,12 +72,17 @@ export type RoundConfig = {
   /** Scene effects tied to this round (src/fx/sceneController.ts); the scene mode comes from `gameConfig.fx.modeByRound`. */
   effects: readonly RoundEffect[];
   /**
-   * A chat as the round starts (rounds 10–12), at the chat spot under the doors: one line
-   * every `chatMessage.sequenceIntervalMs`, all fading out together `holdMs` (default
-   * `chatMessage.sequenceHoldMs`) after the last. In a round above the darkness it shows
+   * A chat as the round starts (rounds 10–12; `delayMs` later), at the chat spot under the
+   * doors: one line every `chatMessage.sequenceIntervalMs`, all fading out together `holdMs`
+   * (default `chatMessage.sequenceHoldMs`) after the last. In a round above the darkness it shows
    * lit, with the round's content.
    */
-  chat?: { lines: readonly ChatKey[]; variant: 'light' | 'orange'; holdMs?: number };
+  chat?: {
+    lines: readonly ChatKey[];
+    variant: 'light' | 'orange';
+    holdMs?: number;
+    delayMs?: number;
+  };
   /** The shape starts fading in this long after the round starts (round 12: time to read its message). */
   shapeDelayMs?: number;
   /** A dark question mark on the shape, at its centroid C, in the logo font (round 12). */
@@ -370,7 +375,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     // Still dropped and glitching; the doors close and the scene goes black over the same 8s.
     effects: ['stayDropped', 'glitchConstant', 'closingDoors', 'alertFocus'],
     // The closing doors cover the chat as they come in.
-    chat: { lines: ['doorsClosing', 'hurryUp'], variant: 'light' },
+    // 1s in, so it feels live.
+    chat: { lines: ['doorsClosing', 'reallyClosing', 'hurryUp'], variant: 'light', delayMs: 1000 },
   },
   12: {
     // An even triangle, shown for 1s (fading over the last 200ms). Clicks count for 4s; a
