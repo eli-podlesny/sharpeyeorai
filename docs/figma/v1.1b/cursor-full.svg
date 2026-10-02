@@ -1,0 +1,14 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="full">
+<rect width="48" height="48" fill="#D1D1D1"/>
+<rect id="left up" x="14" y="16" width="2" height="4" fill="#FF561E"/>
+<rect id="left bottom" x="14" y="28" width="2" height="4" fill="#FF561E"/>
+<rect id="top left" x="16" y="14" width="4" height="2" fill="#FF561E"/>
+<rect id="bottom left" x="16" y="32" width="4" height="2" fill="#FF561E"/>
+<rect id="top right" x="28" y="14" width="4" height="2" fill="#FF561E"/>
+<rect id="bottom right" x="28" y="32" width="4" height="2" fill="#FF561E"/>
+<rect id="right up" x="32" y="16" width="2" height="4" fill="#FF561E"/>
+<rect id="right bottom" x="32" y="28" width="2" height="4" fill="#FF561E"/>
+<circle id="center-dot" cx="24" cy="24" r="2" stroke="#FF561E" stroke-width="2"/>
+</g>
+</svg>
