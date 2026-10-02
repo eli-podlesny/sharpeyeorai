@@ -7,7 +7,13 @@ import { contentSize, toContentCoords } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
 import type { Point } from '../core/stage';
 import { rem, setRem } from '../core/units';
-import { createRoundClock, DEBUG_STEP_MS, roundDebug } from '../rounds/clock';
+import {
+  createRoundClock,
+  DEBUG_STEP_MS,
+  liveRound,
+  roundDebug,
+  type LiveRound,
+} from '../rounds/clock';
 import type { PlacedShape } from '../rounds/geometry';
 import { isMoving, shapeAt } from '../rounds/motion';
 import { shapeCenters, type Centers } from '../rounds/opticalCenter';
@@ -128,7 +134,8 @@ export function createRoundScene(ctx: SceneContext): Scene {
     }
 
     root.append(play);
-    scope.mount(ctx.content, root);
+    // Round 12 renders above the scene darkness; clicks still go to screen-content below.
+    scope.mount(round.aboveDarkness ? ctx.spotlight : ctx.content, root);
     commitStyles(root);
 
     hud.setVisible(true, 0);
@@ -145,11 +152,11 @@ export function createRoundScene(ctx: SceneContext): Scene {
     const syncHidden = (): void => clock.setPaused('hidden', document.hidden, performance.now());
     syncHidden();
     document.addEventListener('visibilitychange', syncHidden);
-    const live = { roundId, elapsedMs: () => clock.elapsed(performance.now()) };
-    roundDebug.live = live;
+    const live: LiveRound = { roundId, elapsedMs: () => clock.elapsed(performance.now()) };
+    liveRound.current = live;
     scope.onDispose(() => {
       document.removeEventListener('visibilitychange', syncHidden);
-      if (roundDebug.live === live) roundDebug.live = null;
+      if (liveRound.current === live) liveRound.current = null;
     });
 
     const timeline = round.timeline;
@@ -204,15 +211,19 @@ export function createRoundScene(ctx: SceneContext): Scene {
       }, seq.outroFadeMs + seq.betweenRoundsMs);
     };
 
-    /** The round is decided: motion freezes, the pulse stops, and the round heads for its outro. */
-    const decide = (result: RoundResult, outroAfterMs: number): void => {
+    /**
+     * The round is decided: motion freezes, the pulse stops, and the round heads for its outro.
+     * Fixed-length rounds wait for their end on the clock instead (see the frame loop), unless
+     * `endNow` (a click in a round with `clickEndsRound`).
+     */
+    const decide = (result: RoundResult, outroAfterMs: number, endNow = false): void => {
       decided = true;
       shape.classList.add('is-pulse-stopped');
       if (decoy) decoy.hidden = true;
       session.results.push(result);
       bus.emit('round.logged', { result });
-      // Fixed-length rounds wait for their end on the clock instead (see the frame loop).
       if (fixedEnd === null) scope.timeout(startOutro, outroAfterMs);
+      else if (endNow) startOutro();
     };
 
     // 1. The shape fades in, rising and zooming in.
@@ -301,8 +312,8 @@ export function createRoundScene(ctx: SceneContext): Scene {
         scope.timeout(() => tip.remove(), seq.loggedTooltipMs);
       }
       timeline?.onClick?.(tl, { content: point, latencyMs });
-      // 4. Wait, then the outro.
-      decide(result, seq.postClickWaitMs);
+      // 4. Wait, then the outro (round 12: the outro at once).
+      decide(result, seq.postClickWaitMs, round.clickEndsRound === true);
     });
   });
 }

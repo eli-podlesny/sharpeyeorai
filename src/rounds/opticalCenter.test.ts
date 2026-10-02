@@ -22,6 +22,7 @@ function makeRound(overrides: Partial<RoundConfig> = {}): RoundConfig {
     showObjective: true,
     clickFeedback: true,
     effects: [],
+    aboveDarkness: false,
     copyKey: 'objective.shape',
     ...overrides,
   };

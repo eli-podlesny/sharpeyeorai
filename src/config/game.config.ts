@@ -1,3 +1,5 @@
+import type { SceneMode } from '../core/state';
+
 /**
  * Gameplay timing and flow. Tune values here only; scenes read them.
  */
@@ -38,6 +40,96 @@ export interface GameConfig {
   optical: OpticalConfig;
   scoring: ScoringConfig;
   persona: PersonaConfig;
+  /** Scene effects (src/fx/): breathing, glitch, alert, screen drop, blackout. */
+  fx: FxConfig;
+}
+
+/** Background breathing strength: how far the image is pushed around, and how fast. */
+export interface BreathingPreset {
+  /** Largest displacement, in background-image px. */
+  amplitudePx: number;
+  /** Speed multiplier of the slow noise (1 = base speed). */
+  speed: number;
+}
+
+/** A repeating glitch: `offMs` calm first (a round never opens on a glitch), then `onMs` of glitch. */
+export interface GlitchPattern {
+  onMs: number;
+  offMs: number;
+}
+
+export interface FxConfig {
+  /**
+   * Scene mode for each round (index 0 = round 1). The mode of round N+1 starts at round
+   * N's outro end, so "after round 3's outro" the scene is distorted.
+   */
+  modeByRound: readonly SceneMode[];
+  breathing: {
+    subtle: BreathingPreset;
+    strong: BreathingPreset;
+    /** Switching presets (or on/off) eases over this time. */
+    transitionMs: number;
+    /** Base noise cycle: one slow swell takes about this long at speed 1. */
+    cycleMs: number;
+    /** The WebGL canvas never renders above this device-pixel ratio (performance). */
+    maxPixelRatio: number;
+  };
+  glitch: {
+    /** Rounds 7–8: a short burst every 4s. Rounds 10–11 glitch without pause instead. */
+    slow: GlitchPattern;
+    /** Round 9: a short burst every 2s. */
+    fast: GlitchPattern;
+    /** Safety: glitch bursts never start more often than this per second. */
+    maxFlashesPerSecond: number;
+    /** Horizontal slices shifted sideways per burst. */
+    minSlices: number;
+    maxSlices: number;
+    /** Slice height range, in screen px. */
+    sliceMinHeightPx: number;
+    sliceMaxHeightPx: number;
+    /** Largest sideways shift of a slice, in screen px. */
+    maxShiftPx: number;
+    /** Whole-screen jitter, in screen px. */
+    jitterPx: number;
+    /** Slices and jitter are re-rolled this often within a burst (no brightness change). */
+    rerollMs: number;
+    /** Screen opacity during a burst (the slight drop). */
+    opacity: number;
+    /** Opacity of the noise overlay during a burst. */
+    noiseOpacity: number;
+    /** One burst from the debug panel. */
+    debugBurstMs: number;
+    /** Reduced motion: no slices or noise, the screen only dims to this opacity… */
+    reducedMotionOpacity: number;
+    /** …fading over this time. */
+    reducedMotionFadeMs: number;
+  };
+  alert: {
+    /** One full pulse #111 → orange → #111. */
+    periodMs: number;
+    /** Alert fades in over the room color (and out again) over this time. */
+    rampMs: number;
+    /** The glow ellipse's opacity at full alert. Its blur radius is `layout.alertGlow.blur`. */
+    glowOpacity: number;
+  };
+  drop: {
+    /** After round 9's click: the assembly falls over this time… */
+    fallMs: number;
+    /** …then shakes as it lands, over this time. */
+    shakeMs: number;
+    /** It returns to place over this time (debug toggle; at the end it goes home in the dark, at once). */
+    returnMs: number;
+    /** Reduced motion: a short, plain move each way. */
+    reducedMotionMs: number;
+  };
+  blackout: {
+    /** Round 11 darkens from 0 to this level by its deadline, as the doors close (1 = black). Round 12 stays there. */
+    closingDarkness: number;
+    /** After an early click in round 11, doors and darkness hurry to the end over this time. */
+    speedUpMs: number;
+    /** After a click in round 12 (which ends the game at once), the black lasts this long before the lights return on the score. */
+    afterClickMs: number;
+  };
 }
 
 /**
@@ -127,8 +219,8 @@ export interface PersonaConfig {
 export const gameConfig: GameConfig = {
   startMode: 'button',
   autoStartDelayMs: 1500,
-  doorOpenMs: 1200,
-  doorCloseMs: 1200,
+  doorOpenMs: 2000,
+  doorCloseMs: 2000,
   loadingStartBeforeDoorsMs: 300,
   loadingMs: 2500,
   loadingFadeOutMs: 200,
@@ -154,9 +246,9 @@ export const gameConfig: GameConfig = {
     fadeEasing: 'ease',
     slideEasing: 'ease-out',
   },
-  endDarknessMs: 3000,
+  endDarknessMs: 1000,
   endDarknessFadeMs: 300,
-  scoreCountUpMs: 1200,
+  scoreCountUpMs: 2500,
   copiedTooltipMs: 2000,
   shapePointSpacingPx: 3,
   optical: {
@@ -179,5 +271,61 @@ export const gameConfig: GameConfig = {
     humanity: { machine: 0.35, human: 0.65 },
     speed: { fast: 1500, slow: 4000 },
     algorithmTotal: 9800,
+  },
+  fx: {
+    modeByRound: [
+      'normal', // 1
+      'normal', // 2
+      'normal', // 3
+      'distorted', // 4
+      'distorted', // 5
+      'distorted', // 6
+      'distorted', // 7
+      'alert', // 8
+      'alert', // 9
+      'alert', // 10
+      'blackout', // 11
+      'blackout', // 12
+    ],
+    breathing: {
+      subtle: { amplitudePx: 4, speed: 1 },
+      strong: { amplitudePx: 10, speed: 2 },
+      transitionMs: 2000,
+      cycleMs: 9000,
+      maxPixelRatio: 1.5,
+    },
+    glitch: {
+      slow: { onMs: 120, offMs: 3880 },
+      fast: { onMs: 120, offMs: 1880 },
+      maxFlashesPerSecond: 3,
+      minSlices: 2,
+      maxSlices: 4,
+      sliceMinHeightPx: 6,
+      sliceMaxHeightPx: 40,
+      maxShiftPx: 12,
+      jitterPx: 1.5,
+      rerollMs: 90,
+      opacity: 0.95,
+      noiseOpacity: 0.08,
+      debugBurstMs: 400,
+      reducedMotionOpacity: 0.8,
+      reducedMotionFadeMs: 150,
+    },
+    alert: {
+      periodMs: 2400,
+      rampMs: 2000,
+      glowOpacity: 0.16,
+    },
+    drop: {
+      fallMs: 420,
+      shakeMs: 380,
+      returnMs: 800,
+      reducedMotionMs: 300,
+    },
+    blackout: {
+      closingDarkness: 1,
+      speedUpMs: 800,
+      afterClickMs: 3000,
+    },
   },
 };

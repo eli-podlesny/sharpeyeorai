@@ -64,15 +64,23 @@ export function createRoundClock(): RoundClock {
   };
 }
 
+/** The round being played: its id and its round clock. */
+export interface LiveRound {
+  roundId: number;
+  /** Round clock now (0 until the shape is fully visible). */
+  elapsedMs: () => number;
+}
+
 /**
- * Shared between the round scene and the debug panel: the panel pauses or steps motion,
- * and reads the live round's clock.
+ * The round being played, if any. Set by the round scene; read by the debug panel and the
+ * scene effects (rounds 11–12 follow the round clock, so a hidden tab pauses them too).
  */
+export const liveRound: { current: LiveRound | null } = { current: null };
+
+/** Shared between the round scene and the debug panel: the panel pauses or steps motion. */
 export const roundDebug: {
   /** Motion paused from the debug panel. */
   paused: boolean;
   /** Frames to step forward while paused; the round scene uses them up. */
   steps: number;
-  /** The round being played, if any. */
-  live: { roundId: number; elapsedMs: () => number } | null;
-} = { paused: false, steps: 0, live: null };
+} = { paused: false, steps: 0 };

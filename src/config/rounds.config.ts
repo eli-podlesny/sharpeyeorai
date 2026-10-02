@@ -10,6 +10,27 @@ export type { ShapeConfig } from '../rounds/shapes';
 
 export type RoundPhase = 1 | 2 | 3 | 4;
 
+/**
+ * Effects a round switches on (timings in `gameConfig.fx`):
+ * - `glitchSlow` / `glitchFast`: a short screen glitch every 4s (rounds 7–8) / every 2s (round 9).
+ * - `glitchConstant`: the screen glitches without pause (rounds 10–11).
+ * - `dropOnClick`: the screen assembly drops, with a shake as it lands, right after the
+ *   click (round 9).
+ * - `stayDropped`: the screen stays dropped (rounds 10–12). It goes home at the end of the
+ *   game, in the dark (or at once when a debug jump lands on a round without either tag).
+ * - `closingDoors`: doors close and the scene goes black over the time limit (round 11).
+ * - `stayDark`: the scene stays black; only the round's own content shows; the doors close
+ *   over the idle time (round 12).
+ */
+export type RoundEffect =
+  | 'glitchSlow'
+  | 'glitchFast'
+  | 'glitchConstant'
+  | 'dropOnClick'
+  | 'stayDropped'
+  | 'closingDoors'
+  | 'stayDark';
+
 /** Shape fill color: the default graphite, or the light logo color (round 12). Colors are tokens. */
 export type ShapeFill = 'default' | 'light';
 
@@ -37,13 +58,18 @@ export type RoundConfig = {
   motions?: readonly RoundMotion[];
   /** The shape is only visible for a while (round 12). */
   hideAfter?: HideAfter;
+  /** A fixed-length round that still ends right after a click (round 12: no wait for the idle time). */
+  clickEndsRound?: boolean;
   /** A blinking dot on C (or O) right after the shape is visible (round 5). */
   decoy?: DecoyConfig;
   /** The objective line shows during this round (round 12 hides it). */
   showObjective: boolean;
   /** Click marker and "Sample 0X, logged" tooltip after the click (round 12 shows neither). */
   clickFeedback: boolean;
-  effects: string[]; // effect ids, empty for now
+  /** Scene effects tied to this round (src/fx/sceneController.ts); the scene mode comes from `gameConfig.fx.modeByRound`. */
+  effects: readonly RoundEffect[];
+  /** The round renders above the scene darkness, fully lit (round 12's smiley). */
+  aboveDarkness: boolean;
   copyKey: ObjectiveKey;
   /** Hooks into the round sequence (moving shapes, glitches…). Empty for now. */
   timeline?: RoundTimeline;
@@ -252,10 +278,11 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     // An oval swaying left and right on a figure-eight, never leaving the free area.
     shape: { type: 'ellipse', width: 240, height: 150 },
     motions: [
-      { type: 'wave', periodMs: 6000, ampY: 40, phaseDeg: 0, margin: layout.round.motionMargin },
+      { type: 'wave', periodMs: 9000, ampY: 40, phaseDeg: 0, margin: layout.round.motionMargin },
     ],
   },
-  7: { ...largeRect(), falloffRadius: REFERENCE_FALLOFF_PX },
+  // A short screen glitch every 4s.
+  7: { ...largeRect(), falloffRadius: REFERENCE_FALLOFF_PX, effects: ['glitchSlow'] },
   8: {
     // An irregular seven-point star that jumps somewhere new every 1.2s.
     shape: {
@@ -267,6 +294,7 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
       innerRadii: [0.46, 0.62, 0.38, 0.56, 0.42, 0.66, 0.5],
     },
     motions: [{ type: 'jump', everyMs: 1200, margin: layout.round.motionMargin }],
+    effects: ['glitchSlow'],
   },
   9: {
     // A big circle with a medium and a small one bulging out of its upper right, merged into
@@ -281,6 +309,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     },
     // Each circle drifts and swells a little, so the merged outline slowly morphs.
     motions: [MORPH],
+    // A short screen glitch every 2s. Right after the click, the screen drops.
+    effects: ['glitchFast', 'dropOnClick'],
   },
   10: {
     // A five-point star, stretched sideways.
@@ -289,23 +319,33 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     offset: { x: -120, y: DEFAULT_OFFSET.y },
     // One full turn, clockwise, every 20s.
     motions: [{ type: 'spin', periodMs: 20000 }],
+    // The screen is still dropped and glitches without pause.
+    effects: ['stayDropped', 'glitchConstant'],
   },
   11: {
     // Shrinks; the falloff follows the current size, so late clicks are judged more strictly.
     shape: { type: 'rect', width: SHRINK_FROM_PX, height: SHRINK_FROM_PX },
     motions: [{ type: 'shrink', endScale: SHRINK_TO_PX / SHRINK_FROM_PX, durationMs: SHRINK_MS }],
     timeLimitMs: SHRINK_MS,
+    // Still dropped and glitching; the doors close and the scene goes black over the same 10s.
+    effects: ['stayDropped', 'glitchConstant', 'closingDoors'],
   },
   12: {
-    // Shown for 1s (fading over the last 200ms). Clicks count for 5s, then 4s of ignored
-    // input, click or not. No objective line, no click marker, no tooltip: just the smile.
-    shape: { type: 'smiley', diameter: 100 },
+    // An even triangle, shown for 1s (fading over the last 200ms). Clicks count for 5s. With
+    // no click, 4s of ignored input follow (9s in all); a click ends the round at once.
+    // No objective line, no click marker, no tooltip: just the triangle.
+    shape: { type: 'triangle', side: 120 },
     fill: 'light',
     hideAfter: { visibleMs: 1000, fadeMs: 200 },
     inputWindows: [[0, 5000]],
     postRoundIdleMs: 4000,
+    clickEndsRound: true,
     showObjective: false,
     clickFeedback: false,
+    // The scene stays black; only the triangle shows, lit, on the dropped screen. The doors
+    // close over the idle time.
+    aboveDarkness: true,
+    effects: ['stayDropped', 'stayDark'],
   },
 };
 
@@ -324,6 +364,7 @@ export const rounds: readonly RoundConfig[] = ROUND_IDS.map((id) => ({
   showObjective: true,
   clickFeedback: true,
   effects: [],
+  aboveDarkness: false,
   copyKey: 'objective.shape',
   ...ROUND_SHAPES[id],
 }));

@@ -3,31 +3,52 @@ import type { SceneContext } from '../core/game';
 import { defineScene, type Scene } from '../core/scenes';
 
 /**
- * After the last round: the doors close, the scene goes dark for `endDarknessMs`,
- * the darkness lifts, and the score scene opens the doors onto the result.
+ * After the last round: the doors close and the scene goes fully black, then every effect
+ * switches off and the screen returns to its place (scene mode `normal`), out of sight.
+ * Then the lights come back and the score scene opens the doors onto the result.
+ *
+ * Round 12 leaves the scene black already. With no click there, the black lasts
+ * `endDarknessMs`. A click ends round 12 at once, and then the black lasts
+ * `fx.blackout.afterClickMs` counted from the click (the round's fade-out and pause included).
+ * Doors that are still open in the black are shut at once, unseen.
  */
 export function createEndingScene(ctx: SceneContext): Scene {
   return defineScene((scope) => {
-    const { bus, darkness } = ctx;
-    const closeMs = gameConfig.doorCloseMs;
+    const { bus, darkness, doors } = ctx;
+    const { roundSequence: seq } = gameConfig;
+    const alreadyDark = darkness.level >= 1;
+    const clicked = ctx.session.results.at(-1)?.click != null;
+    const closeMs = doors.isClosed || alreadyDark ? 0 : gameConfig.doorCloseMs;
     const fadeMs = gameConfig.endDarknessFadeMs;
+    const darkAt = closeMs + (alreadyDark ? 0 : fadeMs);
+    const holdMs =
+      alreadyDark && clicked
+        ? Math.max(gameConfig.fx.blackout.afterClickMs - seq.outroFadeMs - seq.betweenRoundsMs, 0)
+        : gameConfig.endDarknessMs;
 
     // Leaving early (debug jump) must not keep the window dark.
-    scope.onDispose(() => darkness.setDark(false, 0));
+    scope.onDispose(() => darkness.setLevel(0, 0));
 
-    bus.emit('door.close.start', { durationMs: closeMs });
-    ctx.doors.setOpen(false, closeMs);
+    if (!doors.isClosed) {
+      bus.emit('door.close.start', { durationMs: closeMs });
+      doors.setOpen(false, closeMs);
+      scope.timeout(() => bus.emit('door.close.end', {}), closeMs);
+    }
 
-    scope.timeout(() => {
-      bus.emit('door.close.end', {});
-      bus.emit('scene.dark', { dark: true, durationMs: fadeMs });
-      darkness.setDark(true, fadeMs);
-    }, closeMs);
+    if (!alreadyDark) {
+      scope.timeout(() => {
+        bus.emit('scene.dark', { dark: true, durationMs: fadeMs });
+        darkness.setLevel(1, fadeMs);
+      }, closeMs);
+    }
 
-    const lightAt = closeMs + fadeMs + gameConfig.endDarknessMs;
+    // Fully black: effects off, screen back in place, out of sight.
+    scope.timeout(() => ctx.setSceneMode('normal'), darkAt);
+
+    const lightAt = darkAt + holdMs;
     scope.timeout(() => {
       bus.emit('scene.dark', { dark: false, durationMs: fadeMs });
-      darkness.setDark(false, fadeMs);
+      darkness.setLevel(0, fadeMs);
     }, lightAt);
 
     scope.timeout(() => ctx.machine.go('score'), lightAt + fadeMs);

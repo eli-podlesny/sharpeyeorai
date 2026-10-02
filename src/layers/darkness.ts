@@ -1,22 +1,30 @@
 import { fadeTo } from '../ui/motion';
 import { createLayerElement } from './placeholder';
 
-/** Fades the whole window to dark and back (end of the game). */
+/** How dark the whole window is: 0 = normal lighting, 1 = black. */
 export interface DarknessControl {
-  setDark(dark: boolean, fadeMs: number): void;
+  readonly level: number;
+  /** Fades to `level` over `fadeMs` (0 = this frame; used for frame-by-frame ramps). */
+  setLevel(level: number, fadeMs: number): void;
 }
 
 /**
- * A plain dark overlay over the whole window, above every other layer. A simple
- * placeholder for the end-of-game blackout; real effects come later.
+ * A dark overlay over the whole window, above the scene (rounds 11–12 and the end of the
+ * game). It lives on the stage so that the `spotlight` layer can sit above it; it is sized
+ * in vw/vh to cover the window whatever the stage scale.
  */
 export function createDarknessLayer(): { el: HTMLElement; control: DarknessControl } {
   const el = createLayerElement('darkness');
-  el.classList.add('fade');
+  el.classList.add('fade', 'layer--window');
   el.style.opacity = '0';
+  let level = 0;
   const control: DarknessControl = {
-    setDark(dark, fadeMs) {
-      fadeTo(el, dark ? 1 : 0, fadeMs);
+    get level() {
+      return level;
+    },
+    setLevel(next, fadeMs) {
+      level = Math.min(Math.max(next, 0), 1);
+      fadeTo(el, level, fadeMs);
     },
   };
   return { el, control };

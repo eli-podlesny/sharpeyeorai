@@ -28,8 +28,8 @@ export const TRANSITIONS: Readonly<Record<GameState, readonly GameState[]>> = {
 };
 
 /**
- * Scene-wide look (placeholder until the effects land in v0.5–v0.7). Changing it has no
- * visual effect yet; it is mirrored to `data-scene-mode` on the stage for later CSS.
+ * Scene-wide look. src/fx/sceneController.ts sets it per round (`gameConfig.fx.modeByRound`)
+ * and turns it into effects; it is also mirrored to `data-scene-mode` on the stage.
  */
 export const SCENE_MODES = ['normal', 'distorted', 'alert', 'blackout'] as const;
 

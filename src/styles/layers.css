@@ -5,7 +5,18 @@
   inset: 0;
   overflow: hidden;
   isolation: isolate; /* keeps the multiply blend inside the app */
-  background: var(--color-room);
+  /* Alert mode (src/fx/alert.ts) sets --alert-mix (0–100, the pulse between the two alert
+     colors) and --alert-ramp (0–100, how far alert has faded in over the room color). */
+  --alert-color: color-mix(
+    in srgb,
+    var(--alert-high) calc(var(--alert-mix, 0) * 1%),
+    var(--alert-low)
+  );
+  background: color-mix(
+    in srgb,
+    var(--alert-color) calc(var(--alert-ramp, 0) * 1%),
+    var(--color-room)
+  );
 }
 
 /* The 1440 × 900 design stage, centered in the window. 90rem × 56.25rem = 1440 × 900 at 16px. */
@@ -20,6 +31,22 @@
 
 .layer {
   position: absolute;
+}
+
+/* Window-sized layers that live on the stage (alert glow, darkness): centered on the
+   stage, which is centered on the window, so they always cover it. */
+.layer--window {
+  left: 50%;
+  top: 50%;
+  width: 100vw;
+  height: 100vh;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Frame, glow, screen and doors move as one (round 10's drop). Origin set from config. */
+.layer--assembly {
+  inset: 0;
 }
 
 .placeholder-label {
@@ -51,6 +78,19 @@
   user-select: none;
 }
 
+/* Breathing (src/fx/breathing.ts) draws the image here in WebGL, in place of the <img> */
+.background__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  mix-blend-mode: multiply;
+}
+
+.background__canvas[hidden] {
+  display: none;
+}
+
 /* 2. vignette — covers the whole window */
 .layer--vignette {
   inset: 0;
@@ -72,6 +112,12 @@
 }
 
 /* 4. screen */
+/* Everything on the screen (tooltips included) stays under the doors: no z-index inside
+   can lift it above them (round 11's doors cover the "logged" tooltip). */
+.layer--screen {
+  isolation: isolate;
+}
+
 .screen__base,
 .screen__texture,
 .screen-content {
@@ -94,6 +140,20 @@
     transparent 0.125rem 0.25rem
   );
   pointer-events: none;
+}
+
+/* Glitch noise (src/fx/glitch.ts): speckle mask over the noise color, above the screen HUD */
+.screen__noise {
+  position: absolute;
+  inset: 0;
+  background: var(--glitch-noise);
+  mask-size: 8rem 8rem;
+  -webkit-mask-size: 8rem 8rem;
+  pointer-events: none;
+}
+
+.screen__noise[hidden] {
+  display: none;
 }
 
 /* screen-hud — inside the screen, above its content, below the doors. Clicks pass through. */
@@ -146,10 +206,12 @@
 /* 5. doors — clipped to the screen viewport. --door-duration is set by the doors control. */
 .layer--doors {
   overflow: hidden;
+  pointer-events: none; /* clicks always reach the screen content, even behind shut doors */
 }
 
-.layer--doors.is-open {
-  pointer-events: none; /* clicks reach the screen content */
+/* Held partly closed frame by frame (round 11): no slide transition. */
+.layer--doors.is-held .door {
+  transition: none;
 }
 
 .door {
@@ -194,8 +256,9 @@
   pointer-events: none;
 }
 
-/* 7. hud */
-.layer--hud {
+/* 7. hud — logo and version sit below the screen assembly (hud-back); the screen slot on top */
+.layer--hud,
+.layer--hud-back {
   inset: 0;
   pointer-events: none;
 }
@@ -234,11 +297,37 @@
   pointer-events: auto;
 }
 
-/* End-of-game darkness — covers the whole window, above every layer */
-.layer--darkness {
+/* Alert glow: a soft, heavily blurred ellipse over the whole scene in the alert color.
+   The high (orange) ellipse fades over the low one with the pulse; opacities set by alert.ts. */
+.layer--alert-glow {
+  opacity: 0;
+  will-change: opacity;
+}
+
+.alert-glow__ellipse {
+  position: absolute;
   inset: 0;
+  border-radius: 50%;
+  will-change: opacity;
+}
+
+.alert-glow__ellipse--low {
+  background: var(--alert-low);
+}
+
+.alert-glow__ellipse--high {
+  background: var(--alert-high);
+  opacity: 0;
+}
+
+/* Scene darkness (rounds 11–12, end of the game) — covers the whole window */
+.layer--darkness {
+  background: var(--scene-darkness);
+}
+
+/* Over the screen box, above the darkness: round content that stays lit (round 12) */
+.layer--spotlight {
   pointer-events: none;
-  background: var(--end-darkness);
 }
 
 /* Debug overlay — fixed screen pixels, not scaled with the stage */

@@ -59,6 +59,31 @@ export const layout = {
     top: 128,
   },
 
+  /**
+   * The screen assembly (frame, glow, screen, doors) moves as one piece. It turns and
+   * scales around `origin` (stage px), the frame's center.
+   */
+  assembly: {
+    origin: { x: DESIGN_WIDTH / 2, y: 80 + FRAME_HEIGHT / 2 },
+    /**
+     * The drop after round 9's click: where the assembly ends up. It slides toward the left,
+     * turns counter-clockwise and shrinks, so it no longer fits fully in view. `shake` is the
+     * landing: `count` wobbles, the first this far off (px, degrees), dying away.
+     */
+    drop: {
+      x: -300,
+      y: 140,
+      rotateDeg: -8,
+      scale: 0.8,
+      shake: { x: 3, y: 8, rotateDeg: 0.6, count: 5 },
+    },
+  },
+
+  /** Alert mode's window-sized glow ellipse (from round 8): a soft layer blur of this radius. */
+  alertGlow: {
+    blur: 300,
+  },
+
   hud: {
     logoTop: 24,
     logoFontSize: 24,
