@@ -8,7 +8,13 @@ const PLACEHOLDER_SRC = '/placeholders/background.svg';
  * 110vw × 110vh, so it always bleeds past the edges. It is multiplied over the
  * room color token, so the tint can change without editing the image.
  */
-export function createBackgroundLayer(): HTMLElement {
+export interface BackgroundLayer {
+  el: HTMLElement;
+  /** The static image. The breathing effect (src/fx/breathing.ts) draws over it in WebGL. */
+  art: HTMLImageElement;
+}
+
+export function createBackgroundLayer(): BackgroundLayer {
   const el = createLayerElement('background');
   const { artWidth, artHeight, minWidthVw, minHeightVh } = layout.background;
 
@@ -22,5 +28,5 @@ export function createBackgroundLayer(): HTMLElement {
   img.style.width = `max(${minWidthVw}vw, ${minHeightVh}vh * ${artWidth / artHeight})`;
 
   el.append(img);
-  return el;
+  return { el, art: img };
 }

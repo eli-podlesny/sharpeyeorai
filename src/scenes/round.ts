@@ -7,7 +7,13 @@ import { contentSize, toContentCoords } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
 import type { Point } from '../core/stage';
 import { rem, setRem } from '../core/units';
-import { createRoundClock, DEBUG_STEP_MS, roundDebug } from '../rounds/clock';
+import {
+  createRoundClock,
+  DEBUG_STEP_MS,
+  liveRound,
+  roundDebug,
+  type LiveRound,
+} from '../rounds/clock';
 import type { PlacedShape } from '../rounds/geometry';
 import { isMoving, shapeAt } from '../rounds/motion';
 import { shapeCenters, type Centers } from '../rounds/opticalCenter';
@@ -128,7 +134,8 @@ export function createRoundScene(ctx: SceneContext): Scene {
     }
 
     root.append(play);
-    scope.mount(ctx.content, root);
+    // Round 12 renders above the scene darkness; clicks still go to screen-content below.
+    scope.mount(round.aboveDarkness ? ctx.spotlight : ctx.content, root);
     commitStyles(root);
 
     hud.setVisible(true, 0);
@@ -145,11 +152,11 @@ export function createRoundScene(ctx: SceneContext): Scene {
     const syncHidden = (): void => clock.setPaused('hidden', document.hidden, performance.now());
     syncHidden();
     document.addEventListener('visibilitychange', syncHidden);
-    const live = { roundId, elapsedMs: () => clock.elapsed(performance.now()) };
-    roundDebug.live = live;
+    const live: LiveRound = { roundId, elapsedMs: () => clock.elapsed(performance.now()) };
+    liveRound.current = live;
     scope.onDispose(() => {
       document.removeEventListener('visibilitychange', syncHidden);
-      if (roundDebug.live === live) roundDebug.live = null;
+      if (liveRound.current === live) liveRound.current = null;
     });
 
     const timeline = round.timeline;

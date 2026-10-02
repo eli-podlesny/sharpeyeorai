@@ -63,8 +63,15 @@
   --button-text: var(--color-ink);
   --button-border: var(--color-ink);
 
-  /* End-of-game darkness (placeholder for the blackout effect) */
-  --end-darkness: var(--color-ink);
+  /* Scene darkness (rounds 11–12 and the end of the game) */
+  --scene-darkness: var(--color-ink);
+
+  /* Alert mode: the room color pulses between these two; the glow ellipse takes the same color */
+  --alert-low: var(--color-ink);
+  --alert-high: var(--color-hazard);
+
+  /* Screen glitch noise: monochrome speckle in this color over the screen while it glitches */
+  --glitch-noise: var(--color-paper);
 
   /* HUD */
   --color-hud-text: var(--color-paper);

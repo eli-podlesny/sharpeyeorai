@@ -31,6 +31,12 @@ export interface GameEvents {
   /** The end-of-game darkness fades in (`dark: true`) or out. */
   'scene.dark': { dark: boolean; durationMs: number };
   'scene.mode': { mode: SceneMode };
+  /** A screen glitch burst starts (src/fx/glitch.ts). */
+  'fx.glitch': { durationMs: number };
+  /** Alert mode's pulse and glow switch on or off (src/fx/alert.ts). */
+  'alert.show': { active: boolean };
+  /** The screen assembly drops (round 10) or returns (src/fx/drop.ts). */
+  'screen.drop': { down: boolean; durationMs: number };
   'score.reveal': { summary: SessionSummary; isSample: boolean };
   /** Share result was pressed; `copied` is false when the clipboard refused. */
   'score.share': { text: string; copied: boolean };

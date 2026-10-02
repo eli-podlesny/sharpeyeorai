@@ -8,12 +8,13 @@ import { gameConfig } from '../config/game.config';
 import { getRound } from '../config/rounds.config';
 import type { EventBus } from '../core/events';
 import type { Game } from '../core/game';
+import type { SceneFx } from '../fx/sceneController';
 import { contentSize, toContentCoords } from '../core/input';
 import { randomSeed } from '../core/rng';
 import { getScale, toStageCoords, type Point } from '../core/stage';
 import { GAME_STATES, SCENE_MODES, type GameState, type SceneMode } from '../core/state';
 import { autoplayResults } from '../rounds/autoplay';
-import { roundDebug } from '../rounds/clock';
+import { liveRound, roundDebug } from '../rounds/clock';
 import { createResult, shapeSeed } from '../rounds/session';
 import { targetAt } from '../rounds/target';
 import { acceptsClick, fixedRoundEndMs, inputDeadlineMs } from '../rounds/timing';
@@ -33,10 +34,16 @@ const DEFAULT_SPREAD_PX = 20;
 const LIVE_REFRESH_MS = 100;
 /** The round with a random (seeded) shape. */
 const REROLL_ROUND = 2;
+/** The FPS readout averages over this long. */
+const FPS_WINDOW_MS = 500;
+/** Steps of the round 11 darkening scrubber. */
+const SCRUB_STEPS = 100;
 
 export interface DebugOverlayOptions {
   game: Game;
   bus: EventBus;
+  /** Scene effects, to trigger and force from the panel. */
+  fx: SceneFx;
   /** Start open (`?debug=1`). */
   open: boolean;
 }
@@ -53,10 +60,12 @@ function summarize(payload: unknown): string {
  * Shows scale, mouse position, current state and round, live dO / dC / q under the
  * cursor during a round, the last events, controls to jump anywhere in the game,
  * autoplay presets that fill all rounds and go straight to the score, the scene mode,
- * and motion controls: pause/resume and step one frame of the round clock, with the
- * round time, time left before the deadline and whether input is open.
+ * motion controls: pause/resume and step one frame of the round clock, with the
+ * round time, time left before the deadline and whether input is open; and effect
+ * controls: force a scene mode, trigger a glitch, toggle alert and the screen drop,
+ * scrub round 11's darkening. The FPS shows at the top.
  */
-export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void {
+export function initDebugOverlay({ game, bus, fx, open }: DebugOverlayOptions): void {
   const el = h('div', 'debug-overlay');
   el.hidden = !open;
   el.setAttribute('aria-label', 'Debug panel');
@@ -163,7 +172,7 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
   });
   autoplay.append(presetSelect, spreadInput, play);
 
-  // Scene mode (placeholder: no visual effect yet)
+  // Scene mode (held until the next round changes it)
   const modeRow = h('div', 'debug-overlay__row');
   const modeSelect = h('select', 'debug-overlay__input debug-overlay__select');
   modeSelect.setAttribute('aria-label', 'Scene mode');
@@ -174,7 +183,43 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
   });
   modeRow.append('scene mode ', modeSelect);
 
-  el.append(info, states, controls, shapes, motionRow, autoplay, modeRow, events);
+  // Effects: glitch, alert, screen drop
+  const fxRow = h('div', 'debug-overlay__row');
+  const glitchButton = h('button', 'debug-overlay__button', 'glitch');
+  glitchButton.type = 'button';
+  glitchButton.addEventListener('click', () => fx.triggerGlitch());
+  const alertButton = h('button', 'debug-overlay__button', 'alert');
+  alertButton.type = 'button';
+  alertButton.title =
+    'Toggles the alert pulse; restart or a new round hands it back to the scene mode';
+  alertButton.addEventListener('click', () => fx.forceAlert(!fx.alertActive));
+  const dropButton = h('button', 'debug-overlay__button', 'drop screen');
+  dropButton.type = 'button';
+  dropButton.addEventListener('click', () => fx.setDropped(!fx.dropped));
+  fxRow.append(glitchButton, alertButton, dropButton);
+
+  // Round 11's darkening: hold doors and darkness anywhere from 0 to 1
+  const scrubRow = h('div', 'debug-overlay__row');
+  const scrubLabel = h('label', 'debug-overlay__toggle');
+  const scrubOn = h('input', '');
+  scrubOn.type = 'checkbox';
+  scrubLabel.append(scrubOn, ' scrub r11 dark');
+  const scrub = h('input', 'debug-overlay__range');
+  scrub.type = 'range';
+  scrub.min = '0';
+  scrub.max = String(SCRUB_STEPS);
+  scrub.value = '0';
+  scrub.disabled = true;
+  scrub.setAttribute('aria-label', 'Round 11 darkening');
+  const applyScrub = (): void => {
+    scrub.disabled = !scrubOn.checked;
+    fx.scrubBlackout(scrubOn.checked ? Number(scrub.value) / SCRUB_STEPS : null);
+  };
+  scrubOn.addEventListener('change', applyScrub);
+  scrub.addEventListener('input', applyScrub);
+  scrubRow.append(scrubLabel, scrub);
+
+  el.append(info, states, controls, shapes, motionRow, autoplay, modeRow, fxRow, scrubRow, events);
   document.body.append(el);
 
   let mouse = { x: NaN, y: NaN };
@@ -186,8 +231,8 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
 
   /** The live round's clock, in ms from `round.shape.visible`; null outside a round. */
   const roundMs = (): number | null =>
-    state === 'round' && roundVisible && roundDebug.live?.roundId === round
-      ? roundDebug.live.elapsedMs()
+    state === 'round' && roundVisible && liveRound.current?.roundId === round
+      ? liveRound.current.elapsedMs()
       : null;
 
   /** What a click right here, right now, would score (on the frame of the moment). */
@@ -223,6 +268,7 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
     const stage = Number.isNaN(mouse.x) ? '—' : `${mouse.x.toFixed(1)}, ${mouse.y.toFixed(1)}`;
     const showRound = state === 'round' && round !== null;
     info.textContent = [
+      `fps     ${fps === null ? '—' : fps.toFixed(0)}${fx.breathingSupported ? '' : '  (no WebGL)'}`,
       `scale   ${getScale().toFixed(4)}`,
       `window  ${window.innerWidth} × ${window.innerHeight}`,
       `stage   ${stage}`,
@@ -236,7 +282,30 @@ export function initDebugOverlay({ game, bus, open }: DebugOverlayOptions): void
     for (const [name, button] of stateButtons) {
       button.classList.toggle('is-active', name === state);
     }
+    alertButton.classList.toggle('is-active', fx.alertActive);
+    dropButton.classList.toggle('is-active', fx.dropped);
   };
+
+  // FPS, measured only while the panel is open.
+  let fps: number | null = null;
+  let frames = 0;
+  let since = performance.now();
+  const countFrame = (now: number): void => {
+    if (!el.hidden) {
+      frames++;
+      if (now - since >= FPS_WINDOW_MS) {
+        fps = (frames * 1000) / (now - since);
+        frames = 0;
+        since = now;
+        render();
+      }
+    } else {
+      frames = 0;
+      since = now;
+    }
+    requestAnimationFrame(countFrame);
+  };
+  requestAnimationFrame(countFrame);
 
   // Specific listeners run before onAny ones, so state and round are fresh when we render.
   bus.on('state.change', ({ to }) => (state = to));

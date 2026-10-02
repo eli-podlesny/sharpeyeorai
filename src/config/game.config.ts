@@ -1,3 +1,5 @@
+import type { SceneMode } from '../core/state';
+
 /**
  * Gameplay timing and flow. Tune values here only; scenes read them.
  */
@@ -38,6 +40,93 @@ export interface GameConfig {
   optical: OpticalConfig;
   scoring: ScoringConfig;
   persona: PersonaConfig;
+  /** Scene effects (src/fx/): breathing, glitch, alert, screen drop, blackout. */
+  fx: FxConfig;
+}
+
+/** Background breathing strength: how far the image is pushed around, and how fast. */
+export interface BreathingPreset {
+  /** Largest displacement, in background-image px. */
+  amplitudePx: number;
+  /** Speed multiplier of the slow noise (1 = base speed). */
+  speed: number;
+}
+
+/** A repeating glitch: `offMs` calm first (a round never opens on a glitch), then `onMs` of glitch. */
+export interface GlitchPattern {
+  onMs: number;
+  offMs: number;
+}
+
+export interface FxConfig {
+  /**
+   * Scene mode for each round (index 0 = round 1). The mode of round N+1 starts at round
+   * N's outro end, so "after round 3's outro" the scene is distorted.
+   */
+  modeByRound: readonly SceneMode[];
+  breathing: {
+    subtle: BreathingPreset;
+    strong: BreathingPreset;
+    /** Switching presets (or on/off) eases over this time. */
+    transitionMs: number;
+    /** Base noise cycle: one slow swell takes about this long at speed 1. */
+    cycleMs: number;
+    /** The WebGL canvas never renders above this device-pixel ratio (performance). */
+    maxPixelRatio: number;
+  };
+  glitch: {
+    /** Round 7: short bursts. Round 9: long bursts with short calm gaps. */
+    short: GlitchPattern;
+    long: GlitchPattern;
+    /** Safety: glitch bursts never start more often than this per second. */
+    maxFlashesPerSecond: number;
+    /** Horizontal slices shifted sideways per burst. */
+    minSlices: number;
+    maxSlices: number;
+    /** Slice height range, in screen px. */
+    sliceMinHeightPx: number;
+    sliceMaxHeightPx: number;
+    /** Largest sideways shift of a slice, in screen px. */
+    maxShiftPx: number;
+    /** Whole-screen jitter, in screen px. */
+    jitterPx: number;
+    /** Slices and jitter are re-rolled this often within a burst (no brightness change). */
+    rerollMs: number;
+    /** Screen opacity during a burst (the slight drop). */
+    opacity: number;
+    /** Opacity of the noise overlay during a burst. */
+    noiseOpacity: number;
+    /** One burst from the debug panel. */
+    debugBurstMs: number;
+    /** Reduced motion: no slices or noise, the screen only dims to this opacity… */
+    reducedMotionOpacity: number;
+    /** …fading over this time. */
+    reducedMotionFadeMs: number;
+  };
+  alert: {
+    /** One full pulse #111 → orange → #111. */
+    periodMs: number;
+    /** Alert fades in over the room color (and out again) over this time. */
+    rampMs: number;
+    /** The glow ellipse's opacity at full alert. */
+    glowOpacity: number;
+  };
+  drop: {
+    /** Round 10: the assembly drops over this time, from the start of the intro. */
+    durationMs: number;
+    /** It returns to place during the outro, over this time. */
+    returnMs: number;
+    /** Reduced motion: a short, plain move each way. */
+    reducedMotionMs: number;
+  };
+  blackout: {
+    /** Round 11 darkens from 0 to this level by its deadline, as the doors close. */
+    closingDarkness: number;
+    /** After an early click in round 11, doors and darkness hurry to the end over this time. */
+    speedUpMs: number;
+    /** Round 12: after the smiley is gone, the scene goes fully dark over this time. */
+    fullDarkFadeMs: number;
+  };
 }
 
 /**
@@ -179,5 +268,60 @@ export const gameConfig: GameConfig = {
     humanity: { machine: 0.35, human: 0.65 },
     speed: { fast: 1500, slow: 4000 },
     algorithmTotal: 9800,
+  },
+  fx: {
+    modeByRound: [
+      'normal', // 1
+      'normal', // 2
+      'normal', // 3
+      'distorted', // 4
+      'distorted', // 5
+      'distorted', // 6
+      'distorted', // 7
+      'alert', // 8
+      'alert', // 9
+      'alert', // 10
+      'blackout', // 11
+      'blackout', // 12
+    ],
+    breathing: {
+      subtle: { amplitudePx: 4, speed: 1 },
+      strong: { amplitudePx: 10, speed: 2 },
+      transitionMs: 2000,
+      cycleMs: 9000,
+      maxPixelRatio: 1.5,
+    },
+    glitch: {
+      short: { onMs: 200, offMs: 1200 },
+      long: { onMs: 800, offMs: 400 },
+      maxFlashesPerSecond: 3,
+      minSlices: 2,
+      maxSlices: 4,
+      sliceMinHeightPx: 12,
+      sliceMaxHeightPx: 90,
+      maxShiftPx: 36,
+      jitterPx: 4,
+      rerollMs: 70,
+      opacity: 0.86,
+      noiseOpacity: 0.22,
+      debugBurstMs: 400,
+      reducedMotionOpacity: 0.8,
+      reducedMotionFadeMs: 150,
+    },
+    alert: {
+      periodMs: 2400,
+      rampMs: 2000,
+      glowOpacity: 0.16,
+    },
+    drop: {
+      durationMs: 1200,
+      returnMs: 800,
+      reducedMotionMs: 300,
+    },
+    blackout: {
+      closingDarkness: 0.9,
+      speedUpMs: 800,
+      fullDarkFadeMs: 400,
+    },
   },
 };

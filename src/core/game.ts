@@ -14,17 +14,19 @@ export interface SceneContext {
   content: HTMLElement;
   /** Over the screen box, above doors and frame: controls shown while the doors are shut. */
   overlay: HTMLElement;
+  /** Over the screen box, above the scene darkness: round content that stays lit (round 12). */
+  spotlight: HTMLElement;
   doors: DoorsControl;
   /** Counter, progress and timer inside the screen, below the doors. */
   hud: ScreenHudControl;
-  /** Whole-window darkness (end of the game). */
+  /** Whole-window darkness (rounds 11–12, end of the game). */
   darkness: DarknessControl;
   bus: EventBus;
   machine: StateMachine;
   /** The current play-through. Replaced by `newSession()`. */
   readonly session: GameSession;
   newSession(startRound?: number): void;
-  /** Scene-wide look; a placeholder with no visual effect yet. */
+  /** Scene-wide look; src/fx/sceneController.ts turns it into effects. */
   readonly sceneMode: SceneMode;
   setSceneMode(mode: SceneMode): void;
 }
@@ -38,6 +40,7 @@ export interface Game {
 export interface GameOptions {
   content: HTMLElement;
   overlay: HTMLElement;
+  spotlight: HTMLElement;
   doors: DoorsControl;
   hud: ScreenHudControl;
   darkness: DarknessControl;
@@ -69,6 +72,7 @@ export function createGame(options: GameOptions): Game {
   const context: SceneContext = {
     content: options.content,
     overlay: options.overlay,
+    spotlight: options.spotlight,
     doors: options.doors,
     hud: options.hud,
     darkness: options.darkness,
