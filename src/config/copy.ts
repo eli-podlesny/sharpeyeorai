@@ -248,70 +248,231 @@ export const copy = {
    * Verdict personas. `matrix` is accuracy tier × humanity tier; overrides win over the
    * matrix (checked in the order listed in persona.ts). The speed tag is a third line,
    * hidden when an override fires.
+   *
+   * Every verdict has a few headlines and a few lines
+   * (each line reads with any headline of its verdict), and each speed tier a few tags;
+   * every score screen takes the next combination (`verdictPick`), so replays read
+   * differently. The first of each is the original wording.
    */
   persona: {
     overrides: {
       algorithm: {
-        headline: 'Are you the algorithm?',
-        line: "We checked twice. You're not supposed to exist.",
+        headlines: [
+          'Are you the algorithm?',
+          'Machine confirmed.',
+          'Perfect score detected.',
+          'Hello, fellow AI.',
+        ],
+        lines: [
+          "We checked twice. You're not supposed to exist.",
+          'No human eye is this exact. Show us your hands.',
+          'We are adding you to the training data.',
+          'Please log off and return to the server room.',
+        ],
       },
       trigger: {
-        headline: 'Click first, aim never.',
-        line: 'Impressive reflexes. Wrong planet.',
+        headlines: [
+          'Click first, aim never.',
+          'Trigger happy.',
+          'Fastest miss in the west.',
+          'All speed, no aim.',
+        ],
+        lines: [
+          'Impressive reflexes. Wrong planet.',
+          'You were done before the shapes were.',
+          'Speed is not a center, sadly.',
+          'Lightning fast. Lightning random.',
+        ],
       },
       sniper: {
-        headline: 'The Sniper.',
-        line: "Took your sweet time. Didn't miss. Terrifying.",
+        headlines: [
+          'The Sniper.',
+          'Patient predator.',
+          'One shot, one center.',
+          'Slow and deadly.',
+        ],
+        lines: [
+          "Took your sweet time. Didn't miss. Terrifying.",
+          'You waited. You aimed. You nailed it.',
+          'Every click was a decision. Every decision was right.',
+          'The timer suffered. The score did not.',
+        ],
       },
     },
     matrix: {
       sharp: {
         machine: {
-          headline: 'A human with a robotic vision.',
-          line: 'You spend too much time in front of the laptop. Go outside and touch the grass.',
+          headlines: [
+            'A human with a robotic vision.',
+            'Precision instrument.',
+            'Factory calibrated.',
+            'Grid-perfect.',
+            'Ruler for eyes.',
+          ],
+          lines: [
+            'You spend too much time in front of the laptop. Go outside and touch the grass.',
+            'You found the math center every time. The math is flattered.',
+            'Your clicks could pass a QA test. Nobody asked them to.',
+            'Somewhere a spreadsheet is proud of you.',
+            'Accurate, cold, and slightly concerning.',
+          ],
         },
         hybrid: {
-          headline: 'Calibrated.',
-          line: 'Half designer, half firmware. Both halves are annoyingly good.',
+          headlines: [
+            'Calibrated.',
+            'Best of both worlds.',
+            'Dual core.',
+            'Smooth operator.',
+            'Balanced to the pixel.',
+          ],
+          lines: [
+            'Half designer, half firmware. Both halves are annoyingly good.',
+            'You see like a person and click like a script.',
+            'Sharp eyes, steady logic. We have questions.',
+            'The machine and the artist agree on you. Rare.',
+            'Nothing escapes you. Not even the math.',
+          ],
         },
         human: {
-          headline: 'The Eye.',
-          line: 'No ruler. No grid. No doubt. Art directors would kill for your instincts.',
+          headlines: [
+            'The Eye.',
+            'Born with a grid in your head.',
+            'Optical royalty.',
+            'Taste, measured.',
+            'Gallery-grade eyes.',
+          ],
+          lines: [
+            'No ruler. No grid. No doubt. Art directors would kill for your instincts.',
+            'You found the center that feels right, not the one that computes. That is the point.',
+            'Your eye corrects what geometry gets wrong.',
+            'Typographers would hire you on the spot.',
+            'You see balance the way others see color.',
+          ],
         },
       },
       decent: {
         machine: {
-          headline: 'Budget android.',
-          line: "You think in pixels, but the pixels don't think back. Software update recommended.",
+          headlines: [
+            'Budget android.',
+            'Beta firmware.',
+            'Almost an algorithm.',
+            'Low-res robot.',
+            'Default settings.',
+          ],
+          lines: [
+            "You think in pixels, but the pixels don't think back. Software update recommended.",
+            'You aim for the math center and land close-ish.',
+            'Your inner calculator needs new batteries.',
+            'Logical, mostly. Precise, sometimes.',
+            'Like a robot on a Monday.',
+          ],
         },
         hybrid: {
-          headline: 'Suspiciously average.',
-          line: 'Not human enough to trust. Not machine enough to replace. Yet.',
+          headlines: [
+            'Suspiciously average.',
+            'Perfectly fine.',
+            'Middle of the road.',
+            'Human-ish.',
+            'Statistically you.',
+          ],
+          lines: [
+            'Not human enough to trust. Not machine enough to replace. Yet.',
+            'You landed in the middle of everything. Fitting.',
+            'Neither eye nor algorithm. A third thing.',
+            "Our model can't decide what you are. It's sulking.",
+            'Average is a center too, technically.',
+          ],
         },
         human: {
-          headline: 'Gut feeling, mostly.',
-          line: 'Your eye knows where the center is. Your hand is still negotiating.',
+          headlines: [
+            'Gut feeling, mostly.',
+            'Eye of the beholder.',
+            'Instinct over math.',
+            'Feels about right.',
+            'A good eye, a shaky hand.',
+          ],
+          lines: [
+            'Your eye knows where the center is. Your hand is still negotiating.',
+            'You trust what you see. Mostly correctly.',
+            'Your instincts point the right way. Your aim takes the scenic route.',
+            'Human to the core, give or take a few pixels.',
+            'You see balance. You click near it.',
+          ],
         },
       },
       blurry: {
         machine: {
-          headline: 'Broken calibration.',
-          line: 'You aimed like a machine and missed like one too. Have you tried turning yourself off and on again?',
+          headlines: [
+            'Broken calibration.',
+            'Error 404: center not found.',
+            'Robot, low battery.',
+            'Needs a reboot.',
+            'Corrupted sensor.',
+          ],
+          lines: [
+            'You aimed like a machine and missed like one too. Have you tried turning yourself off and on again?',
+            'Methodical. Confident. Wrong.',
+            'Your logic is flawless. Your results are not.',
+            'We ran diagnostics. They ran away.',
+            'Precisely imprecise.',
+          ],
         },
         hybrid: {
-          headline: 'Glitch in the system.',
-          line: "We reviewed your data. We're not sure what you are. Neither are you.",
+          headlines: [
+            'Glitch in the system.',
+            'Unclassifiable.',
+            'Signal lost.',
+            'Static.',
+            'Undefined.',
+          ],
+          lines: [
+            "We reviewed your data. We're not sure what you are. Neither are you.",
+            'Part human, part machine, all over the place.',
+            'Our sensors gave up halfway through.',
+            'You are a rounding error with a mouse.',
+            'Somewhere between a guess and a shrug.',
+          ],
         },
         human: {
-          headline: 'Very, very human.',
-          line: "The center is a social construct, apparently. Please don't hang pictures at home.",
+          headlines: [
+            'Very, very human.',
+            'Abstract artist.',
+            'Free spirit.',
+            'Off-center, on purpose.',
+            'Rules are suggestions.',
+          ],
+          lines: [
+            "The center is a social construct, apparently. Please don't hang pictures at home.",
+            'You click with your heart. Your heart has bad aim.',
+            'Asymmetry is a choice. You made it twelve times.',
+            'Your frames hang crooked and you love them.',
+            'Wherever you clicked, that is your center now.',
+          ],
         },
       },
     },
     speedTags: {
-      fast: 'Speedy Gonzales. You clicked before the shape finished loading.',
-      steady: 'Steady hands. The machine respects that.',
-      slow: 'Slowpoke. The test is over. You can stop measuring now.',
+      fast: [
+        'Speedy Gonzales. You clicked before the shape finished loading.',
+        'Quick draw. The shapes barely had time to appear.',
+        'Fast clicker. Our stopwatch is still catching up.',
+        'Blink-speed decisions.',
+        'You treat every test like a race.',
+      ],
+      steady: [
+        'Steady hands. The machine respects that.',
+        'Calm and measured. Very professional.',
+        'Not fast, not slow. Just right.',
+        'A steady pace. The facility approves.',
+        'Unhurried. Unbothered.',
+      ],
+      slow: [
+        'Slowpoke. The test is over. You can stop measuring now.',
+        'Thorough. Very, very thorough.',
+        'You took your time. All of it.',
+        'We almost sent someone to check on you.',
+        'Patience of a monk. Speed of one too.',
+      ],
     },
   },
 } as const;

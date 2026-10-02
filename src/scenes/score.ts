@@ -6,6 +6,7 @@ import { contentSize } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
 import type { Scope } from '../core/scope';
 import { setU, u } from '../core/units';
+import { randomSeed } from '../core/rng';
 import { createSampleResults } from '../rounds/autoplay';
 import { summarize, type SessionSummary } from '../scoring/summary';
 import { h } from '../ui/dom';
@@ -96,6 +97,9 @@ function createDetailsTable(summary: SessionSummary): HTMLTableElement {
  * The screen HUD is hidden here. Reached without
  * playing (debug jump), it scores seeded sample clicks instead.
  */
+/** Counts the score screens of this visit, from a random start: the verdict's wording. */
+let verdictRoll = randomSeed();
+
 export function createScoreScene(ctx: SceneContext): Scene {
   return defineScene((scope) => {
     ctx.doors.setOpen(false, 0);
@@ -104,7 +108,8 @@ export function createScoreScene(ctx: SceneContext): Scene {
     const { session } = ctx;
     const isSample = session.results.length === 0;
     const results = isSample ? createSampleResults(session, contentSize) : session.results;
-    const summary = summarize(results);
+    // Each score screen takes the next wording of its verdict, so replays read differently.
+    const summary = summarize(results, gameConfig.roundCount, gameConfig.scoring, verdictRoll++);
     const { persona } = summary;
 
     const root = h('div', 'score');

@@ -235,6 +235,7 @@ C and O are about 10–40px apart on most shapes (avocado ≈ 19px, by design of
 - Speed tier by mean latency: fast < 1500ms, steady 1500–4000ms, slow > 4000ms.
 - Overrides first, in order: total ≥ 9800 (algorithm), fast + blurry (trigger), slow + sharp (sniper). Otherwise accuracy × humanity.
 - The speed tag is a third line, hidden when an override fired.
+- Wording varies: every verdict has 4–5 headlines and 5 lines (each line reads with any headline of its verdict), every speed tier 5 tags. Each score screen of a visit takes the next combination from a random start (`verdictPick`: pairs never repeat before headlines × lines screens, so 10 replays with the same result all read differently). The first of each is the original wording.
 
 ## Events (hooks for later versions)
 
@@ -297,3 +298,4 @@ Mobile layout, leaderboard/database, sound playback, narrator/intro cinematic, f
 - v1.1b review 3: round chats. Round 10: "What's going on?!", "Did we break anything?"; round 11: "Oh, the doors are closing fast", "Hurry Up!". Lines 1.2s apart, each pushing the last up with Figma's 4px overlap; the whole chat fades 4s after the last line. The chat stays under the doors.
 - v1.1b review 4: the chat director: idle chats after 7s, speedy lines for a click within 1s, cocky lines for a miss, "Seems easy, huh?" after round 3; misses outrank time lines, the alert outranks everything and clears the chat; at most 6 messages at once. Round 11's chat has 3 lines and starts 1s in.
 - v1.1b review 5: more chat: greeting, story beats, bullseye, machine pick, streaks, impatient clicks, leaving and coming back, a score line. Idle chats stay until the mouse moves. The alert message stays until round 10's chat fades.
+- v1.1b review 6: more verdict wordings on the score screen, cycled so replays read differently.
