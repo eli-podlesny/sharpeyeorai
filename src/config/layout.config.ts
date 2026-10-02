@@ -59,6 +59,26 @@ export const layout = {
     top: 128,
   },
 
+  /**
+   * The screen assembly (frame, glow, screen, doors) moves as one piece. It turns and
+   * scales around `origin` (stage px), the frame's center.
+   */
+  assembly: {
+    origin: { x: DESIGN_WIDTH / 2, y: 80 + FRAME_HEIGHT / 2 },
+    /**
+     * Round 10's drop: where the assembly ends up. It slides toward the left, turns
+     * counter-clockwise and shrinks, so it no longer fits fully in view. `overshoot` is how
+     * far past the end pose it swings before settling back (heavy mechanical drop).
+     */
+    drop: {
+      x: -300,
+      y: 140,
+      rotateDeg: -8,
+      scale: 0.8,
+      overshoot: { y: 18, rotateDeg: -1.2 },
+    },
+  },
+
   hud: {
     logoTop: 24,
     logoFontSize: 24,
