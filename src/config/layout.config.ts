@@ -216,7 +216,17 @@ export const layout = {
     lineHeight: 24,
     /** The shape enters from `rise` px lower at `scale`, and leaves zooming back out to `scale`. */
     shapeEnter: { rise: 32, scale: 0.8 },
-    shapeBorder: 2,
+    shapeBorder: 4,
+    /**
+     * The shape outline looks drawn by hand, like the game's line art (an SVG filter on the
+     * outline only, src/ui/shapeSvg.ts). `wobble`: a slow waver along the line (noise
+     * frequency per content px, push in content px). `grain`: a fine noise that thins and
+     * breaks the line like pencil or dry brush (alpha = contrast × noise + offset).
+     */
+    pencil: {
+      wobble: { frequency: 0.045, scale: 3 },
+      grain: { frequency: 0.85, contrast: 3.4, offset: -0.75 },
+    },
     /** Dot left where the player clicked. */
     clickMarkerSize: 8,
     /** The "Sample 0X, logged" tooltip: fixed in the top-right of the opening (anchor). */

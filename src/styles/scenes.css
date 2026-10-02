@@ -90,8 +90,14 @@
 .round-shape__path {
   fill: var(--shape-fill);
   fill-rule: evenodd;
+}
+
+/* The outline, drawn over the fill, with the hand-drawn (pencil) filter */
+.round-shape__outline {
+  fill: none;
   stroke: var(--shape-border);
-  stroke-linejoin: miter;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 /* Round 12: the light logo color instead of graphite */
