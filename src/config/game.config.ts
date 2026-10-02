@@ -219,8 +219,8 @@ export interface PersonaConfig {
 export const gameConfig: GameConfig = {
   startMode: 'button',
   autoStartDelayMs: 1500,
-  doorOpenMs: 1200,
-  doorCloseMs: 1200,
+  doorOpenMs: 2000,
+  doorCloseMs: 2000,
   loadingStartBeforeDoorsMs: 300,
   loadingMs: 2500,
   loadingFadeOutMs: 200,
@@ -246,9 +246,9 @@ export const gameConfig: GameConfig = {
     fadeEasing: 'ease',
     slideEasing: 'ease-out',
   },
-  endDarknessMs: 3000,
+  endDarknessMs: 1000,
   endDarknessFadeMs: 300,
-  scoreCountUpMs: 1200,
+  scoreCountUpMs: 2500,
   copiedTooltipMs: 2000,
   shapePointSpacingPx: 3,
   optical: {
@@ -317,8 +317,8 @@ export const gameConfig: GameConfig = {
       glowOpacity: 0.16,
     },
     drop: {
-      fallMs: 650,
-      shakeMs: 450,
+      fallMs: 420,
+      shakeMs: 380,
       returnMs: 800,
       reducedMotionMs: 300,
     },

@@ -16,7 +16,8 @@ export type BreathingLevel = 'off' | 'subtle' | 'strong';
 export interface BreathingFx {
   /** False without WebGL (or once the context is lost): the static image is all there is. */
   readonly supported: boolean;
-  setLevel(level: BreathingLevel, now: number): void;
+  /** Eases to `level` over `fx.breathing.transitionMs`, or over `ms` when given (0 = at once). */
+  setLevel(level: BreathingLevel, now: number, ms?: number): void;
   /** Call every frame. */
   update(now: number, reducedMotion: boolean): void;
 }
@@ -187,11 +188,11 @@ export function createBreathing(background: BackgroundLayer): BreathingFx {
     get supported() {
       return supported;
     },
-    setLevel(level, now) {
+    setLevel(level, now, ms = cfg.transitionMs) {
       const preset = level === 'off' ? NONE : cfg[level];
-      amp.setTarget(preset.amplitudePx, now, cfg.transitionMs);
+      amp.setTarget(preset.amplitudePx, now, ms);
       // Speed eases too; when fading out it keeps moving while the push shrinks.
-      if (level !== 'off') speed.setTarget(preset.speed, now, cfg.transitionMs);
+      if (level !== 'off') speed.setTarget(preset.speed, now, ms);
     },
     update(now, reducedMotion) {
       const a = amp.value(now);

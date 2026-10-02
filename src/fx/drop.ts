@@ -98,19 +98,22 @@ export function createScreenDrop(assembly: HTMLElement, followers: HTMLElement[]
         );
         return ms;
       }
-      // A heavy fall, speeding up until it hits; then a short shake that dies away.
+      // A heavy fall, like gravity: it gives way slowly, speeds up and hits at full speed
+      // (ease-in cubic). The hit pushes it on a little and it springs back (fast ease-out),
+      // then smaller wobbles settle it.
       const ms = cfg.fallMs + cfg.shakeMs;
       const landAt = cfg.fallMs / ms;
       const wobbles = shakePoses(dropped, pose.shake);
+      const IMPACT = 'cubic-bezier(0.2, 0.9, 0.35, 1)';
       moveTo(
         dropped,
         (from) => [
-          { transform: from, offset: 0, easing: 'cubic-bezier(0.5, 0, 1, 0.6)' },
-          { transform: css(dropped), offset: landAt, easing: 'ease-out' },
+          { transform: from, offset: 0, easing: 'cubic-bezier(0.55, 0.05, 0.7, 0.2)' },
+          { transform: css(dropped), offset: landAt, easing: IMPACT },
           ...wobbles.map((p, i) => ({
             transform: css(p),
             offset: landAt + ((1 - landAt) * (i + 1)) / wobbles.length,
-            easing: 'ease-in-out',
+            easing: i === 0 ? IMPACT : 'ease-in-out',
           })),
         ],
         ms,

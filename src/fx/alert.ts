@@ -4,7 +4,8 @@ import { alertPulseAt, createTween } from './schedule';
 /** Alert mode: the room color pulses between the two alert tokens, and a soft glow takes it too. */
 export interface AlertFx {
   readonly active: boolean;
-  setActive(active: boolean, now: number): void;
+  /** Fades in or out over `fx.alert.rampMs`, or over `rampMs` when given (0 = at once). */
+  setActive(active: boolean, now: number, rampMs?: number): void;
   /** Call every frame. */
   update(now: number): void;
 }
@@ -30,11 +31,11 @@ export function createAlert(app: HTMLElement, glow: HTMLElement): AlertFx {
     get active() {
       return active;
     },
-    setActive(next, now) {
+    setActive(next, now, rampMs = cfg.rampMs) {
       if (next === active) return;
       active = next;
       if (next && ramp.value(now) === 0) pulseStart = now;
-      ramp.setTarget(next ? 1 : 0, now, cfg.rampMs);
+      ramp.setTarget(next ? 1 : 0, now, rampMs);
       idle = false;
     },
     update(now) {

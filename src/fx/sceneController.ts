@@ -78,10 +78,10 @@ export function createSceneController(
   const glitchKind = (effects: RoundConfig['effects']): string | undefined =>
     effects.find((e) => e.startsWith('glitch'));
 
-  const applyAlert = (now: number): void => {
+  const applyAlert = (now: number, rampMs?: number): void => {
     const active = forcedAlert ?? alertForMode(ctx.sceneMode);
     if (active === alert.active) return;
-    alert.setActive(active, now);
+    alert.setActive(active, now, rampMs);
     bus.emit('alert.show', { active });
   };
 
@@ -95,8 +95,11 @@ export function createSceneController(
 
   const applyMode = (mode: SceneMode): void => {
     const now = performance.now();
-    breathing.setLevel(breathingForMode(mode), now);
-    applyAlert(now);
+    // Back to normal happens in the dark (the end of the game) or outside the rounds: at
+    // once, so the lights return on a calm stage. Every other change eases in.
+    const ms = mode === 'normal' ? 0 : undefined;
+    breathing.setLevel(breathingForMode(mode), now, ms);
+    applyAlert(now, ms);
     if (mode === 'normal') {
       // Back to a calm scene (round 1, or the end of the game while it is dark).
       glitch.stop();
