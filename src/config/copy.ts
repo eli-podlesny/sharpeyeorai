@@ -42,7 +42,7 @@ export const copy = {
     total: '{total}pts',
     sampleNote: 'Sample data — no rounds played',
     details: 'Details',
-    hideDetails: 'Summary',
+    hideDetails: 'Score',
     share: 'Share result',
     playAgain: 'Play again',
     colRound: 'Test',

@@ -1,5 +1,4 @@
 import { layout } from '../config/layout.config';
-import { toContentCoords } from '../core/input';
 import type { Point } from '../core/stage';
 import { setU, u } from '../core/units';
 import { h } from './dom';
@@ -58,23 +57,17 @@ export function showTooltip(
   return tip;
 }
 
-/** The same tooltip pinned to a fixed spot, `right`/`top` design px from the container's top-right. */
+/**
+ * The same tooltip pinned to a fixed spot: `right` and `top` (or `bottom`) design px from
+ * the container's edges.
+ */
 export function showTooltipAtCorner(
   container: HTMLElement,
-  corner: { right: number; top: number },
+  corner: { right: number; top: number } | { right: number; bottom: number },
   content: TooltipContent,
 ): HTMLElement {
   const tip = createTooltip(content);
   setU(tip, corner);
   container.append(tip);
   return tip;
-}
-
-/**
- * An element's top-right corner in screen-content pixels. Use it to anchor a tooltip
- * next to a button.
- */
-export function besideElement(el: HTMLElement): Point {
-  const box = el.getBoundingClientRect();
-  return toContentCoords(box.right, box.top);
 }

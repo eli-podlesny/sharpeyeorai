@@ -10,7 +10,7 @@ import { createSampleResults } from '../rounds/autoplay';
 import { summarize, type SessionSummary } from '../scoring/summary';
 import { h } from '../ui/dom';
 import { fadeTo, prefersReducedMotion } from '../ui/motion';
-import { besideElement, showTooltip } from '../ui/tooltip';
+import { showTooltipAtCorner } from '../ui/tooltip';
 import { createFillingBar, createPanel, createTitle } from './layout';
 
 const { score: L } = layout;
@@ -118,6 +118,7 @@ export function createScoreScene(ctx: SceneContext): Scene {
       L.total,
     );
     total.setAttribute('aria-label', fill(copy.score.total, { total: summary.total }));
+    total.style.transform = `translateX(${u(L.total.nudgeX)})`;
     const line = createLine('p', 'score-body', persona.line, L.line);
     line.style.maxWidth = u(L.line.maxWidth);
     verdict.append(total, createLine('h2', 'score-headline', persona.headline, L.headline), line);
@@ -144,7 +145,11 @@ export function createScoreScene(ctx: SceneContext): Scene {
     links.append(details, share, playAgain);
 
     root.append(createLine('p', 'score-label', copy.score.label, L.label), verdict, table, links);
-    if (isSample) root.append(h('p', 'score-sample-note', copy.score.sampleNote));
+    if (isSample) {
+      const note = h('p', 'score-sample-note', copy.score.sampleNote);
+      setU(note, L.sampleNote);
+      root.append(note);
+    }
     root.classList.add('fade');
     root.style.opacity = '0';
     root.inert = true;
@@ -203,9 +208,9 @@ export function createScoreScene(ctx: SceneContext): Scene {
         url: copy.score.shareUrl,
       });
       const report = (copied: boolean): void => {
-        const at = besideElement(share);
+        const at = L.copiedTooltip;
         if (copied) {
-          replaceTip(showTooltip(root, at, { title: copy.score.copied, above: true }));
+          replaceTip(showTooltipAtCorner(root, at, { title: copy.score.copied }));
           const version = tipVersion;
           scope.timeout(() => {
             if (version === tipVersion) tip?.remove();
@@ -213,11 +218,10 @@ export function createScoreScene(ctx: SceneContext): Scene {
         } else {
           // No clipboard: show the text so it can be copied by hand. It stays until replaced.
           replaceTip(
-            showTooltip(root, at, {
+            showTooltipAtCorner(root, at, {
               title: copy.score.copyFailed,
               lines: [text],
               wrap: true,
-              above: true,
             }),
           );
         }

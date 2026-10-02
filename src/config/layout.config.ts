@@ -91,6 +91,11 @@ const ANCHORS = {
   timer: { right: 16.52, top: 1.59 },
   /** "Sample 0X, logged" tooltip: its top-right corner, in the opening's top-right corner. */
   loggedTooltip: { right: 6.195, top: 8.166 },
+  /**
+   * Chat tooltip spot (Figma "hud placement"): its bottom-right corner, in the opening's
+   * bottom-right corner. The score screen's "Copied" tooltip shows here.
+   */
+  chatTooltip: { right: 6.195, bottom: 8.465 },
   /** Objective line: bottom-center, its bottom this far up, clear of the bottom notch. */
   objective: { bottom: 9 },
 } as const;
@@ -271,7 +276,13 @@ export const layout = {
   /** Score scene, from the Figma "Score" frame. Tops are inside screen-content. */
   score: {
     label: { top: 80, fontSize: 16, lineHeight: 24, letterSpacing: 8 },
-    total: { top: 185, fontSize: 80, lineHeight: 88 },
+    /** `nudgeX`: moved right this far, so the number looks centered (optical balance). */
+    total: { top: 185, fontSize: 80, lineHeight: 88, nudgeX: 4 },
+    /** "Copied" (and "Copy this:") tooltip: at the chat tooltip spot, bottom-right. */
+    copiedTooltip: {
+      right: pctW(ANCHORS.chatTooltip.right),
+      bottom: pctH(ANCHORS.chatTooltip.bottom),
+    },
     headline: { top: 280, fontSize: 20, lineHeight: 24 },
     line: { top: 312, fontSize: 16, lineHeight: 24, maxWidth: 440 },
     /** Not in the Figma frame: placed under the two-line body. */
@@ -280,5 +291,7 @@ export const layout = {
     links: { top: 572, fontSize: 16, lineHeight: 24, letterSpacing: 8, gap: 56 },
     /** Details table, shown in place of the verdict while open. */
     table: { top: 136, fontSize: 14, rowHeight: 26, cellPaddingX: 20 },
+    /** Debug only: the "Sample data" note under the links, clear of the bottom notch. */
+    sampleNote: { top: 604, fontSize: 12, lineHeight: 16 },
   },
 } as const;
