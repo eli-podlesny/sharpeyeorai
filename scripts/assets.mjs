@@ -1,9 +1,11 @@
 // Builds the runtime images from the owner's raw exports.
 //   assets-src/<name>.png  →  public/assets/<name>@2x.{webp,avif} (source size)
 //                             public/assets/<name>@1x.{webp,avif} (half size)
+//   assets-src/ui/cursors/<name>{,@2x}.png  →  public/assets/cursors/ (copied as PNG: the
+//                             most reliable format for CSS cursors)
 // and writes src/assets/manifest.ts with each image's intrinsic size and file sizes.
 // Run with `npm run assets` after changing anything in assets-src/.
-import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import * as prettier from 'prettier';
 import sharp from 'sharp';
@@ -27,6 +29,16 @@ const IMAGES = [
 ];
 
 const FORMATS = ['webp', 'avif'];
+
+/** The metal system cursors (32px, and 64px @2x). `key` is the name used in code. */
+const CURSORS_SRC = path.join(SRC, 'ui/cursors');
+const CURSORS_OUT = path.join(OUT, 'cursors');
+const CURSORS = [
+  { key: 'default', stem: 'cursor-default' },
+  { key: 'pointer', stem: 'cursor-pointer' },
+  { key: 'pointerDown', stem: 'cursor-pointer-down' },
+  { key: 'notAllowed', stem: 'cursor-not-allowed' },
+];
 
 async function encode(input, format, quality, outFile) {
   const pipeline =
@@ -64,6 +76,21 @@ async function main() {
       }
     }
     entries.push(entry);
+  }
+
+  await mkdir(CURSORS_OUT, { recursive: true });
+  const cursorLines = [];
+  for (const c of CURSORS) {
+    const files = {};
+    for (const [density, suffix] of [
+      ['x1', ''],
+      ['x2', '@2x'],
+    ]) {
+      const name = `${c.stem}${suffix}.png`;
+      await copyFile(path.join(CURSORS_SRC, name), path.join(CURSORS_OUT, name));
+      files[density] = `${PUBLIC_PATH}/cursors/${name}`;
+    }
+    cursorLines.push(`  ${c.key}: { x1: '${files.x1}', x2: '${files.x2}' },`);
   }
 
   const kb = (n) => `${(n / 1024).toFixed(0)} KB`;
@@ -115,6 +142,13 @@ ${lines.join('\n')}
 } as const satisfies Record<string, ManifestImage>;
 
 export type ImageKey = keyof typeof manifest;
+
+/** The metal system cursors, 1× and 2× PNG (hotspots in \`layout.systemCursor\`). */
+export const cursorFiles = {
+${cursorLines.join('\n')}
+} as const satisfies Record<string, { x1: string; x2: string }>;
+
+export type CursorKey = keyof typeof cursorFiles;
 `;
   const options = (await prettier.resolveConfig(MANIFEST)) ?? {};
   await writeFile(MANIFEST, await prettier.format(ts, { ...options, filepath: MANIFEST }));

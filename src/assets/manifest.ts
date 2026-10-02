@@ -85,3 +85,25 @@ export const manifest = {
 } as const satisfies Record<string, ManifestImage>;
 
 export type ImageKey = keyof typeof manifest;
+
+/** The metal system cursors, 1× and 2× PNG (hotspots in `layout.systemCursor`). */
+export const cursorFiles = {
+  default: {
+    x1: '/assets/cursors/cursor-default.png',
+    x2: '/assets/cursors/cursor-default@2x.png',
+  },
+  pointer: {
+    x1: '/assets/cursors/cursor-pointer.png',
+    x2: '/assets/cursors/cursor-pointer@2x.png',
+  },
+  pointerDown: {
+    x1: '/assets/cursors/cursor-pointer-down.png',
+    x2: '/assets/cursors/cursor-pointer-down@2x.png',
+  },
+  notAllowed: {
+    x1: '/assets/cursors/cursor-not-allowed.png',
+    x2: '/assets/cursors/cursor-not-allowed@2x.png',
+  },
+} as const satisfies Record<string, { x1: string; x2: string }>;
+
+export type CursorKey = keyof typeof cursorFiles;
