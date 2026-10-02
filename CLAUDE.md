@@ -12,7 +12,7 @@ The owner is a designer who is new to Claude Code. Explain what you are about to
 
 ## Current version
 
-**v0.7 — scene effects.** All 12 rounds complete; merging v0.7 makes **v1.0**. See `docs/briefs/` for the active brief. (Releases are now numbered 0.x by brief; the roadmap table below is kept for scope reference.)
+**v1.0 — released** (tag `v1.0.0`): the playable greybox with all 12 rounds, scoring and scene effects (v0.7 merged). Next briefs in `docs/briefs/`. (Releases are now numbered 0.x by brief; the roadmap table below is kept for scope reference.)
 
 | Version | Scope                                                                                                                                      |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
