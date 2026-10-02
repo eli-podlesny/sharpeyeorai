@@ -19,10 +19,24 @@
     var(--alert-high) calc(var(--alert-mix, 0) * 1%),
     var(--alert-low)
   );
-  background: color-mix(
+  --alert-tint: color-mix(
     in srgb,
     var(--alert-color) calc(var(--alert-ramp, 0) * 1%),
     var(--color-room)
+  );
+  /* Rounds 10–12 (--alert-focus 0–1): the tint gathers around the screen center
+     (--alert-cx/-cy): full within --alert-focus-core, the room color beyond
+     --alert-focus-edge. Unfocused, both reach far past the window: a flat tint. */
+  --alert-core: calc(
+    (1 - var(--alert-focus, 0)) * 150vmax + var(--alert-focus, 0) * var(--alert-focus-core)
+  );
+  --alert-edge: calc(
+    (1 - var(--alert-focus, 0)) * 150vmax + var(--alert-focus, 0) * var(--alert-focus-edge)
+  );
+  background: radial-gradient(
+    circle at var(--alert-cx, 50%) var(--alert-cy, 50%),
+    var(--alert-tint) var(--alert-core),
+    var(--color-room) var(--alert-edge)
   );
   /* The unit: the largest frame-shaped box with --unit-margin-y above and below and at
      least --unit-margin-x at the sides, capped (variables set by src/core/stage.ts, which

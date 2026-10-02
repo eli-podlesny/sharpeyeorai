@@ -168,6 +168,8 @@ export interface FxConfig {
     rampMs: number;
     /** The glow ellipse's opacity at full alert. Its blur radius is `layout.alertGlow.blur`. */
     glowOpacity: number;
+    /** Rounds 10–12: the alert gathers around the screen over this time (`layout.alertGlow.focus`). */
+    focusMs: number;
   };
   drop: {
     /** After round 9's click: the assembly falls over this time… */
@@ -436,6 +438,7 @@ export const gameConfig: GameConfig = {
       intensePeriodMs: 900,
       rampMs: 2000,
       glowOpacity: 0.16,
+      focusMs: 1500,
     },
     drop: {
       fallMs: 420,

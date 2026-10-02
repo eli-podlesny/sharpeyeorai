@@ -21,6 +21,8 @@ export type RoundPhase = 1 | 2 | 3 | 4;
  * - `closingDoors`: doors close and the scene goes black over the time limit (round 11).
  * - `stayDark`: the scene stays black; only the round's own content shows; the doors close
  *   over the idle time (round 12).
+ * - `alertFocus`: the alert color gathers around the (dropped) screen instead of covering
+ *   the whole room (rounds 10–12).
  */
 export type RoundEffect =
   | 'glitchSlow'
@@ -29,7 +31,8 @@ export type RoundEffect =
   | 'dropOnClick'
   | 'stayDropped'
   | 'closingDoors'
-  | 'stayDark';
+  | 'stayDark'
+  | 'alertFocus';
 
 /** Shape fill color: the default graphite, or the light logo color (round 12). Colors are tokens. */
 export type ShapeFill = 'default' | 'light';
@@ -213,6 +216,9 @@ function lastBreathsMs(): number {
   return count * (riseMs + holdMs + fallMs) + (count - 1) * gapMs;
 }
 
+/** Round 10: extra margin for its wander, as the spinning star outgrows its box at rest. */
+const ROUND_10_SPIN_ROOM = 80;
+
 /** Round 11's square shrinks from this size… */
 const SHRINK_FROM_PX = 200;
 /** …to this size, over this long; the round times out at the same moment. */
@@ -337,12 +343,21 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     // A five-point star, stretched sideways.
     shape: { type: 'star', width: 380, height: 240, points: 5, innerRatio: 0.6 },
     rotationDeg: 14,
-    offset: { x: -120, y: DEFAULT_OFFSET.y },
-    // One full turn, clockwise, every 20s.
-    motions: [{ type: 'spin', periodMs: 20000 }],
+    // One full turn, clockwise, every 20s, while it wanders around the screen on a
+    // figure-eight. The wave keeps extra room (`ROUND_10_SPIN_ROOM`) since the turning star
+    // is taller and wider than its box at rest.
+    motions: [
+      { type: 'spin', periodMs: 20000 },
+      {
+        type: 'wave',
+        periodMs: 7000,
+        ampY: 60,
+        phaseDeg: 0,
+        margin: layout.round.motionMargin + ROUND_10_SPIN_ROOM,
+      },
+    ],
     // The screen is still dropped and glitches without pause.
-    effects: ['stayDropped', 'glitchConstant'],
-    startMessage: { copyKey: 'hurryUp', variant: 'orange', durationMs: 2500 },
+    effects: ['stayDropped', 'glitchConstant', 'alertFocus'],
   },
   11: {
     // Shrinks; the falloff follows the current size, so late clicks are judged more strictly.
@@ -350,7 +365,9 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     motions: [{ type: 'shrink', endScale: SHRINK_TO_PX / SHRINK_FROM_PX, durationMs: SHRINK_MS }],
     timeLimitMs: SHRINK_MS,
     // Still dropped and glitching; the doors close and the scene goes black over the same 8s.
-    effects: ['stayDropped', 'glitchConstant', 'closingDoors'],
+    effects: ['stayDropped', 'glitchConstant', 'closingDoors', 'alertFocus'],
+    // "Hurry Up!" as it starts, before the doors have closed far.
+    startMessage: { copyKey: 'hurryUp', variant: 'light', durationMs: 2500 },
   },
   12: {
     // An even triangle, shown for 1s (fading over the last 200ms). Clicks count for 4s; a
@@ -373,7 +390,7 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     // close over the idle time.
     aboveDarkness: true,
     shapeMark: true,
-    effects: ['stayDropped', 'stayDark'],
+    effects: ['stayDropped', 'stayDark', 'alertFocus'],
     // "Last chance..." first, lit in the black; the triangle comes once it has been read.
     startMessage: { copyKey: 'lastChance', variant: 'light', durationMs: 2000 },
     shapeDelayMs: 2000,

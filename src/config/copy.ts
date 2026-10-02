@@ -42,7 +42,7 @@ export const copy = {
   chat: {
     /** Orange, when alert mode starts (after round 7). */
     alert: 'Alert! System Malfunction',
-    /** At the start of round 10. */
+    /** At the start of round 11. */
     hurryUp: 'Hurry Up!',
     /** Before round 12's triangle, lit in the dark. */
     lastChance: 'Last chance...',

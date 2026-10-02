@@ -48,9 +48,14 @@ describe('scene-mode timeline', () => {
     expect(getRound(7).effects).toEqual(['glitchSlow']);
     expect(getRound(8).effects).toEqual(['glitchSlow']);
     expect(getRound(9).effects).toEqual(['glitchFast', 'dropOnClick']);
-    expect(getRound(10).effects).toEqual(['stayDropped', 'glitchConstant']);
-    expect(getRound(11).effects).toEqual(['stayDropped', 'glitchConstant', 'closingDoors']);
-    expect(getRound(12).effects).toEqual(['stayDropped', 'stayDark']);
+    expect(getRound(10).effects).toEqual(['stayDropped', 'glitchConstant', 'alertFocus']);
+    expect(getRound(11).effects).toEqual([
+      'stayDropped',
+      'glitchConstant',
+      'closingDoors',
+      'alertFocus',
+    ]);
+    expect(getRound(12).effects).toEqual(['stayDropped', 'stayDark', 'alertFocus']);
     expect(rounds.filter((r) => r.aboveDarkness).map((r) => r.id)).toEqual([12]);
     expect(rounds.slice(0, 6).every((r) => r.effects.length === 0)).toBe(true);
   });

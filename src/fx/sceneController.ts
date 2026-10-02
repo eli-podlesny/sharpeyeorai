@@ -60,7 +60,12 @@ export function createSceneController(
   const { bus, doors, darkness } = ctx;
   const fx = gameConfig.fx;
   const breathing = createBreathing(layers.background);
-  const alert = createAlert(app, layers.alertGlow);
+  // The alert can gather around the screen, wherever it is (dropped, rounds 10–12).
+  const screenCenter = (): { x: number; y: number } => {
+    const r = layers.assembly.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  };
+  const alert = createAlert(app, layers.alertGlow, screenCenter);
   const glitch = createGlitch(layers.screen, randomSeed());
   // Round 12's lit shape (in the spotlight layer) drops with the screen, so it sits on it.
   const drop = createScreenDrop(layers.assembly, [layers.spotlightUnit], layers.background.el);
@@ -145,6 +150,7 @@ export function createSceneController(
     breathLit = false;
     glitch.stop();
     drop.reset();
+    alert.setFocus(false, performance.now(), 0);
     if (darkness.level > 0) darkness.setLevel(0, 0);
     ctx.setSceneMode('normal');
     applyMode('normal');
@@ -165,6 +171,7 @@ export function createSceneController(
     breathed = false;
     breathLit = false;
     ctx.setSceneMode(sceneModeForRound(roundId));
+    alert.setFocus(has('alertFocus'), now);
 
     // Rounds 10–12 keep the screen down (a debug jump drops it at once). Any other round
     // starts with it home; in the game it only goes home at the end, in the dark.

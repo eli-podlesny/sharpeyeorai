@@ -232,6 +232,12 @@ export const layout = {
   /** Alert mode's window-sized glow ellipse (from round 8): a soft blur, in px of a 900 px tall window. */
   alertGlow: {
     blur: 300,
+    /**
+     * Focused on the screen (rounds 10–12): the alert color stays full within `coreVmax`
+     * of the screen center and fades to the normal room color by `edgeVmax` (in vmax, so it
+     * keeps its proportion to the window); the glow shrinks to `glowScale` around the screen.
+     */
+    focus: { coreVmax: 18, edgeVmax: 62, glowScale: 0.55 },
   },
 
   /**

@@ -65,7 +65,7 @@ describe('rounds config', () => {
     expect(kinds(7)).toEqual(['skew']);
     expect(kinds(8)).toEqual(['jump']);
     expect(kinds(9)).toEqual(['morph']);
-    expect(kinds(10)).toEqual(['spin']);
+    expect(kinds(10)).toEqual(['spin', 'wave']);
     expect(kinds(11)).toEqual(['shrink']);
   });
 
@@ -95,9 +95,25 @@ describe('rounds config', () => {
     expect(rounds.filter((r) => !r.clickFeedback).map((r) => r.id)).toEqual([12]);
   });
 
-  it('round 10 (star) is turned about 14° and moved about 120px left', () => {
+  it('round 10 (star) is turned about 14° and wanders around the middle while it spins', () => {
     expect(getRound(10).rotationDeg).toBe(14);
-    expect(getRound(10).offset.x).toBe(-120);
+    expect(getRound(10).offset.x).toBe(0);
+  });
+
+  it('round 10 stays inside the motion safe area through a whole turn', () => {
+    const content = { width: layout.opening.width, height: layout.opening.height };
+    const area = freeScreenArea(layout.round.motionMargin);
+    let reachX = 0;
+    for (let t = 0; t <= 20000; t += 50) {
+      const box = bounds(shapeAt(getRound(10), content, 1, t).outer);
+      expect(box.minX).toBeGreaterThanOrEqual(area.left);
+      expect(box.maxX).toBeLessThanOrEqual(area.left + area.width);
+      expect(box.minY).toBeGreaterThanOrEqual(area.top);
+      expect(box.maxY).toBeLessThanOrEqual(area.top + area.height);
+      reachX = Math.max(reachX, Math.abs((box.minX + box.maxX) / 2 - content.width / 2));
+    }
+    // It really moves around, not just turns in place.
+    expect(reachX).toBeGreaterThan(100);
   });
 
   it('only round 12 uses the light fill', () => {
