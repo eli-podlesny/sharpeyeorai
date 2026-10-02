@@ -12,7 +12,7 @@ The owner is a designer who is new to Claude Code. Explain what you are about to
 
 ## Current version
 
-**v0.6 — moving, morphing and timed rounds.** See `docs/briefs/` for the active brief. (Releases are now numbered 0.x by brief; the roadmap table below is kept for scope reference.)
+**v0.7 — scene effects.** All 12 rounds complete; merging v0.7 makes **v1.0**. See `docs/briefs/` for the active brief. (Releases are now numbered 0.x by brief; the roadmap table below is kept for scope reference.)
 
 | Version | Scope                                                                                                                                      |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -30,7 +30,7 @@ Never build ahead of the current version. If something from a later version is n
 ## Tech stack
 
 - Vite + TypeScript (`strict: true`, no `any`). No UI framework.
-- DOM + CSS for everything visual. Images are layered `<img>`/`<div>` elements. No canvas/WebGL unless a brief asks for it.
+- DOM + CSS for everything visual. Images are layered `<img>`/`<div>` elements. No canvas/WebGL unless a brief asks for it. Exception (v0.7): the **background layer** may use WebGL for its breathing effect (`src/fx/breathing.ts`, plain WebGL, no library), always with the static image as fallback.
 - Plain CSS with custom properties. Global tokens live in `src/styles/tokens.css`. No Tailwind.
 - Vitest for tests. ESLint + Prettier for code style.
 - Fonts self-hosted through Fontsource (EU/GDPR reason: no Google Fonts CDN): Turret Road (Medium, ExtraBold), Kode Mono (Regular, Bold).
@@ -62,7 +62,7 @@ src/
   scenes/            intro, ready, loading, round, ending, score (calculating: kept, out of the flow)
   layers/            background, frame, doors, screen, screen-hud, hud, darkness
   ui/                tooltips, popups, buttons
-  fx/                effects (tint, distortion, shake) — v1.1+
+  fx/                scene effects (v0.7): sceneController, breathing, glitch, alert, drop + pure schedule
   audio/             v1.3 only
   styles/            tokens.css, base.css
 public/assets/       optimized runtime images (webp) — added in v1.1
@@ -76,7 +76,7 @@ docs/briefs/         one brief per task, written by the owner
 - The stage scales uniformly to fit the window (contain), centered. Scaling works through **rem**: everything on the stage is sized in rem (1rem = 16 design px, converted with `rem()` in `src/core/units.ts`), and `src/core/stage.ts` sets the root font size to `16px × scale`.
 - Minimum supported window width: **1024px**. Below that the stage stops shrinking and the edges crop. The page never scrolls in any direction.
 - The background layer is centered on the window (not the stage), at least 110vw × 110vh, so it always bleeds past every edge and never shows a hard edge. The image uses `mix-blend-mode: multiply` over the `--color-room` token, so the room tint can change without editing the image.
-- Converting a mouse event to stage coordinates must go through one function in `src/core/` so that scaling, and later shake or distortion, is handled in one place.
+- Converting a mouse event to stage coordinates must go through one function in `src/core/` so that scaling, and later shake or distortion, is handled in one place. Screen-content clicks go through `toContentCoords` (`src/core/input.ts`), which also undoes the assembly's real transform matrix (`src/core/affine.ts`), never bounding rectangles.
 - A version label (from `package.json`, injected at build time) sits bottom-center, as in the Figma frames.
 
 ## Layer stack (bottom to top)
@@ -87,11 +87,11 @@ Each layer is its own module with a stable name. Assets are **placeholders** unt
 2. `vignette` — soft darkening at the edges.
 3. `frame-glow` — blurred copy of the frame, behind it.
 4. `screen` — the panel surface: base color + texture overlay. Game content renders inside `screen-content`. The `screen-hud` (round counter, progress bar, timer) sits inside the screen above the content and below the doors, and stays visible from loading through the last round (hidden on the score screen).
-5. `doors` — left and right blast-door halves, clipped to the screen viewport. Slide apart to open.
+5. `doors` — left and right blast-door halves, clipped to the screen viewport. Slide apart to open. They never take clicks (round 11 counts clicks behind them).
 6. `frame` — the metal frame, on top of the screen edges.
 7. `hud` — logo (top center), version label, About link, and anything outside the frame.
 
-Above everything: `darkness`, a whole-window overlay for the end-of-game blackout (placeholder).
+Layers 3–6 sit in the `assembly`, which moves as one piece (round 10's drop) around `layout.assembly.origin`. Above the HUD, on the stage: `alert-glow` (window-sized ellipse in the alert color), `darkness` (window-sized, levels 0–1; rounds 11–12 and the end of the game) and `spotlight` (over the screen box, above the darkness: round 12 renders there, lit). Window-sized layers on the stage use `.layer--window` (vw/vh, centered).
 
 Placeholder rule: flat blocks in palette colors with their layer name printed small inside, at the sizes and positions in `src/config/layout.config.ts`. Current values (from Figma, will change):
 
@@ -127,7 +127,24 @@ Colors and type are not final. Always use tokens, never hard-coded values, so th
 - Score against the shape exactly as displayed: on the click, motion freezes (every moving round) and the round is scored on the frame on screen (`targetAt` at that frame's time); C, M, O, the falloff and the outline snapshot (`shape`, `frameMs`) are stored in the result. The default falloff follows the shape's current size (round 11 gets stricter as it shrinks).
 - Timing (`src/rounds/timing.ts`): `timeLimitMs` and `inputWindows` (ranges from `shape.visible`; clicks outside are ignored). No click by the deadline (the time limit or the end of the last window) → `round.timeout`, a result with no click (q = 0, left out of lean and mean latency, "no input" in the Details table). Round 11: `timeLimitMs` 10000, then straight to the outro. Round 12: shown 1000ms (fading over the last 200ms), clicks count during `[0, 5000]`, then `postRoundIdleMs` 4000 of ignored input: 9s in all, click or not. Round 12 shows no objective line, no click marker and no logged tooltip: just the smile.
 - Decoy (round 5, `decoy` in `rounds.config.ts`): an orange 2 × 2px dot (`--decoy-dot`) on the shape's current C (`target: 'optical'` switches to O), blinking twice, 400ms on / 400ms off (1.25 Hz, under the 3 Hz limit), right after the shape is fully visible. Gone on the click.
-- Debug panel: pause/resume motion (the round clock), step one frame while paused, the round time with time left / input open / fixed end for timed rounds; the C/O/M markers follow moving shapes; the live score uses the current frame.
+- Debug panel: pause/resume motion (the round clock), step one frame while paused, the round time with time left / input open / fixed end for timed rounds; the C/O/M markers follow moving shapes; the live score uses the current frame. Effects (v0.7): force a scene mode (held until the next round changes it), trigger a glitch, toggle alert and the screen drop, scrub round 11's darkening, FPS.
+- Scene-mode timeline (v0.7, `gameConfig.fx.modeByRound`; the next round's mode starts at a round's outro end). One controller (`src/fx/sceneController.ts`) listens to round events and drives every effect; round files hold no effect code. Every number is in `gameConfig.fx` / `layout.assembly`.
+
+  | When | Mode | Effects |
+  | --- | --- | --- |
+  | Ready → round 3 | `normal` | none |
+  | After round 3's outro | `distorted` | background breathing, subtle (4px) |
+  | Round 7 | `distorted` | + screen glitch: 200ms every 1400ms (calm first) |
+  | After round 7's outro | `alert` | room color pulses #111 ↔ hazard (2.4s), glow ellipse at 16%; breathing strong (10px, 2× faster). No system-message popup yet |
+  | Round 9 | `alert` | + glitch: 800ms on, 400ms calm |
+  | Round 10 | `alert` | + the screen assembly drops (1200ms, heavy, with a settle: left, −8°, 0.8×) during the intro, and returns in the outro |
+  | Round 11 | `blackout` | alert and breathing continue; doors close and the scene darkens to 90% over exactly the 10s deadline (round clock); an early click speeds both up to finish (800ms) |
+  | Round 12 | `blackout` | doors snap open in the dark; the smile renders above the darkness (`aboveDarkness`), then full dark; doors close over the 4s idle |
+  | End | `normal` | full black 3s; effects off and the screen home in the dark; lights return; doors open on the score |
+
+- Breathing: WebGL shader displaces the background with slow smooth noise; presets ease over 2s; one draw call, texture uploaded once, canvas sized to the layer (pixel ratio capped). No WebGL or reduced motion → static image.
+- Glitch (`src/fx/glitch.ts`): 2–4 shifted slices, jitter, slight opacity drop and monochrome noise, inside the screen only (screen background, HUD, objective, shape). Visual only (an SVG displacement filter: hit-testing and scoring are untouched). Burst starts are flash-limited to 3 per second. Reduced motion: the screen only dims.
+- Reduced motion overall: no breathing, glitch dims only, the drop is a short plain move (300ms); the alert pulse stays (slow and soft).
 - Round 1 ignores time in scoring. Every round has a configurable `timeWeight`.
 
 ## Scoring model
@@ -193,7 +210,7 @@ C and O are about 10–40px apart on most shapes (avocado ≈ 19px, by design of
 
 ## Events (hooks for later versions)
 
-Emit typed events through the event bus even before anything listens to them, for example `door.open.start/end`, `door.close.start/end`, `round.intro.start`, `round.intro.end`, `round.shape.visible`, `round.click`, `round.timeout`, `round.logged`, `round.outro.start`, `round.outro.end`, `scene.dark`, `scene.mode`, `alert.show`, `score.reveal`, `score.share`. Sound (v1.3) and effects attach to these. Keep the event list in `src/core/events.ts`.
+Emit typed events through the event bus even before anything listens to them, for example `door.open.start/end`, `door.close.start/end`, `round.intro.start`, `round.intro.end`, `round.shape.visible`, `round.click`, `round.timeout`, `round.logged`, `round.outro.start`, `round.outro.end`, `scene.dark`, `scene.mode`, `alert.show`, `fx.glitch`, `screen.drop`, `score.reveal`, `score.share`. Sound (v1.3) and effects attach to these. Keep the event list in `src/core/events.ts`.
 
 ## Working conventions
 
@@ -233,3 +250,4 @@ Mobile layout, leaderboard/database, sound playback, narrator/intro cinematic, f
 - v0.5 review 2: round 2 blob upright (300 × 440); round 7 rectangle turned 10° clockwise and shrunk so its turned box fills the free area; round 9 is three merged circles of very different sizes (asymmetric); round 10 is a stretched, softer five-point star; the smiley is 100 × 100 (fine for now, even though it drops out of the lean).
 - v0.6: moving shapes are scored on the frame displayed at the click and freeze on click (all of them). The round clock pauses while the tab is hidden. The decoy blinks twice, slowly (under 3 Hz). Moving shapes never pass behind the HUD. Round 12 always runs its full 9s, with no objective line, marker or tooltip. Round 11 has no visible countdown (the v0.7 doors will carry the deadline; they may partly cover the HUD then). The score Details stay a table (no per-round diagrams); timeouts read "no input".
 - v0.6 review: the oval sways slower (6s per loop). Morphing is smaller and slower (3%, 5s). Round 5 also bobs; round 7 leans back and forth (and is a little smaller so it still fits); round 8 jumps every 1200ms; round 9 morphs; round 10 turns once every 20s.
+- v0.7: WebGL is allowed for the background layer only (breathing). One scene controller drives all effects from round events. No alert "System Message" box for now. Round 10's drop lasts ~1200ms and keeps going while the shape is visible. Round 11: the whole scene (screen and shape too) darkens; an early click makes doors and darkness hurry to finish. Round 12: no intro text; the smile is lit above the darkness. The end keeps a few seconds of full black; the screen returns home in the dark and the score is revealed in normal lighting. Reduced motion: glitch becomes a gentle dim; the alert pulse stays.
