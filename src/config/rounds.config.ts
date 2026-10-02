@@ -204,7 +204,7 @@ const MORPH: RoundMotion = { type: 'morph', amplitude: 0.03, cycleMs: 5000 };
 const SHRINK_FROM_PX = 200;
 /** …to this size, over this long; the round times out at the same moment. */
 const SHRINK_TO_PX = 40;
-const SHRINK_MS = 10000;
+const SHRINK_MS = 8000;
 
 /** What makes each round different. Rounds not listed keep the default square. */
 const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
@@ -329,7 +329,7 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     shape: { type: 'rect', width: SHRINK_FROM_PX, height: SHRINK_FROM_PX },
     motions: [{ type: 'shrink', endScale: SHRINK_TO_PX / SHRINK_FROM_PX, durationMs: SHRINK_MS }],
     timeLimitMs: SHRINK_MS,
-    // Still dropped and glitching; the doors close and the scene goes black over the same 10s.
+    // Still dropped and glitching; the doors close and the scene goes black over the same 8s.
     effects: ['stayDropped', 'glitchConstant', 'closingDoors'],
   },
   12: {

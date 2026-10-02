@@ -151,10 +151,10 @@ describe('round 11: the shrinking square', () => {
   const round = getRound(11);
   const side = (t: number): number => bounds(shapeAt(round, content, SEED, t).outer).width;
 
-  it('shrinks linearly from 200 to 40 over 10s, centered, then stays', () => {
+  it('shrinks linearly from 200 to 40 over 8s, centered, then stays', () => {
     expect(side(0)).toBeCloseTo(200, 6);
-    expect(side(5000)).toBeCloseTo(120, 6);
-    expect(side(10000)).toBeCloseTo(40, 6);
+    expect(side(4000)).toBeCloseTo(120, 6);
+    expect(side(8000)).toBeCloseTo(40, 6);
     expect(side(12000)).toBeCloseTo(40, 6);
     const rest = shapeAt(round, content, SEED, 0).anchor;
     expect(shapeAt(round, content, SEED, 7000).anchor).toEqual(rest);

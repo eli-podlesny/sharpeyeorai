@@ -119,13 +119,13 @@ describe('flash limiter', () => {
 describe('round 11 closing', () => {
   const limit = getRound(11).timeLimitMs ?? 0;
 
-  it('closes linearly and is fully shut exactly at the 10s deadline', () => {
-    expect(limit).toBe(10000);
+  it('closes linearly and is fully shut exactly at the 8s deadline', () => {
+    expect(limit).toBe(8000);
     expect(closingAmount(0, limit, null)).toBe(0);
-    expect(closingAmount(5000, limit, null)).toBe(0.5);
-    expect(closingAmount(9999, limit, null)).toBeLessThan(1);
+    expect(closingAmount(4000, limit, null)).toBe(0.5);
+    expect(closingAmount(7999, limit, null)).toBeLessThan(1);
+    expect(closingAmount(8000, limit, null)).toBe(1);
     expect(closingAmount(10000, limit, null)).toBe(1);
-    expect(closingAmount(12000, limit, null)).toBe(1);
   });
 
   it('speeds up to finish after an early click, from where it was', () => {

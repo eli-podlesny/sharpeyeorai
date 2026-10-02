@@ -18,11 +18,11 @@ describe('input rules', () => {
     expect(acceptsClick(round, 60000)).toBe(true);
   });
 
-  it('round 11 times out at 10s', () => {
+  it('round 11 times out at 8s', () => {
     const round = getRound(11);
-    expect(inputDeadlineMs(round)).toBe(10000);
-    expect(acceptsClick(round, 9999)).toBe(true);
-    expect(acceptsClick(round, 10000)).toBe(false);
+    expect(inputDeadlineMs(round)).toBe(8000);
+    expect(acceptsClick(round, 7999)).toBe(true);
+    expect(acceptsClick(round, 8000)).toBe(false);
     expect(fixedRoundEndMs(round)).toBeNull();
   });
 
