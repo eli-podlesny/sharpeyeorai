@@ -66,16 +66,16 @@ export const layout = {
   assembly: {
     origin: { x: DESIGN_WIDTH / 2, y: 80 + FRAME_HEIGHT / 2 },
     /**
-     * Round 10's drop: where the assembly ends up. It slides toward the left, turns
-     * counter-clockwise and shrinks, so it no longer fits fully in view. `overshoot` is how
-     * far past the end pose it swings before settling back (heavy mechanical drop).
+     * The drop after round 9's click: where the assembly ends up. It slides toward the left,
+     * turns counter-clockwise and shrinks, so it no longer fits fully in view. `shake` is the
+     * landing: `count` wobbles, the first this far off (px, degrees), dying away.
      */
     drop: {
       x: -300,
       y: 140,
       rotateDeg: -8,
       scale: 0.8,
-      overshoot: { y: 18, rotateDeg: -1.2 },
+      shake: { x: 3, y: 8, rotateDeg: 0.6, count: 5 },
     },
   },
 

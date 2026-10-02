@@ -43,9 +43,9 @@ export interface SceneFx {
  *   normal → nothing; distorted → subtle breathing; alert → strong breathing + alert pulse;
  *   blackout → the same, darkening. Leaving the rounds puts everything back.
  * - Round effects (`effects` in rounds.config.ts): glitch every 4s (7–8), every 2s (9),
- *   without pause once the screen has dropped (10–11); the screen drop (10, kept in 11);
- *   the closing doors and blackout (11); the black scene around the lit smile (12).
- *   The screen returns home in the dark, at round 12's start.
+ *   without pause (10–11); the screen drop right after round 9's click, kept down through
+ *   round 12; the closing doors and blackout (11); the black scene around the lit triangle
+ *   on the dropped screen (12). The screen goes home at the end, in the dark.
  *
  * Rounds 11–12 follow the round clock, so a hidden tab (or the debug pause) stops them too.
  */
@@ -59,7 +59,8 @@ export function createSceneController(
   const breathing = createBreathing(layers.background);
   const alert = createAlert(app, layers.alertGlow);
   const glitch = createGlitch(layers.screen, randomSeed());
-  const drop = createScreenDrop(layers.assembly);
+  // Round 12's lit shape (in the spotlight layer) drops with the screen, so it sits on it.
+  const drop = createScreenDrop(layers.assembly, [layers.spotlight]);
 
   let round: RoundConfig | null = null;
   let forcedAlert: boolean | null = null;
@@ -136,15 +137,15 @@ export function createSceneController(
     speedUp = null;
     ctx.setSceneMode(sceneModeForRound(roundId));
 
-    // The screen drops (round 10), stays down (round 11, or drops at once after a debug
-    // jump), or goes home at once: after round 11 that happens unseen, in the dark.
+    // Rounds 10–12 keep the screen down (a debug jump drops it at once). Any other round
+    // starts with it home; in the game it only goes home at the end, in the dark.
     let downAt = now;
-    if (has('screenDrop') || has('stayDropped')) downAt += setDrop(true);
+    if (has('stayDropped')) downAt += setDrop(true);
     else if (drop.down) drop.reset();
 
     if (has('glitchSlow')) glitch.setPattern(fx.glitch.slow, now);
     else if (has('glitchFast')) glitch.setPattern(fx.glitch.fast, now);
-    // Starts once the screen is down; a constant glitch from the round before keeps going.
+    // Glitches from the moment the screen is down; one from the round before keeps going.
     else if (has('glitchConstant')) glitch.setConstant(downAt);
     else glitch.stop();
 
@@ -160,6 +161,8 @@ export function createSceneController(
   });
 
   bus.on('round.click', () => {
+    // Round 9: the screen falls right after the click (the round is already scored).
+    if (has('dropOnClick')) setDrop(true);
     if (has('closingDoors') && closing < 1) {
       speedUp = { at: performance.now(), fromAmount: closing };
     }
@@ -169,8 +172,6 @@ export function createSceneController(
     const next = roundId < gameConfig.roundCount ? getRound(roundId + 1).effects : [];
     // The glitch keeps its rhythm into a next round with the same kind (7 → 8, 10 → 11).
     if (glitchKind(round?.effects ?? []) !== glitchKind(next)) glitch.stop();
-    // The screen comes back in the outro, unless the next round keeps it down.
-    if (drop.down && !next.includes('stayDropped')) setDrop(false);
   });
 
   bus.on('round.outro.end', ({ roundId }) => {

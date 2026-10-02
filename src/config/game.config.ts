@@ -113,9 +113,11 @@ export interface FxConfig {
     glowOpacity: number;
   };
   drop: {
-    /** Round 10: the assembly drops over this time, from the start of the intro. */
-    durationMs: number;
-    /** It returns to place during the outro, over this time. */
+    /** After round 9's click: the assembly falls over this time… */
+    fallMs: number;
+    /** …then shakes as it lands, over this time. */
+    shakeMs: number;
+    /** It returns to place over this time (debug toggle; at the end it goes home in the dark, at once). */
     returnMs: number;
     /** Reduced motion: a short, plain move each way. */
     reducedMotionMs: number;
@@ -125,6 +127,8 @@ export interface FxConfig {
     closingDarkness: number;
     /** After an early click in round 11, doors and darkness hurry to the end over this time. */
     speedUpMs: number;
+    /** After a click in round 12 (which ends the game at once), the black lasts this long before the lights return on the score. */
+    afterClickMs: number;
   };
 }
 
@@ -313,13 +317,15 @@ export const gameConfig: GameConfig = {
       glowOpacity: 0.16,
     },
     drop: {
-      durationMs: 1200,
+      fallMs: 650,
+      shakeMs: 450,
       returnMs: 800,
       reducedMotionMs: 300,
     },
     blackout: {
       closingDarkness: 1,
       speedUpMs: 800,
+      afterClickMs: 3000,
     },
   },
 };

@@ -211,15 +211,19 @@ export function createRoundScene(ctx: SceneContext): Scene {
       }, seq.outroFadeMs + seq.betweenRoundsMs);
     };
 
-    /** The round is decided: motion freezes, the pulse stops, and the round heads for its outro. */
-    const decide = (result: RoundResult, outroAfterMs: number): void => {
+    /**
+     * The round is decided: motion freezes, the pulse stops, and the round heads for its outro.
+     * Fixed-length rounds wait for their end on the clock instead (see the frame loop), unless
+     * `endNow` (a click in a round with `clickEndsRound`).
+     */
+    const decide = (result: RoundResult, outroAfterMs: number, endNow = false): void => {
       decided = true;
       shape.classList.add('is-pulse-stopped');
       if (decoy) decoy.hidden = true;
       session.results.push(result);
       bus.emit('round.logged', { result });
-      // Fixed-length rounds wait for their end on the clock instead (see the frame loop).
       if (fixedEnd === null) scope.timeout(startOutro, outroAfterMs);
+      else if (endNow) startOutro();
     };
 
     // 1. The shape fades in, rising and zooming in.
@@ -308,8 +312,8 @@ export function createRoundScene(ctx: SceneContext): Scene {
         scope.timeout(() => tip.remove(), seq.loggedTooltipMs);
       }
       timeline?.onClick?.(tl, { content: point, latencyMs });
-      // 4. Wait, then the outro.
-      decide(result, seq.postClickWaitMs);
+      // 4. Wait, then the outro (round 12: the outro at once).
+      decide(result, seq.postClickWaitMs, round.clickEndsRound === true);
     });
   });
 }

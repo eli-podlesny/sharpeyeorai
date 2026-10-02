@@ -13,11 +13,11 @@ export type RoundPhase = 1 | 2 | 3 | 4;
 /**
  * Effects a round switches on (timings in `gameConfig.fx`):
  * - `glitchSlow` / `glitchFast`: a short screen glitch every 4s (rounds 7–8) / every 2s (round 9).
- * - `glitchConstant`: the screen glitches without pause (rounds 10–11; in round 10 from the
- *   moment the screen has dropped).
- * - `screenDrop`: the screen assembly drops during the intro (round 10).
- * - `stayDropped`: the screen stays dropped (round 11). It returns home in the dark before
- *   the next round without either tag.
+ * - `glitchConstant`: the screen glitches without pause (rounds 10–11).
+ * - `dropOnClick`: the screen assembly drops, with a shake as it lands, right after the
+ *   click (round 9).
+ * - `stayDropped`: the screen stays dropped (rounds 10–12). It goes home at the end of the
+ *   game, in the dark (or at once when a debug jump lands on a round without either tag).
  * - `closingDoors`: doors close and the scene goes black over the time limit (round 11).
  * - `stayDark`: the scene stays black; only the round's own content shows; the doors close
  *   over the idle time (round 12).
@@ -26,7 +26,7 @@ export type RoundEffect =
   | 'glitchSlow'
   | 'glitchFast'
   | 'glitchConstant'
-  | 'screenDrop'
+  | 'dropOnClick'
   | 'stayDropped'
   | 'closingDoors'
   | 'stayDark';
@@ -58,6 +58,8 @@ export type RoundConfig = {
   motions?: readonly RoundMotion[];
   /** The shape is only visible for a while (round 12). */
   hideAfter?: HideAfter;
+  /** A fixed-length round that still ends right after a click (round 12: no wait for the idle time). */
+  clickEndsRound?: boolean;
   /** A blinking dot on C (or O) right after the shape is visible (round 5). */
   decoy?: DecoyConfig;
   /** The objective line shows during this round (round 12 hides it). */
@@ -307,8 +309,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     },
     // Each circle drifts and swells a little, so the merged outline slowly morphs.
     motions: [MORPH],
-    // A short screen glitch every 2s.
-    effects: ['glitchFast'],
+    // A short screen glitch every 2s. Right after the click, the screen drops.
+    effects: ['glitchFast', 'dropOnClick'],
   },
   10: {
     // A five-point star, stretched sideways.
@@ -317,8 +319,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     offset: { x: -120, y: DEFAULT_OFFSET.y },
     // One full turn, clockwise, every 20s.
     motions: [{ type: 'spin', periodMs: 20000 }],
-    // The whole screen drops, tilted, during the intro; once down, it glitches without pause.
-    effects: ['screenDrop', 'glitchConstant'],
+    // The screen is still dropped and glitches without pause.
+    effects: ['stayDropped', 'glitchConstant'],
   },
   11: {
     // Shrinks; the falloff follows the current size, so late clicks are judged more strictly.
@@ -329,18 +331,21 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     effects: ['stayDropped', 'glitchConstant', 'closingDoors'],
   },
   12: {
-    // Shown for 1s (fading over the last 200ms). Clicks count for 5s, then 4s of ignored
-    // input, click or not. No objective line, no click marker, no tooltip: just the smile.
-    shape: { type: 'smiley', diameter: 100 },
+    // An even triangle, shown for 1s (fading over the last 200ms). Clicks count for 5s. With
+    // no click, 4s of ignored input follow (9s in all); a click ends the round at once.
+    // No objective line, no click marker, no tooltip: just the triangle.
+    shape: { type: 'triangle', side: 120 },
     fill: 'light',
     hideAfter: { visibleMs: 1000, fadeMs: 200 },
     inputWindows: [[0, 5000]],
     postRoundIdleMs: 4000,
+    clickEndsRound: true,
     showObjective: false,
     clickFeedback: false,
-    // The scene stays black; only the smile shows, lit. The doors close over the idle time.
+    // The scene stays black; only the triangle shows, lit, on the dropped screen. The doors
+    // close over the idle time.
     aboveDarkness: true,
-    effects: ['stayDark'],
+    effects: ['stayDropped', 'stayDark'],
   },
 };
 

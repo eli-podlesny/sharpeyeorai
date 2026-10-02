@@ -47,8 +47,9 @@ describe('rounds config', () => {
       'circleCluster',
       'star',
       'rect',
-      'smiley',
+      'triangle',
     ]);
+    expect(getRound(12).shape).toEqual({ type: 'triangle', side: 120 });
     expect(getRound(1).shape).toEqual({ type: 'rect', width: 360, height: 360 });
     expect(getRound(11).shape).toEqual({ type: 'rect', width: 200, height: 200 });
   });
@@ -82,6 +83,10 @@ describe('rounds config', () => {
     expect(r12.inputWindows).toEqual([[0, 5000]]);
     expect(r12.postRoundIdleMs).toBe(4000);
     expect(r12.hideAfter).toEqual({ visibleMs: 1000, fadeMs: 200 });
+  });
+
+  it('only round 12 ends on its click instead of waiting out its idle time', () => {
+    expect(rounds.filter((r) => r.clickEndsRound).map((r) => r.id)).toEqual([12]);
   });
 
   it('round 12 alone hides the objective line and the click feedback', () => {

@@ -9,6 +9,7 @@ import { rhombusShape, type RhombusParams } from './rhombus';
 import type { Shape, ShapeContext } from './shape';
 import { smileyShape, type SmileyParams } from './smiley';
 import { starShape, type StarParams } from './star';
+import { triangleShape, type TriangleParams } from './triangle';
 
 export type { Shape, ShapeContext } from './shape';
 
@@ -23,7 +24,8 @@ export type ShapeConfig =
   | ({ type: 'avocado' } & AvocadoParams)
   | ({ type: 'rhombus' } & RhombusParams)
   | ({ type: 'star' } & StarParams)
-  | ({ type: 'smiley' } & SmileyParams);
+  | ({ type: 'smiley' } & SmileyParams)
+  | ({ type: 'triangle' } & TriangleParams);
 
 export type ShapeType = ShapeConfig['type'];
 
@@ -50,5 +52,7 @@ export function buildShape(config: ShapeConfig, ctx: ShapeContext): Shape {
       return rhombusShape(config, ctx);
     case 'smiley':
       return smileyShape(config, ctx);
+    case 'triangle':
+      return triangleShape(config, ctx);
   }
 }

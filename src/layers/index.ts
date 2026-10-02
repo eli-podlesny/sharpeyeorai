@@ -65,8 +65,10 @@ export function createLayerStack(): LayerStack {
     alertGlow.append(ellipse);
   }
 
+  // Turns around the same stage point as the assembly, so it can follow the screen drop.
   const spotlight = createLayerElement('spotlight');
   placeBox(spotlight, layout.screen);
+  spotlight.style.transformOrigin = `${rem(origin.x - layout.screen.left)} ${rem(origin.y - layout.screen.top)}`;
 
   return {
     viewport: [background.el, createVignetteLayer()],
