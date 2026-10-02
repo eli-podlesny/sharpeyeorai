@@ -278,7 +278,7 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     // An oval swaying left and right on a figure-eight, never leaving the free area.
     shape: { type: 'ellipse', width: 240, height: 150 },
     motions: [
-      { type: 'wave', periodMs: 6000, ampY: 40, phaseDeg: 0, margin: layout.round.motionMargin },
+      { type: 'wave', periodMs: 9000, ampY: 40, phaseDeg: 0, margin: layout.round.motionMargin },
     ],
   },
   // A short screen glitch every 4s.

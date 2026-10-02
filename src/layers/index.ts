@@ -72,7 +72,7 @@ export function createLayerStack(): LayerStack {
 
   return {
     viewport: [background.el, createVignetteLayer()],
-    stage: [assembly, hud.el, alertGlow, darkness.el, spotlight],
+    stage: [hud.back, assembly, hud.el, alertGlow, darkness.el, spotlight],
     background,
     assembly,
     screen: screen.el,

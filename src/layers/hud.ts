@@ -5,12 +5,14 @@ import { rem } from '../core/units';
 import { createLayerElement, placeBox } from './placeholder';
 
 /**
- * Logo (top center), version label (bottom center), and anything else outside the frame.
- * `screenSlot` covers the screen box above the doors and frame: scenes put controls
- * there that must show while the doors are shut (the Start button).
+ * The HUD in two layers. `back` holds the logo (top center) and the version label (bottom
+ * center); it sits below the screen assembly, so the frame passes over them when the
+ * screen drops. `el` is on top: `screenSlot` covers the screen box above the doors and
+ * frame, where scenes put controls that must show while the doors are shut (Start).
  */
-export function createHudLayer(): { el: HTMLElement; screenSlot: HTMLElement } {
+export function createHudLayer(): { el: HTMLElement; back: HTMLElement; screenSlot: HTMLElement } {
   const el = createLayerElement('hud');
+  const back = createLayerElement('hud-back');
   const { hud } = layout;
 
   const logo = document.createElement('div');
@@ -32,6 +34,7 @@ export function createHudLayer(): { el: HTMLElement; screenSlot: HTMLElement } {
   screenSlot.className = 'hud__screen-slot';
   placeBox(screenSlot, layout.screen);
 
-  el.append(logo, version, screenSlot);
-  return { el, screenSlot };
+  back.append(logo, version);
+  el.append(screenSlot);
+  return { el, back, screenSlot };
 }
