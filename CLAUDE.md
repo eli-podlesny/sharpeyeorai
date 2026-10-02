@@ -12,7 +12,7 @@ The owner is a designer who is new to Claude Code. Explain what you are about to
 
 ## Current version
 
-**v1.0 — released** (tag `v1.0.0`): the playable greybox with all 12 rounds, scoring and scene effects (v0.7 merged). Next briefs in `docs/briefs/`. (Releases are now numbered 0.x by brief; the roadmap table below is kept for scope reference.)
+**v1.1a — released** (tag `v1.1.0-a`): the responsive layout system and the real art in every layer, plus the v1.1a review changes (see the decision log). Next: v1.1b, parallax and background motion. Briefs in `docs/briefs/`. (Releases are now numbered 0.x by brief; the roadmap table below is kept for scope reference.)
 
 | Version | Scope                                                                                                                                      |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
