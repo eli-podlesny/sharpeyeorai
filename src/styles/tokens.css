@@ -13,8 +13,8 @@
   /* Only for interactive elements, click targets, alerts, the score number, the Drama tint */
   --color-hazard: #ee4d00;
 
-  /* Room tint: the background image is multiplied over this color */
-  --color-room: var(--color-concrete);
+  /* Room tint: the background image is multiplied over this color (Figma: #777 oval) */
+  --color-room: var(--color-ash);
 
   /* Typography */
   --font-display: 'Turret Road', system-ui, sans-serif;
@@ -27,16 +27,10 @@
   --font-hud: var(--font-mono);
   --weight-hud: var(--weight-mono-bold);
 
-  /* Placeholder block colors (v0.1 – v1.0 only) */
-  --placeholder-vignette: color-mix(in srgb, var(--color-ink) 75%, transparent);
-  --placeholder-frame-glow: var(--color-bone);
-  --placeholder-screen: var(--color-bone);
-  --placeholder-screen-texture: color-mix(in srgb, var(--color-paper) 6%, transparent);
-  --placeholder-door: var(--color-ash);
-  --placeholder-door-seam: var(--color-ink);
-  --placeholder-frame: var(--color-graphite);
-  --placeholder-frame-edge: var(--color-ash);
-  --placeholder-label: var(--color-paper);
+  /* Room and screen art (Figma node 177:598) */
+  --vignette-color: var(--color-ink);
+  /* The screen's base color, over a blurred view of the room */
+  --screen-surface: color-mix(in srgb, var(--color-bone) 64%, transparent);
 
   /* Screen content (round, loading, score…) */
   --screen-text: var(--color-ink);
@@ -84,6 +78,12 @@
   --debug-marker-computed: var(--color-paper);
   --debug-marker-optical: var(--color-hazard);
   --debug-marker-pole: var(--color-ash);
+  /* Debug layout outlines: opening, anchors, safe areas */
+  --debug-outline: var(--color-hazard);
+  --debug-outline-surface: var(--color-paper);
+  --debug-outline-opening: var(--color-hazard);
+  --debug-outline-safe: var(--color-ink);
+  --screen-gallery: var(--color-bone);
 
   /* Focus ring */
   --focus-ring: var(--color-hazard);

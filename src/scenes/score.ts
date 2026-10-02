@@ -5,7 +5,7 @@ import type { SceneContext } from '../core/game';
 import { contentSize } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
 import type { Scope } from '../core/scope';
-import { rem, setRem } from '../core/units';
+import { setU, u } from '../core/units';
 import { createSampleResults } from '../rounds/autoplay';
 import { summarize, type SessionSummary } from '../scoring/summary';
 import { h } from '../ui/dom';
@@ -22,7 +22,7 @@ function createLine(
   box: { top: number; fontSize: number; lineHeight: number; letterSpacing?: number },
 ): HTMLElement {
   const el = h(tag, `score-line ${className}`, text);
-  setRem(el, box);
+  setU(el, box);
   return el;
 }
 
@@ -54,9 +54,9 @@ function countUp(scope: Scope, el: HTMLElement, total: number): void {
 
 function createDetailsTable(summary: SessionSummary): HTMLTableElement {
   const table = h('table', 'score-table');
-  setRem(table, { top: L.table.top, fontSize: L.table.fontSize });
-  table.style.setProperty('--row-height', rem(L.table.rowHeight));
-  table.style.setProperty('--cell-padding-x', rem(L.table.cellPaddingX));
+  setU(table, { top: L.table.top, fontSize: L.table.fontSize });
+  table.style.setProperty('--row-height', u(L.table.rowHeight));
+  table.style.setProperty('--cell-padding-x', u(L.table.cellPaddingX));
 
   const headRow = h('tr', '');
   for (const label of [
@@ -117,7 +117,7 @@ export function createScoreScene(ctx: SceneContext): Scene {
     );
     total.setAttribute('aria-label', fill(copy.score.total, { total: summary.total }));
     const line = createLine('p', 'score-body', persona.line, L.line);
-    line.style.maxWidth = rem(L.line.maxWidth);
+    line.style.maxWidth = u(L.line.maxWidth);
     verdict.append(total, createLine('h2', 'score-headline', persona.headline, L.headline), line);
     if (persona.speedTag) {
       verdict.append(createLine('p', 'score-speed-tag', persona.speedTag, L.speedTag));
@@ -128,7 +128,7 @@ export function createScoreScene(ctx: SceneContext): Scene {
 
     // Links row
     const links = h('div', 'score-links');
-    setRem(links, {
+    setU(links, {
       top: L.links.top,
       fontSize: L.links.fontSize,
       lineHeight: L.links.lineHeight,

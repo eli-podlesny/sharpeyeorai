@@ -60,7 +60,7 @@ export function createSceneController(
   const alert = createAlert(app, layers.alertGlow);
   const glitch = createGlitch(layers.screen, randomSeed());
   // Round 12's lit shape (in the spotlight layer) drops with the screen, so it sits on it.
-  const drop = createScreenDrop(layers.assembly, [layers.spotlight]);
+  const drop = createScreenDrop(layers.assembly, [layers.spotlightUnit]);
 
   let round: RoundConfig | null = null;
   let forcedAlert: boolean | null = null;

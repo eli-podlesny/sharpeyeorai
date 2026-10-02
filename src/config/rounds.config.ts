@@ -104,11 +104,11 @@ export function freeScreenArea(margin: number = layout.round.largeShapeMargin): 
   width: number;
   height: number;
 } {
-  const { screen, screenHud } = layout;
+  const { opening, screenHud } = layout;
   const hudBottom = Math.max(screenHud.progress.top, screenHud.timer.top) + screenHud.lineHeight;
   const top = hudBottom + margin;
   const bottom = screenHud.objective.top - margin;
-  return { left: margin, top, width: screen.width - 2 * margin, height: bottom - top };
+  return { left: margin, top, width: opening.width - 2 * margin, height: bottom - top };
 }
 
 /** Round 7's rectangle turns this far clockwise. */
@@ -189,8 +189,8 @@ function largeRect(): Pick<RoundConfig, 'shape' | 'offset' | 'rotationDeg' | 'mo
     rotationDeg: LARGE_RECT_ROTATION_DEG,
     motions: [LARGE_RECT_SKEW],
     offset: {
-      x: area.left + area.width / 2 - layout.screen.width / 2,
-      y: area.top + area.height / 2 - layout.screen.height / 2,
+      x: area.left + area.width / 2 - layout.opening.width / 2,
+      y: area.top + area.height / 2 - layout.opening.height / 2,
     },
   };
 }

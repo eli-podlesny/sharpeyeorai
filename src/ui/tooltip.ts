@@ -1,7 +1,7 @@
 import { layout } from '../config/layout.config';
 import { toContentCoords } from '../core/input';
 import type { Point } from '../core/stage';
-import { rem, setRem } from '../core/units';
+import { setU, u } from '../core/units';
 import { h } from './dom';
 
 const { tooltip: T } = layout;
@@ -18,9 +18,9 @@ export interface TooltipContent {
 
 function createTooltip(content: TooltipContent): HTMLElement {
   const tip = h('div', content.wrap ? 'tooltip tooltip--wrap' : 'tooltip');
-  setRem(tip, { fontSize: T.fontSize, lineHeight: T.lineHeight });
-  if (content.wrap) tip.style.maxWidth = rem(T.maxWidth);
-  tip.style.padding = `${rem(T.paddingY)} ${rem(T.paddingX)}`;
+  setU(tip, { fontSize: T.fontSize, lineHeight: T.lineHeight });
+  if (content.wrap) tip.style.maxWidth = u(T.maxWidth);
+  tip.style.padding = `${u(T.paddingY)} ${u(T.paddingX)}`;
   tip.setAttribute('role', 'status');
   tip.append(h('div', 'tooltip__title', content.title));
   for (const line of content.lines ?? []) tip.append(h('div', '', line));
@@ -39,11 +39,11 @@ export function showTooltip(
   content: TooltipContent,
 ): HTMLElement {
   const tip = createTooltip(content);
-  setRem(tip, { left: at.x + T.offsetX, top: at.y + T.offsetY });
+  setU(tip, { left: at.x + T.offsetX, top: at.y + T.offsetY });
   container.append(tip);
 
   const flipY = (): void => {
-    tip.style.top = rem(at.y - T.offsetY);
+    tip.style.top = u(at.y - T.offsetY);
     tip.classList.add('tooltip--flip-y');
   };
   if (content.above) flipY();
@@ -51,7 +51,7 @@ export function showTooltip(
   const box = tip.getBoundingClientRect();
   const bounds = container.getBoundingClientRect();
   if (box.right > bounds.right) {
-    tip.style.left = rem(at.x - T.offsetX);
+    tip.style.left = u(at.x - T.offsetX);
     tip.classList.add('tooltip--flip-x');
   }
   if (!content.above && box.bottom > bounds.bottom) flipY();
@@ -65,7 +65,7 @@ export function showTooltipAtCorner(
   content: TooltipContent,
 ): HTMLElement {
   const tip = createTooltip(content);
-  setRem(tip, corner);
+  setU(tip, corner);
   container.append(tip);
   return tip;
 }

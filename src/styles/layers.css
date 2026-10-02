@@ -1,4 +1,11 @@
-/* Sizes and positions come from layout.config.ts (set inline in rem). This file holds looks only. */
+/*
+ * Three layout groups (src/config/layout.config.ts):
+ *  - viewport HUD (logo, version): fixed px;
+ *  - background: covers the window plus an overscan;
+ *  - `.unit` boxes: the frame-shaped unit and the boxes that line up with it. Inside a unit,
+ *    sizes come from config as container units (set inline with `u()`).
+ * This file holds the structure and looks; the numbers live in config.
+ */
 
 #app {
   position: fixed;
@@ -17,54 +24,52 @@
     var(--alert-color) calc(var(--alert-ramp, 0) * 1%),
     var(--color-room)
   );
+  /* The unit: the largest frame-shaped box with --unit-margin-y above and below and at
+     least --unit-margin-x at the sides, capped (variables set by src/core/stage.ts, which
+     mirrors this formula for input mapping). */
+  --unit-height: min(
+    calc(100vh - 2 * var(--unit-margin-y)),
+    calc((100vw - 2 * var(--unit-margin-x)) / var(--frame-ar)),
+    var(--unit-max-height)
+  );
+  --unit-width: calc(var(--unit-height) * var(--frame-ar));
 }
 
-/* The 1440 × 900 design stage, centered in the window. 90rem × 56.25rem = 1440 × 900 at 16px. */
-.stage {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 90rem;
-  height: 56.25rem;
-  transform: translate(-50%, -50%);
+/* Nothing shows until every art image has loaded (src/core/preload.ts) */
+#app[data-loading] > * {
+  visibility: hidden;
 }
 
 .layer {
   position: absolute;
 }
 
-/* Window-sized layers that live on the stage (alert glow, darkness): centered on the
-   stage, which is centered on the window, so they always cover it. */
+/* Window-sized layers (alert glow, darkness) */
 .layer--window {
-  left: 50%;
-  top: 50%;
-  width: 100vw;
-  height: 100vh;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-
-/* Frame, glow, screen and doors move as one (round 10's drop). Origin set from config. */
-.layer--assembly {
   inset: 0;
-}
-
-.placeholder-label {
-  position: absolute;
-  left: 0.375rem;
-  top: 0.375rem;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  line-height: 1;
-  color: var(--placeholder-label);
-  opacity: 0.7;
   pointer-events: none;
-  user-select: none;
 }
 
-/* 1. background — viewport-centered, multiplied over the room color */
+/* A frame-shaped box, centered in the window. Its own transform (the drop) turns and
+   scales it around its center; everything inside is sized in its container units. */
+.unit {
+  left: calc(50% - var(--unit-width) / 2);
+  top: calc(50% - var(--unit-height) / 2);
+  width: var(--unit-width);
+  height: var(--unit-height);
+  transform-origin: 50% 50%;
+  container-type: size;
+  pointer-events: none;
+}
+
+/* <picture> wrappers lay out as their image */
+.art {
+  display: contents;
+}
+
+/* 1. background — window plus overscan on each side, multiplied over the room color */
 .layer--background {
-  inset: 0;
+  inset: calc(var(--bg-overscan) * -100vh) calc(var(--bg-overscan) * -100vw);
   pointer-events: none;
 }
 
@@ -91,55 +96,66 @@
   display: none;
 }
 
-/* 2. vignette — covers the whole window */
+/* 2. vignette — the window, darker toward the edges */
 .layer--vignette {
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 55%, var(--placeholder-vignette));
 }
 
-.layer--vignette .placeholder-label {
-  left: auto;
-  right: 0.375rem;
+.layer--vignette svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-/* 3. frame-glow */
-.frame-glow__blur {
+/* Art that fills its layer box exactly (the frame and its shadows) */
+.frame-glow__art,
+.frame__art,
+.frame__inner-shadow {
   position: absolute;
   inset: 0;
-  background: var(--placeholder-frame-glow);
-  opacity: 0.35;
+  width: 100%;
+  height: 100%;
+  user-select: none;
 }
 
-/* 4. screen */
-/* Everything on the screen (tooltips included) stays under the doors: no z-index inside
+/* 3. frame-glow — the frame's shadow (filter set from config) */
+.layer--frame-glow {
+  pointer-events: none;
+}
+
+/* 4. screen — the surface, a little larger than the opening; the frame covers its edges.
+   Everything on the screen (tooltips included) stays under the doors: no z-index inside
    can lift it above them (round 11's doors cover the "logged" tooltip). */
 .layer--screen {
   isolation: isolate;
 }
 
 .screen__base,
-.screen__texture,
-.screen-content {
+.screen__texture {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.screen-content {
-  overflow: hidden;
-}
-
+/* Over a blurred view of the room (backdrop blur set from config) */
 .screen__base {
-  background: var(--placeholder-screen);
+  background: var(--screen-surface);
 }
 
 .screen__texture {
-  background: repeating-linear-gradient(
-    to bottom,
-    var(--placeholder-screen-texture) 0 0.125rem,
-    transparent 0.125rem 0.25rem
-  );
+  object-fit: cover;
+  mix-blend-mode: overlay;
   pointer-events: none;
+  user-select: none;
+}
+
+/* Game content: the opening (game coordinates); box set from config */
+.screen-content {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: auto;
 }
 
 /* Glitch noise (src/fx/glitch.ts): speckle mask over the noise color, above the screen HUD */
@@ -156,10 +172,9 @@
   display: none;
 }
 
-/* screen-hud — inside the screen, above its content, below the doors. Clicks pass through. */
+/* screen-hud — over the opening, above the content, below the doors. Clicks pass through. */
 .screen-hud {
   position: absolute;
-  inset: 0;
   pointer-events: none;
   color: var(--screen-text);
   font-family: var(--font-hud);
@@ -203,7 +218,8 @@
   text-align: center;
 }
 
-/* 5. doors — clipped to the screen viewport. --door-duration is set by the doors control. */
+/* 5. doors — clipped to the screen surface. --door-duration is set by the doors control,
+   --door-shift (how far each slides out) from config. */
 .layer--doors {
   overflow: hidden;
   pointer-events: none; /* clicks always reach the screen content, even behind shut doors */
@@ -216,48 +232,26 @@
 
 .door {
   position: absolute;
-  top: 0;
-  width: 50%;
-  height: 100%;
-  background: var(--placeholder-door);
+  max-width: none;
+  user-select: none;
   transition: transform var(--door-duration, 0ms);
 }
 
 .is-open .door--left {
-  transform: translateX(-100%);
+  transform: translateX(calc(-1 * var(--door-shift)));
 }
 
 .is-open .door--right {
-  transform: translateX(100%);
+  transform: translateX(var(--door-shift));
 }
 
-.door--left {
-  left: 0;
-  border-right: 0.0625rem solid var(--placeholder-door-seam);
-}
-
-.door--right {
-  right: 0;
-  border-left: 0.0625rem solid var(--placeholder-door-seam);
-}
-
-/* 6. frame — a border ring; widths set from config */
+/* 6. frame — the art, with its inner shadow below it (transform and filter set from config) */
 .layer--frame {
   pointer-events: none;
 }
 
-.frame__ring {
-  position: absolute;
-  inset: 0;
-  border-style: solid;
-  border-color: var(--placeholder-frame);
-  outline: 0.0625rem solid var(--placeholder-frame-edge);
-  outline-offset: -0.0625rem;
-  pointer-events: none;
-}
-
-/* 7. hud — logo and version sit below the screen assembly (hud-back); the screen slot on top */
-.layer--hud,
+/* 7. hud — logo and version (fixed px) sit below the screen unit (hud-back); the screen
+   slot, in its own unit box, on top */
 .layer--hud-back {
   inset: 0;
   pointer-events: none;
@@ -274,7 +268,6 @@
 
 .hud__logo {
   font-weight: var(--weight-display-bold);
-  line-height: 1;
 }
 
 .hud__logo-accent {
@@ -284,11 +277,10 @@
 .hud__version {
   font-family: var(--font-mono);
   font-weight: var(--weight-mono-regular);
-  line-height: 1;
   opacity: 0.64;
 }
 
-/* Over the screen box, above doors and frame; only its children take clicks */
+/* Over the opening, above doors and frame; only its children take clicks */
 .hud__screen-slot {
   position: absolute;
 }
@@ -325,12 +317,59 @@
   background: var(--scene-darkness);
 }
 
-/* Over the screen box, above the darkness: round content that stays lit (round 12) */
+/* Over the opening, above the darkness: round content that stays lit (round 12) */
 .layer--spotlight {
   pointer-events: none;
 }
 
-/* Debug overlay — fixed screen pixels, not scaled with the stage */
+/* Debug: outlines of the opening, the HUD anchors and the safe areas (src/ui/layoutOutline.ts) */
+.layout-outline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.layout-outline[hidden] {
+  display: none;
+}
+
+.layout-outline__box {
+  position: absolute;
+  outline: 1px solid var(--debug-outline);
+}
+
+.layout-outline__box--surface {
+  outline-color: var(--debug-outline-surface);
+}
+
+.layout-outline__box--opening {
+  outline: 2px solid var(--debug-outline-opening);
+}
+
+.layout-outline__box--safe {
+  outline: 1px dashed var(--debug-outline-safe);
+}
+
+.layout-outline__box--safe .layout-outline__label {
+  color: var(--debug-outline-safe);
+}
+
+.layout-outline__box--anchor {
+  background: color-mix(in srgb, var(--debug-outline) 18%, transparent);
+}
+
+.layout-outline__label {
+  position: absolute;
+  left: 2px;
+  top: 1px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--debug-outline);
+  white-space: nowrap;
+}
+
+/* Debug overlay — fixed screen pixels, not scaled */
 .debug-overlay {
   position: fixed;
   left: 8px;
@@ -442,7 +481,7 @@
 }
 
 .shape-gallery__screen {
-  fill: var(--placeholder-screen);
+  fill: var(--screen-gallery);
 }
 
 .shape-gallery__free {

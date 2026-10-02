@@ -7,7 +7,7 @@ import { shapeCenters } from './opticalCenter';
 import { bounds, selfIntersects } from './polygon';
 import { opticalSettings } from '../config/rounds.config';
 
-const content = { width: layout.screen.width, height: layout.screen.height };
+const content = { width: layout.opening.width, height: layout.opening.height };
 const SEED = 42;
 const SEEDS = [1, 2, 3, 42, 1234567];
 

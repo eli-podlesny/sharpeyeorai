@@ -1,5 +1,5 @@
 import type { ShapeFill } from '../config/rounds.config';
-import { rem } from '../core/units';
+import { u } from '../core/units';
 import { shapePath, type PlacedShape, type Size } from '../rounds/geometry';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -15,7 +15,7 @@ export function svg<K extends keyof SVGElementTagNameMap>(
 
 /**
  * A placed shape as one SVG path over the whole screen-content area (viewBox in
- * screen-content px), so holes are real cutouts. Sized in rem like everything on the stage.
+ * screen-content px), so holes are real cutouts. Sized with u() like everything in the unit.
  */
 export function createShapeSvg(
   shape: PlacedShape,
@@ -25,8 +25,8 @@ export function createShapeSvg(
   const root = svg('svg', `round-shape round-shape--${options.type} round-shape--${options.fill}`);
   root.setAttribute('viewBox', `0 0 ${content.width} ${content.height}`);
   root.setAttribute('aria-hidden', 'true');
-  root.style.width = rem(content.width);
-  root.style.height = rem(content.height);
+  root.style.width = u(content.width);
+  root.style.height = u(content.height);
   const path = svg('path', 'round-shape__path');
   path.setAttribute('d', shapePath(shape));
   path.setAttribute('stroke-width', String(options.strokeWidth));

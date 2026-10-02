@@ -1,4 +1,4 @@
-/* Scene looks. Sizes and positions come from layout.config.ts (set inline in rem). */
+/* Scene looks. Sizes and positions come from layout.config.ts (set inline with u(), container units). */
 
 /* Simple centered column: ready, loading, calculating, score */
 .scene-panel {

@@ -1,24 +1,25 @@
 import { copy } from '../config/copy';
 import { layout } from '../config/layout.config';
 import { APP_VERSION, formatVersionLabel } from '../core/version';
-import { rem } from '../core/units';
-import { createLayerElement, placeBox } from './placeholder';
+import { createLayerElement, createUnitBox, placeBox } from './layer';
 
 /**
- * The HUD in two layers. `back` holds the logo (top center) and the version label (bottom
- * center); it sits below the screen assembly, so the frame passes over them when the
- * screen drops. `el` is on top: `screenSlot` covers the screen box above the doors and
- * frame, where scenes put controls that must show while the doors are shut (Start).
+ * The HUD in two layers. `back` is the viewport HUD: the logo (top center) and version
+ * label (bottom center), in fixed px, never scaled; it sits below the screen unit, so the
+ * frame passes over them when the screen drops. `el` is a unit box on top: `screenSlot`
+ * covers the opening above the doors and frame, where scenes put controls that must show
+ * while the doors are shut (Start).
  */
 export function createHudLayer(): { el: HTMLElement; back: HTMLElement; screenSlot: HTMLElement } {
-  const el = createLayerElement('hud');
+  const el = createUnitBox('hud');
   const back = createLayerElement('hud-back');
-  const { hud } = layout;
+  const { logo: L, version: V } = layout.viewport;
 
   const logo = document.createElement('div');
   logo.className = 'hud__logo';
-  logo.style.top = rem(hud.logoTop);
-  logo.style.fontSize = rem(hud.logoFontSize);
+  logo.style.top = `${L.top}px`;
+  logo.style.fontSize = `${L.fontSize}px`;
+  logo.style.lineHeight = `${L.lineHeight}px`;
   const logoAccent = document.createElement('span');
   logoAccent.className = 'hud__logo-accent';
   logoAccent.textContent = copy.hud.logoAccent;
@@ -26,13 +27,14 @@ export function createHudLayer(): { el: HTMLElement; back: HTMLElement; screenSl
 
   const version = document.createElement('div');
   version.className = 'hud__version';
-  version.style.bottom = rem(hud.versionBottom);
-  version.style.fontSize = rem(hud.versionFontSize);
+  version.style.bottom = `${V.bottom}px`;
+  version.style.fontSize = `${V.fontSize}px`;
+  version.style.lineHeight = `${V.lineHeight}px`;
   version.textContent = formatVersionLabel(APP_VERSION);
 
   const screenSlot = document.createElement('div');
   screenSlot.className = 'hud__screen-slot';
-  placeBox(screenSlot, layout.screen);
+  placeBox(screenSlot, layout.opening);
 
   back.append(logo, version);
   el.append(screenSlot);

@@ -109,8 +109,8 @@ describe('rounds config', () => {
   });
 
   describe('round 7: a rectangle turned clockwise and leaning, that fills the free area', () => {
-    const { screen } = layout;
-    const content = { width: screen.width, height: screen.height };
+    const { opening } = layout;
+    const content = { width: opening.width, height: opening.height };
     const r7 = getRound(7);
     const area = freeScreenArea();
     const skew = r7.motions?.find((m) => m.type === 'skew');

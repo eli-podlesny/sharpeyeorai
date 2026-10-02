@@ -1,17 +1,25 @@
+import { manifest } from '../assets/manifest';
+
 /**
- * Layout values in design pixels (the 1440 × 900 Figma frame).
- * Values are placeholders from Figma and will be tuned — change them here only.
- * Code converts them to rem through `rem()` in src/core/units.ts.
+ * Layout in three groups (see CLAUDE.md, "The stage"):
+ *  - viewport HUD (logo, version): fixed CSS px, never scaled;
+ *  - background: covers the window plus an overscan;
+ *  - the unit: frame, shadows, screen, doors, screen content and screen HUD, one box
+ *    shaped like the frame art and fitted to the window.
+ *
+ * Everything inside the unit is in reference px: the frame as drawn in the Figma frame,
+ * 772 px tall. Code converts them with `u()` (src/core/units.ts) to container units, so
+ * the whole unit scales together. Change values here only.
  */
 
-export const DESIGN_WIDTH = 1440;
-export const DESIGN_HEIGHT = 900;
+/** The frame's height in the Figma frame: the reference size of everything in the unit. */
+export const UNIT_HEIGHT = 772;
+/** The frame art's aspect ratio, read from the image itself (via the generated manifest). */
+export const FRAME_ASPECT = manifest.frame.width / manifest.frame.height;
+export const UNIT_WIDTH = UNIT_HEIGHT * FRAME_ASPECT;
 
-/** 1rem equals this many design pixels. At 100% scale, 1rem = 16px on screen. */
-export const REM_BASE_PX = 16;
-
-/** The stage stops shrinking once the window is narrower than this (screen px). */
-export const MIN_WINDOW_WIDTH = 1024;
+/** The Figma frame (a 1440 × 900 window): reference for window-sized effects. */
+export const REFERENCE_WINDOW_HEIGHT = 900;
 
 export interface Box {
   width: number;
@@ -20,54 +28,127 @@ export interface Box {
   top: number;
 }
 
-/** Left position that centers a box of the given width on the stage. */
-const centerX = (width: number): number => (DESIGN_WIDTH - width) / 2;
+/** Edges inset from a box, in percent of that box. */
+export interface Insets {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
 
-const FRAME_WIDTH = 1158;
-const FRAME_HEIGHT = 772;
-const SCREEN_WIDTH = 1046;
-const SCREEN_HEIGHT = 676;
+/**
+ * The screen opening: the see-through middle of the frame art, measured from frame.png at
+ * the inner bevel, in percent of the frame image. Its corners are chamfered and the top
+ * and bottom middle have notches; the frame art covers those, and the HUD anchors keep
+ * clear of them. Check against the art with the debug panel's "layout" toggle.
+ */
+const OPENING: Insets = { left: 3.643, top: 6.651, right: 3.643, bottom: 6.651 };
+
+/** A box inside a parent, from insets in percent. */
+function insetBox(parent: { width: number; height: number }, i: Insets): Box {
+  const left = (parent.width * i.left) / 100;
+  const top = (parent.height * i.top) / 100;
+  return {
+    left,
+    top,
+    width: parent.width - left - (parent.width * i.right) / 100,
+    height: parent.height - top - (parent.height * i.bottom) / 100,
+  };
+}
+
+const UNIT = { width: UNIT_WIDTH, height: UNIT_HEIGHT };
+
+/** The opening in unit px. Game coordinates (screen-content px) start at its top-left. */
+const opening = insetBox(UNIT, OPENING);
+
+/** Percent of the opening's width / height, in reference px. */
+const pctW = (p: number): number => (opening.width * p) / 100;
+const pctH = (p: number): number => (opening.height * p) / 100;
+
+/**
+ * The screen surface (base color, texture) and the doors' viewport, from Figma: a little
+ * larger than the opening, its edges hidden under the frame. 1070 × 724, 24 px from the
+ * frame's top.
+ */
+const SURFACE_WIDTH = 1070;
+const SURFACE_HEIGHT = 724;
+const surface: Box = {
+  width: SURFACE_WIDTH,
+  height: SURFACE_HEIGHT,
+  left: (UNIT_WIDTH - SURFACE_WIDTH) / 2,
+  top: 24,
+};
+
+/** HUD anchors inside the opening, in percent of the opening. */
+const ANCHORS = {
+  /** Round counter and progress bar: top-left, inside the corner chamfer. */
+  progress: { left: 7, top: 7 },
+  /** Timer: top-right, mirrored. */
+  timer: { right: 7, top: 7 },
+  /** "Sample 0X, logged" tooltip: top-right, below the timer. */
+  loggedTooltip: { right: 7, top: 12 },
+  /** Objective line: bottom-center, its bottom this far up, clear of the bottom notch. */
+  objective: { bottom: 9 },
+} as const;
+
+const HUD_TEXT_SIZE = 20;
+const HUD_LINE_HEIGHT = 24;
 
 export const layout = {
+  /** Group A and C sizing, in CSS px of the window. */
+  viewport: {
+    /** The unit keeps this much space above and below… */
+    unitMarginY: 64,
+    /** …and at least this much at the sides. */
+    unitMarginX: 24,
+    /** Never taller than the frame art's 1× height × 2 (its 2× file), so it never upscales. */
+    maxUnitHeight: manifest.frame.height,
+    /** Background overscan on each side, as a fraction of the window (parallax room later). */
+    bgOverscan: 0.12,
+    logo: { top: 24, fontSize: 24, lineHeight: 32 },
+    version: { bottom: 32, fontSize: 14, lineHeight: 16 },
+  },
+
+  unit: UNIT,
+
   background: {
-    /** Natural size of the background art, used for its aspect ratio. */
-    artWidth: 1976,
-    artHeight: 1078,
-    /** Minimum size relative to the window, so it always bleeds past every edge. */
-    minWidthVw: 110,
-    minHeightVh: 110,
-  },
-
-  frame: {
-    width: FRAME_WIDTH,
-    height: FRAME_HEIGHT,
-    left: centerX(FRAME_WIDTH),
-    top: 80,
-    /** How far the frame reaches over the screen edges. */
-    screenOverlap: 8,
-  },
-
-  frameGlow: {
-    /** Blur radius of the glow copy behind the frame. */
-    blur: 32,
-  },
-
-  screen: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-    left: centerX(SCREEN_WIDTH),
-    top: 128,
+    /** The art's size in the Figma frame: breathing amplitudes are in these px. */
+    refWidth: 1976,
+    refHeight: 1078,
   },
 
   /**
-   * The screen assembly (frame, glow, screen, doors) moves as one piece. It turns and
-   * scales around `origin` (stage px), the frame's center.
+   * Figma's "vignette overlay": a radial gradient in the 1440 × 900 frame, clear until
+   * `clearUntil`, fully dark at the edge. `matrix` and `radius` are its gradient transform.
+   */
+  vignette: {
+    frame: { width: 1440, height: REFERENCE_WINDOW_HEIGHT },
+    radius: 10,
+    matrix: [72, 45, -72, 115.2, 720, 450],
+    clearUntil: 0.32,
+  },
+
+  opening,
+  surface,
+
+  /** Doors: two images (1086 × 724 each, both centered on the surface); open = slid this far out. */
+  doors: { width: 1086, height: 724, openShift: 640 },
+
+  /** "frame as shadow" in Figma: the frame, darkened, blurred, a little lower. */
+  frameShadow: { offsetY: 16, blur: 16, brightness: 0.34 },
+  /** "frame inner shadow": the frame, nearly black, smaller and higher, faint, over the doors. */
+  frameInnerShadow: { scale: 0.925, offsetY: -22.4, blur: 16, brightness: 0.14, opacity: 0.32 },
+  /** Screen Color: backdrop blur under the screen base color. */
+  screenSurface: { backdropBlur: 8, textureOpacity: 0.32 },
+
+  /**
+   * The screen unit (frame, shadows, screen, doors) moves as one piece: the drop after
+   * round 9's click. It turns and scales around its center.
    */
   assembly: {
-    origin: { x: DESIGN_WIDTH / 2, y: 80 + FRAME_HEIGHT / 2 },
     /**
-     * The drop after round 9's click: where the assembly ends up. It slides toward the left,
-     * turns counter-clockwise and shrinks, so it no longer fits fully in view. `shake` is the
+     * Where it ends up (unit px, degrees): it slides toward the left, turns
+     * counter-clockwise and shrinks, so it no longer fits fully in view. `shake` is the
      * landing: `count` wobbles, the first this far off (px, degrees), dying away.
      */
     drop: {
@@ -79,31 +160,30 @@ export const layout = {
     },
   },
 
-  /** Alert mode's window-sized glow ellipse (from round 8): a soft layer blur of this radius. */
+  /** Alert mode's window-sized glow ellipse (from round 8): a soft blur, in px of a 900 px tall window. */
   alertGlow: {
     blur: 300,
   },
 
-  hud: {
-    logoTop: 24,
-    logoFontSize: 24,
-    versionBottom: 16,
-    versionFontSize: 14,
-  },
-
   /**
    * Counter, progress bar and timer: inside the screen, below the doors, visible all game.
-   * Positions are inside the screen viewport.
+   * Positions are inside the opening (screen-content px), from the anchors above.
    */
   screenHud: {
-    textSize: 20,
-    lineHeight: 24,
+    textSize: HUD_TEXT_SIZE,
+    lineHeight: HUD_LINE_HEIGHT,
     /** "Test 04/12" with its progress bar beside it, `gap` apart. */
-    progress: { left: 180, top: 24, gap: 16, barWidth: 160, barHeight: 4 },
+    progress: {
+      left: pctW(ANCHORS.progress.left),
+      top: pctH(ANCHORS.progress.top),
+      gap: 16,
+      barWidth: 160,
+      barHeight: 4,
+    },
     /** Timer, right-aligned. */
-    timer: { right: 180, top: 24 },
+    timer: { right: pctW(ANCHORS.timer.right), top: pctH(ANCHORS.timer.top) },
     /** The objective line, centered at the bottom; it stays from the objective intro through round 12. */
-    objective: { top: 596 },
+    objective: { top: opening.height - pctH(ANCHORS.objective.bottom) - HUD_LINE_HEIGHT },
   },
 
   /** Before round 1: "Objective:" with the objective line below, centered as one group. */
@@ -128,8 +208,11 @@ export const layout = {
     shapeBorder: 2,
     /** Dot left where the player clicked. */
     clickMarkerSize: 8,
-    /** The "Sample 0X, logged" tooltip: fixed in the top-right corner of the screen. */
-    loggedTooltip: { right: 24, top: 24 },
+    /** The "Sample 0X, logged" tooltip: fixed in the top-right of the opening (anchor). */
+    loggedTooltip: {
+      right: pctW(ANCHORS.loggedTooltip.right),
+      top: pctH(ANCHORS.loggedTooltip.top),
+    },
     /** Debug C (cross), O (circle) and M (square) markers. */
     markerSize: 16,
     markerStroke: 2,

@@ -6,7 +6,7 @@ import { shapeAt } from './motion';
 import { createResult, createTimeoutResult } from './session';
 import { roundTarget, targetAt } from './target';
 
-const content = { width: layout.screen.width, height: layout.screen.height };
+const content = { width: layout.opening.width, height: layout.opening.height };
 const SEED = 42;
 
 describe('scoring a moving shape against the frame on screen', () => {

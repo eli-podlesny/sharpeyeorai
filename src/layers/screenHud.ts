@@ -1,7 +1,7 @@
 import { copy, fill, padDigits, padRound } from '../config/copy';
 import { gameConfig } from '../config/game.config';
 import { layout } from '../config/layout.config';
-import { setRem } from '../core/units';
+import { setU } from '../core/units';
 import { fadeTo, moveTo } from '../ui/motion';
 import { h } from '../ui/dom';
 
@@ -31,11 +31,11 @@ export function createScreenHud(): { el: HTMLElement; control: ScreenHudControl 
   const L = layout.screenHud;
   const el = h('div', 'screen-hud fade');
   el.dataset.layer = 'screen-hud';
-  setRem(el, { fontSize: L.textSize, lineHeight: L.lineHeight });
+  setU(el, { fontSize: L.textSize, lineHeight: L.lineHeight });
 
   // "Test 04/12" + progress bar
   const progress = h('div', 'screen-hud__progress');
-  setRem(progress, { left: L.progress.left, top: L.progress.top, gap: L.progress.gap });
+  setU(progress, { left: L.progress.left, top: L.progress.top, gap: L.progress.gap });
   const label = h('span', 'screen-hud__label');
   const count = h('span', '');
   const total = h(
@@ -45,20 +45,20 @@ export function createScreenHud(): { el: HTMLElement; control: ScreenHudControl 
   );
   label.append(count, total);
   const track = h('div', 'screen-hud__track');
-  setRem(track, { width: L.progress.barWidth, height: L.progress.barHeight });
+  setU(track, { width: L.progress.barWidth, height: L.progress.barHeight });
   const bar = h('div', 'screen-hud__bar');
   track.append(bar);
   progress.append(label, track);
 
   // Timer
   const timer = h('div', 'screen-hud__timer');
-  setRem(timer, { right: L.timer.right, top: L.timer.top });
+  setU(timer, { right: L.timer.right, top: L.timer.top });
   const timerValue = h('span', '');
   timer.append(h('span', 'screen-hud__dim', copy.round.timeLabel), timerValue);
 
   // Objective line: the wrapper moves, the text fades.
   const objective = h('div', 'screen-hud__objective move');
-  setRem(objective, { top: L.objective.top });
+  setU(objective, { top: L.objective.top });
   const objectiveText = h('p', 'screen-hud__objective-text fade');
   objective.append(objectiveText);
 

@@ -3,7 +3,7 @@ import { gameConfig } from '../config/game.config';
 import { layout } from '../config/layout.config';
 import type { SceneContext } from '../core/game';
 import { defineScene, type Scene } from '../core/scenes';
-import { setRem } from '../core/units';
+import { setU } from '../core/units';
 import { h } from '../ui/dom';
 import { commitStyles, fadeTo } from '../ui/motion';
 import { createPanel, createTitle } from './layout';
@@ -21,7 +21,7 @@ export function createLoadingScene(ctx: SceneContext): Scene {
     const panel = createPanel('loading');
     panel.classList.add('fade');
     const track = h('div', 'progress-track');
-    setRem(track, layout.scenes.loadingBar);
+    setU(track, layout.scenes.loadingBar);
     const bar = h('div', 'progress-fill');
     bar.style.transitionDuration = `${gameConfig.loadingMs}ms`;
     track.append(bar);

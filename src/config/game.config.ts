@@ -8,6 +8,11 @@ import type { SceneMode } from '../core/state';
 export type StartMode = 'button' | 'auto';
 
 export interface GameConfig {
+  /**
+   * Art preloading waits for each image to decode, but no longer than this: decoding never
+   * finishes while the tab is in the background, and the game must not stall there.
+   */
+  artDecodeTimeoutMs: number;
   startMode: StartMode;
   autoStartDelayMs: number;
   /** How long the blast doors take to slide apart. */
@@ -217,6 +222,7 @@ export interface PersonaConfig {
 }
 
 export const gameConfig: GameConfig = {
+  artDecodeTimeoutMs: 1500,
   startMode: 'button',
   autoStartDelayMs: 1500,
   doorOpenMs: 2000,
