@@ -98,6 +98,8 @@ export function summarize(
   results: readonly RoundResult[],
   roundCount: number = gameConfig.roundCount,
   cfg: ScoringConfig = gameConfig.scoring,
+  /** Picks the verdict's wording (see `verdictPick`). */
+  roll = 0,
 ): SessionSummary {
   const rounds = results.map((r) => scoreRound(r, roundCount, cfg));
   const total = totalScore(
@@ -112,6 +114,6 @@ export function summarize(
     rounds,
     meanLatencyMs,
     humanityIndex: index,
-    persona: pickPersona(total, index, meanLatencyMs),
+    persona: pickPersona(total, index, meanLatencyMs, gameConfig.persona, roll),
   };
 }

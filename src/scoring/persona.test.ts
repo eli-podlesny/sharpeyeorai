@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { copy } from '../config/copy';
-import { accuracyTier, humanityTier, pickPersona, speedTier } from './persona';
+import { gameConfig } from '../config/game.config';
+import { accuracyTier, humanityTier, pickPersona, speedTier, verdictPick } from './persona';
 
 describe('tiers', () => {
   it('accuracy: sharp ≥ 7500, decent 4500–7499, blurry < 4500', () => {
@@ -30,9 +31,9 @@ describe('pickPersona', () => {
   it('uses accuracy × humanity, with the speed tag as a third line', () => {
     const p = pickPersona(8000, 0.1, 2000);
     expect(p.override).toBeNull();
-    expect(p.headline).toBe(copy.persona.matrix.sharp.machine.headline);
-    expect(p.line).toBe(copy.persona.matrix.sharp.machine.line);
-    expect(p.speedTag).toBe(copy.persona.speedTags.steady);
+    expect(p.headline).toBe(copy.persona.matrix.sharp.machine.headlines[0]);
+    expect(p.line).toBe(copy.persona.matrix.sharp.machine.lines[0]);
+    expect(p.speedTag).toBe(copy.persona.speedTags.steady[0]);
   });
 
   it('covers all nine matrix cells', () => {
@@ -59,7 +60,44 @@ describe('pickPersona', () => {
 
   it('hides the speed tag when an override fires', () => {
     const p = pickPersona(8000, 0.5, 5000);
-    expect(p.headline).toBe(copy.persona.overrides.sniper.headline);
+    expect(p.headline).toBe(copy.persona.overrides.sniper.headlines[0]);
     expect(p.speedTag).toBeNull();
+  });
+
+  it('ten replays with the same result read differently', () => {
+    const seen = new Set<string>();
+    for (let roll = 40; roll < 50; roll++) {
+      const p = pickPersona(6000, 0.5, 2000, gameConfig.persona, roll);
+      seen.add(`${p.headline} ${p.line}`);
+    }
+    expect(seen.size).toBe(10);
+  });
+
+  it('every verdict has at least 4 headlines and 4 lines, every speed tier 5 tags', () => {
+    const cells = [
+      ...Object.values(copy.persona.overrides),
+      ...Object.values(copy.persona.matrix).flatMap((row) => Object.values(row)),
+    ];
+    for (const cell of cells) {
+      expect(cell.headlines.length).toBeGreaterThanOrEqual(4);
+      expect(cell.lines.length).toBeGreaterThanOrEqual(4);
+    }
+    for (const tags of Object.values(copy.persona.speedTags)) expect(tags).toHaveLength(5);
+  });
+});
+
+describe('verdictPick', () => {
+  it('never repeats a pair before headlines × lines rolls', () => {
+    for (const [h, l] of [
+      [5, 5],
+      [4, 4],
+    ] as const) {
+      const pairs = new Set<string>();
+      for (let roll = 0; roll < h * l; roll++) {
+        const p = verdictPick(roll, h, l);
+        pairs.add(`${p.headline},${p.line}`);
+      }
+      expect(pairs.size).toBe(h * l);
+    }
   });
 });

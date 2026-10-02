@@ -25,6 +25,60 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/*
+ * Metal system cursors (src/ui/cursors.ts sets the variables, with native fallbacks).
+ * Everything inherits the page's cursor (no text I-beam over the game); controls get the
+ * pointer, pointer-down while pressed, not-allowed when disabled.
+ */
+html {
+  cursor: var(--cursor-default, default);
+}
+
+:where(body *) {
+  cursor: inherit;
+}
+
+:where(
+  button,
+  a[href],
+  [role='button'],
+  label,
+  select,
+  summary,
+  input[type='checkbox'],
+  input[type='range']
+) {
+  cursor: var(--cursor-pointer, pointer);
+}
+
+:where(
+  button,
+  a[href],
+  [role='button'],
+  label,
+  select,
+  summary,
+  input[type='checkbox'],
+  input[type='range']
+):active {
+  cursor: var(--cursor-pointer-down, pointer);
+}
+
+:where(input[type='text'], input[type='number']) {
+  cursor: text;
+}
+
+:disabled {
+  cursor: var(--cursor-not-allowed, not-allowed);
+}
+
+/* Over the screen during a round (src/ui/screenCursor.ts) the orange in-screen cursor shows
+   instead of the system one. */
+html[data-screen-cursor='custom'],
+html[data-screen-cursor='custom'] * {
+  cursor: none !important;
+}
+
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;

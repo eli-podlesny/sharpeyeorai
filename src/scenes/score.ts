@@ -6,11 +6,12 @@ import { contentSize } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
 import type { Scope } from '../core/scope';
 import { setU, u } from '../core/units';
+import { randomSeed } from '../core/rng';
 import { createSampleResults } from '../rounds/autoplay';
 import { summarize, type SessionSummary } from '../scoring/summary';
 import { h } from '../ui/dom';
 import { fadeTo, prefersReducedMotion } from '../ui/motion';
-import { showTooltipAtCorner } from '../ui/tooltip';
+import { showChatMessage, type ChatMessage } from '../ui/chatMessage';
 import { createFillingBar, createPanel, createTitle } from './layout';
 
 const { score: L } = layout;
@@ -96,6 +97,9 @@ function createDetailsTable(summary: SessionSummary): HTMLTableElement {
  * The screen HUD is hidden here. Reached without
  * playing (debug jump), it scores seeded sample clicks instead.
  */
+/** Counts the score screens of this visit, from a random start: the verdict's wording. */
+let verdictRoll = randomSeed();
+
 export function createScoreScene(ctx: SceneContext): Scene {
   return defineScene((scope) => {
     ctx.doors.setOpen(false, 0);
@@ -104,7 +108,8 @@ export function createScoreScene(ctx: SceneContext): Scene {
     const { session } = ctx;
     const isSample = session.results.length === 0;
     const results = isSample ? createSampleResults(session, contentSize) : session.results;
-    const summary = summarize(results);
+    // Each score screen takes the next wording of its verdict, so replays read differently.
+    const summary = summarize(results, gameConfig.roundCount, gameConfig.scoring, verdictRoll++);
     const { persona } = summary;
 
     const root = h('div', 'score');
@@ -155,9 +160,13 @@ export function createScoreScene(ctx: SceneContext): Scene {
     root.inert = true;
     scope.mount(ctx.content, root);
 
+    // The room shows first; then the screen enters from below (after the game; not on a
+    // debug jump, where it is already there).
+    const enterMs = ctx.screen.show(gameConfig.screenEntrance.delayMs);
+
     // "Calculating" first, like "Initializing": it starts behind the shut doors, the doors
     // open onto it (zooming in), and it stays `calculatingMs` once they are open.
-    const doorAt = gameConfig.loadingStartBeforeDoorsMs;
+    const doorAt = enterMs + gameConfig.loadingStartBeforeDoorsMs;
     const doorMs = gameConfig.doorOpenMs;
     const fadeMs = gameConfig.calculatingFadeMs;
     const calcEnd = doorAt + doorMs + gameConfig.calculatingMs;
@@ -192,13 +201,10 @@ export function createScoreScene(ctx: SceneContext): Scene {
       details.setAttribute('aria-expanded', String(open));
     });
 
-    let tip: HTMLElement | null = null;
-    let tipVersion = 0;
-    const replaceTip = (next: HTMLElement): void => {
-      tip?.remove();
-      tip = next;
-      tipVersion++;
-    };
+    // A new Share replaces the last message (which still stays its minimum time, stacked
+    // above the new one); leaving the score removes it.
+    let message: ChatMessage | null = null;
+    scope.onDispose(() => message?.hide(true));
 
     scope.listen(share, 'click', () => {
       const text = fill(copy.score.shareText, {
@@ -208,23 +214,20 @@ export function createScoreScene(ctx: SceneContext): Scene {
         url: copy.score.shareUrl,
       });
       const report = (copied: boolean): void => {
-        const at = L.copiedTooltip;
-        if (copied) {
-          replaceTip(showTooltipAtCorner(root, at, { title: copy.score.copied }));
-          const version = tipVersion;
-          scope.timeout(() => {
-            if (version === tipVersion) tip?.remove();
-          }, gameConfig.copiedTooltipMs);
-        } else {
-          // No clipboard: show the text so it can be copied by hand. It stays until replaced.
-          replaceTip(
-            showTooltipAtCorner(root, at, {
+        message?.hide();
+        message = copied
+          ? showChatMessage({
+              variant: 'light',
+              title: copy.score.copied,
+              durationMs: gameConfig.chatMessage.copiedMs,
+            })
+          : // No clipboard: show the text so it can be copied by hand. It stays until replaced.
+            showChatMessage({
+              variant: 'light',
               title: copy.score.copyFailed,
-              lines: [text],
-              wrap: true,
-            }),
-          );
-        }
+              body: text,
+              selectable: true,
+            });
         ctx.bus.emit('score.share', { text, copied });
       };
       if (!navigator.clipboard) {

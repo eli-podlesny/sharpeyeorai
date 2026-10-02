@@ -1,7 +1,7 @@
 {
   "name": "sharpeyeorai",
   "private": true,
-  "version": "1.1.0-a",
+  "version": "1.1.0-b",
   "description": "A browser game about visual perception: do you see like a human or like a machine?",
   "type": "module",
   "scripts": {

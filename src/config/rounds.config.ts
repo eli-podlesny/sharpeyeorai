@@ -2,7 +2,7 @@ import type { RoundMotion } from '../rounds/motion';
 import type { ShapeConfig } from '../rounds/shapes';
 import type { RoundTimeline } from '../rounds/timeline';
 import type { DecoyConfig, HideAfter, InputWindow } from '../rounds/timing';
-import type { ObjectiveKey } from './copy';
+import type { ChatKey, ObjectiveKey } from './copy';
 import { gameConfig, type OpticalConfig } from './game.config';
 import { layout } from './layout.config';
 
@@ -21,6 +21,8 @@ export type RoundPhase = 1 | 2 | 3 | 4;
  * - `closingDoors`: doors close and the scene goes black over the time limit (round 11).
  * - `stayDark`: the scene stays black; only the round's own content shows; the doors close
  *   over the idle time (round 12).
+ * - `alertFocus`: the alert color gathers around the (dropped) screen instead of covering
+ *   the whole room (rounds 10–12).
  */
 export type RoundEffect =
   | 'glitchSlow'
@@ -29,7 +31,8 @@ export type RoundEffect =
   | 'dropOnClick'
   | 'stayDropped'
   | 'closingDoors'
-  | 'stayDark';
+  | 'stayDark'
+  | 'alertFocus';
 
 /** Shape fill color: the default graphite, or the light logo color (round 12). Colors are tokens. */
 export type ShapeFill = 'default' | 'light';
@@ -68,6 +71,20 @@ export type RoundConfig = {
   clickFeedback: boolean;
   /** Scene effects tied to this round (src/fx/sceneController.ts); the scene mode comes from `gameConfig.fx.modeByRound`. */
   effects: readonly RoundEffect[];
+  /**
+   * A chat as the round starts (rounds 10–12; `delayMs` later), at the chat spot under the
+   * doors: one line every `chatMessage.sequenceIntervalMs`, all fading out together `holdMs`
+   * (default `chatMessage.sequenceHoldMs`) after the last. In a round above the darkness it shows
+   * lit, with the round's content.
+   */
+  chat?: {
+    lines: readonly ChatKey[];
+    variant: 'light' | 'orange';
+    holdMs?: number;
+    delayMs?: number;
+  };
+  /** The shape starts fading in this long after the round starts (round 12: time to read its message). */
+  shapeDelayMs?: number;
   /** A dark question mark on the shape, at its centroid C, in the logo font (round 12). */
   shapeMark?: boolean;
   /** The round renders above the scene darkness, fully lit (round 12's triangle). */
@@ -200,6 +217,15 @@ function largeRect(): Pick<RoundConfig, 'shape' | 'offset' | 'rotationDeg' | 'mo
 /** Morphing rounds: the outline drifts by up to 3% of the shape's size, on a slow cycle of about 5s. */
 const MORPH: RoundMotion = { type: 'morph', amplitude: 0.03, cycleMs: 5000 };
 
+/** Round 12's last breaths, first rise to last fall (`fx.lastBreath`; breathDurationMs in schedule.ts). */
+function lastBreathsMs(): number {
+  const { riseMs, holdMs, fallMs, count, gapMs } = gameConfig.fx.lastBreath;
+  return count * (riseMs + holdMs + fallMs) + (count - 1) * gapMs;
+}
+
+/** Round 10: extra margin for its wander, as the spinning star outgrows its box at rest. */
+const ROUND_10_SPIN_ROOM = 80;
+
 /** Round 11's square shrinks from this size… */
 const SHRINK_FROM_PX = 200;
 /** …to this size, over this long; the round times out at the same moment. */
@@ -220,6 +246,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
       minRadius: 0.6,
       angleJitter: 0.25,
     },
+    // In the left part of the screen.
+    offset: { x: -240, y: DEFAULT_OFFSET.y },
   },
   3: {
     shape: {
@@ -232,6 +260,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
       pitOffsetX: -0.08,
       pitCenterY: 0.2,
     },
+    // Half its width to the right.
+    offset: { x: 140, y: DEFAULT_OFFSET.y },
   },
   4: {
     // A bean: rounded ends, a dent in the middle of the top edge. Gently morphs.
@@ -254,6 +284,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
       ],
     },
     motions: [MORPH],
+    // A bit left and down.
+    offset: { x: -100, y: 40 },
   },
   5: {
     // A soft triangle, apex up and a little right, heavier bottom left. Morphs like round 4
@@ -318,11 +350,22 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     // A five-point star, stretched sideways.
     shape: { type: 'star', width: 380, height: 240, points: 5, innerRatio: 0.6 },
     rotationDeg: 14,
-    offset: { x: -120, y: DEFAULT_OFFSET.y },
-    // One full turn, clockwise, every 20s.
-    motions: [{ type: 'spin', periodMs: 20000 }],
+    // One full turn, clockwise, every 20s, while it wanders around the screen on a
+    // figure-eight. The wave keeps extra room (`ROUND_10_SPIN_ROOM`) since the turning star
+    // is taller and wider than its box at rest.
+    motions: [
+      { type: 'spin', periodMs: 20000 },
+      {
+        type: 'wave',
+        periodMs: 7000,
+        ampY: 60,
+        phaseDeg: 0,
+        margin: layout.round.motionMargin + ROUND_10_SPIN_ROOM,
+      },
+    ],
     // The screen is still dropped and glitches without pause.
-    effects: ['stayDropped', 'glitchConstant'],
+    effects: ['stayDropped', 'glitchConstant', 'alertFocus'],
+    chat: { lines: ['whatsGoingOn', 'brokeSomething'], variant: 'light' },
   },
   11: {
     // Shrinks; the falloff follows the current size, so late clicks are judged more strictly.
@@ -330,7 +373,10 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     motions: [{ type: 'shrink', endScale: SHRINK_TO_PX / SHRINK_FROM_PX, durationMs: SHRINK_MS }],
     timeLimitMs: SHRINK_MS,
     // Still dropped and glitching; the doors close and the scene goes black over the same 8s.
-    effects: ['stayDropped', 'glitchConstant', 'closingDoors'],
+    effects: ['stayDropped', 'glitchConstant', 'closingDoors', 'alertFocus'],
+    // The closing doors cover the chat as they come in.
+    // 1s in, so it feels live.
+    chat: { lines: ['doorsClosing', 'reallyClosing', 'hurryUp'], variant: 'light', delayMs: 1000 },
   },
   12: {
     // An even triangle, shown for 1s (fading over the last 200ms). Clicks count for 4s; a
@@ -345,10 +391,7 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     fill: 'light',
     hideAfter: { visibleMs: 1000, fadeMs: 200 },
     inputWindows: [[0, 4000]],
-    postRoundIdleMs:
-      gameConfig.fx.lastBreath.riseMs +
-      gameConfig.fx.lastBreath.holdMs +
-      gameConfig.fx.lastBreath.fallMs,
+    postRoundIdleMs: lastBreathsMs(),
     clickEndsRound: true,
     showObjective: false,
     clickFeedback: false,
@@ -356,7 +399,10 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     // close over the idle time.
     aboveDarkness: true,
     shapeMark: true,
-    effects: ['stayDropped', 'stayDark'],
+    effects: ['stayDropped', 'stayDark', 'alertFocus'],
+    // "Last chance..." first, lit in the black; the triangle comes once it has been read.
+    chat: { lines: ['lastChance'], variant: 'light', holdMs: 2000 },
+    shapeDelayMs: 2000,
   },
 };
 

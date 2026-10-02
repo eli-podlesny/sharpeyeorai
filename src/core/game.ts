@@ -1,4 +1,5 @@
 import { gameConfig } from '../config/game.config';
+import type { ScreenEntrance } from '../fx/screenEntrance';
 import type { DarknessControl } from '../layers/darkness';
 import type { DoorsControl } from '../layers/doors';
 import type { ScreenHudControl } from '../layers/screenHud';
@@ -21,6 +22,8 @@ export interface SceneContext {
   hud: ScreenHudControl;
   /** Whole-window darkness (rounds 11–12, end of the game). */
   darkness: DarknessControl;
+  /** The screen leaving in the dark at the end and entering again for the score. */
+  screen: ScreenEntrance;
   bus: EventBus;
   machine: StateMachine;
   /** The current play-through. Replaced by `newSession()`. */
@@ -44,6 +47,7 @@ export interface GameOptions {
   doors: DoorsControl;
   hud: ScreenHudControl;
   darkness: DarknessControl;
+  screen: ScreenEntrance;
   bus: EventBus;
   /** Fixed seed from `?seed=`; null picks a new random seed for every session. */
   seed: number | null;
@@ -76,6 +80,7 @@ export function createGame(options: GameOptions): Game {
     doors: options.doors,
     hud: options.hud,
     darkness: options.darkness,
+    screen: options.screen,
     bus,
     machine,
     get session() {

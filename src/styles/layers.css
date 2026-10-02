@@ -19,10 +19,24 @@
     var(--alert-high) calc(var(--alert-mix, 0) * 1%),
     var(--alert-low)
   );
-  background: color-mix(
+  --alert-tint: color-mix(
     in srgb,
     var(--alert-color) calc(var(--alert-ramp, 0) * 1%),
     var(--color-room)
+  );
+  /* Rounds 10–12 (--alert-focus 0–1): the tint gathers around the screen center
+     (--alert-cx/-cy): full within --alert-focus-core, the room color beyond
+     --alert-focus-edge. Unfocused, both reach far past the window: a flat tint. */
+  --alert-core: calc(
+    (1 - var(--alert-focus, 0)) * 150vmax + var(--alert-focus, 0) * var(--alert-focus-core)
+  );
+  --alert-edge: calc(
+    (1 - var(--alert-focus, 0)) * 150vmax + var(--alert-focus, 0) * var(--alert-focus-edge)
+  );
+  background: radial-gradient(
+    circle at var(--alert-cx, 50%) var(--alert-cy, 50%),
+    var(--alert-tint) var(--alert-core),
+    var(--color-room) var(--alert-edge)
   );
   /* The unit: the largest frame-shaped box with --unit-margin-y above and below and at
      least --unit-margin-x at the sides, capped (variables set by src/core/stage.ts, which
@@ -67,10 +81,14 @@
   display: contents;
 }
 
-/* 1. background — window plus overscan on each side, multiplied over the room color */
+/* 1. background — window plus overscan on each side, multiplied over the room color.
+   The blend sits on the layer, not on the image: parallax and the drop move the layer
+   (translate, transform), which isolates its children, so a blend on them would only
+   see the empty layer. Only one child shows at a time (the <img> or the breathing canvas). */
 .layer--background {
   inset: calc(var(--bg-overscan) * -100vh) calc(var(--bg-overscan) * -100vw);
   pointer-events: none;
+  mix-blend-mode: multiply;
 }
 
 .background__art {
@@ -79,7 +97,6 @@
   top: 50%;
   height: auto;
   transform: translate(-50%, -50%);
-  mix-blend-mode: multiply;
   user-select: none;
 }
 
@@ -89,7 +106,6 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  mix-blend-mode: multiply;
 }
 
 .background__canvas[hidden] {
@@ -176,6 +192,8 @@
 /* screen-hud — over the opening, above the content, below the doors. Clicks pass through. */
 .screen-hud {
   position: absolute;
+  /* HUD parallax (src/fx/parallax.ts), on top of the doors' reveal zoom */
+  translate: var(--parallax-hud-x, 0) var(--parallax-hud-y, 0);
   pointer-events: none;
   color: var(--screen-text);
   font-family: var(--font-hud);
@@ -372,6 +390,47 @@
   white-space: nowrap;
 }
 
+/* TV noise (src/fx/noise.ts): over everything in the game, darkness included; clicks pass.
+   Opacity, blend and tile size come from config. */
+.tv-noise {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none;
+  background-repeat: repeat;
+  image-rendering: pixelated;
+}
+
+/* The orange in-screen cursor (src/ui/screenCursor.ts), above the noise, below the debug panel */
+.screen-cursor {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  pointer-events: none;
+}
+
+.screen-cursor[hidden] {
+  display: none;
+}
+
+.screen-cursor__brackets,
+.screen-cursor__dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  will-change: transform;
+}
+
+.screen-cursor__brackets rect {
+  fill: var(--screen-cursor);
+}
+
+.screen-cursor__dot circle {
+  fill: none;
+  stroke: var(--screen-cursor);
+}
+
 /* Debug overlay — fixed screen pixels, not scaled */
 .debug-overlay {
   position: fixed;
@@ -419,7 +478,6 @@
 }
 
 .debug-overlay__button {
-  cursor: pointer;
 }
 
 .debug-overlay__button.is-active {
@@ -427,7 +485,6 @@
 }
 
 .debug-overlay__button:disabled {
-  cursor: default;
   opacity: 0.5;
 }
 
@@ -443,7 +500,6 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  cursor: pointer;
 }
 
 /* Debug shape gallery: every round's shape as a screen thumbnail, with C/O/M markers */

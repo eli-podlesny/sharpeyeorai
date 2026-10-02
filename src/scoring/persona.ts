@@ -57,12 +57,30 @@ function findOverride(
   return null;
 }
 
-/** The verdict for a finished game. Text comes from `copy.persona`. */
+/**
+ * Pure: which headline and line of a verdict to use for the `roll`-th score screen. The
+ * pairs never repeat before `headlines × lines` rolls: the line index steps on by one more
+ * each time the headlines come round (with 5 × 5: 25 different pairs in a row).
+ */
+export function verdictPick(
+  roll: number,
+  headlines: number,
+  lines: number,
+): { headline: number; line: number } {
+  const r = Math.max(Math.floor(roll), 0);
+  return { headline: r % headlines, line: (r + Math.floor(r / headlines)) % lines };
+}
+
+/**
+ * The verdict for a finished game. Text comes from `copy.persona`; `roll` picks the wording
+ * (src/scenes/score.ts counts it up for each score screen, so replays read differently).
+ */
 export function pickPersona(
   total: number,
   humanityIndex: number | null,
   meanLatencyMs: number,
   cfg: PersonaConfig = gameConfig.persona,
+  roll = 0,
 ): Persona {
   const accuracy = accuracyTier(total, cfg);
   const humanity = humanityTier(humanityIndex, cfg);
@@ -72,13 +90,15 @@ export function pickPersona(
   const text = override
     ? copy.persona.overrides[override]
     : copy.persona.matrix[accuracy][humanity];
+  const pick = verdictPick(roll, text.headlines.length, text.lines.length);
+  const tags = copy.persona.speedTags[speed];
   return {
     accuracy,
     humanity,
     speed,
     override,
-    headline: text.headline,
-    line: text.line,
-    speedTag: override ? null : copy.persona.speedTags[speed],
+    headline: text.headlines[pick.headline] ?? '',
+    line: text.lines[pick.line] ?? '',
+    speedTag: override ? null : (tags[roll % tags.length] ?? null),
   };
 }

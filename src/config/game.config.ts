@@ -47,8 +47,20 @@ export interface GameConfig {
   endDarknessFadeMs: number;
   /** How long the score counts up from 0 on the score screen. */
   scoreCountUpMs: number;
-  /** How long the "Copied" tooltip stays after Share result. */
-  copiedTooltipMs: number;
+  /** Chat messages (src/ui/chatMessage.ts): "Copied" after Share, the alert. */
+  chatMessage: ChatMessageConfig;
+  chatDirector: ChatDirectorConfig;
+  /** The "Sample 0X, logged" tooltip fades in and out over this time. */
+  sampleTooltipFadeMs: number;
+  /**
+   * The screen unit (frame, screen, doors, HUD) enters from below, fading in, once the room
+   * is drawn: at the start of the game, and on the way to the score (src/fx/screenEntrance.ts).
+   * `delayMs` after the room shows, it rises `risePercent` of its own height over `durationMs`.
+   * Reduced motion: a fade only.
+   */
+  screenEntrance: { delayMs: number; durationMs: number; risePercent: number; easing: string };
+  /** The orange in-screen cursor (src/ui/screenCursor.ts). Sizes in `layout.screenCursor`. */
+  screenCursor: ScreenCursorConfig;
   /** Shape outlines are sampled about this many px apart (curves and straight edges). */
   shapePointSpacingPx: number;
   optical: OpticalConfig;
@@ -70,6 +82,78 @@ export interface BreathingPreset {
 export interface GlitchPattern {
   onMs: number;
   offMs: number;
+}
+
+export interface ChatMessageConfig {
+  /** "Copied" stays this long after Share result. */
+  copiedMs: number;
+
+  /** A message fades in and out over this time (Figma shows no motion: a quick fade). */
+  fadeMs: number;
+  /** Every message stays at least this long, even when replaced or hidden early. */
+  minVisibleMs: number;
+  /** A new message pushes the ones above it up, gliding over this time. */
+  pushMs: number;
+  /** Round chats (rounds 10–12): one line every `sequenceIntervalMs`; `sequenceHoldMs` after the last, all fade out. */
+  sequenceIntervalMs: number;
+  sequenceHoldMs: number;
+  /** At most this many messages show at once in a stack; a new one removes the oldest. */
+  maxVisible: number;
+}
+
+/** A story line at a round's start (`copy.chatPools.beats`), this long after it. */
+export interface ChatBeat {
+  round: number;
+  pool: 'breathing' | 'halfway' | 'flicker' | 'loose';
+  delayMs: number;
+}
+
+/** What makes the chat speak (src/ui/chatDirector.ts). Lines in `copy.chatPools`. */
+export interface ChatDirectorConfig {
+  /** No click this long into a round (round clock) → an idle chat, which stays until the mouse moves… */
+  idleAfterMs: number;
+  /** …and then goes this long after the move. */
+  idleHoldAfterMoveMs: number;
+  /** A click this soon after the shape is fully visible → a "too fast" line. */
+  fastBeforeMs: number;
+  /** A click this close to O (content px) → a bullseye line. */
+  bullseyePx: number;
+  /** A click this close to C while O is at least `minFromOPx` away → a "machine pick" line. */
+  machine: { nearCPx: number; minFromOPx: number };
+  /** This many rounds in a row with quality ≥ `minQuality` → a streak line. */
+  goodStreak: { count: number; minQuality: number };
+  /** This many misses in a row → a miss-streak chat instead of the plain miss line. */
+  missStreak: number;
+  /** This many ignored clicks on the screen in a round (too early, or already decided) → an impatient line. */
+  impatientClicks: number;
+  /** After this round's outro, an "easy, huh?" line. */
+  easyAfterRound: number;
+  /** The first round's greeting comes this long after it starts. */
+  startDelayMs: number;
+  /** The score line comes this long after the score shows. */
+  scoreDelayMs: number;
+  /** "Alert! System Malfunction" stays from alert mode's start until this round's chat has faded. */
+  alertUntilChatOfRound: number;
+  beats: readonly ChatBeat[];
+}
+
+/**
+ * The in-screen cursor's feel. Every follow is frame-rate-independent exponential
+ * smoothing: `…Ms` is its time constant (63% of the way after that long).
+ */
+export interface ScreenCursorConfig {
+  /** The dot trails the brackets with this time constant (larger = more lag). */
+  dotLagMs: number;
+  /** Brackets spread with speed this slowly (attack)… */
+  attackMs: number;
+  /** …and close back this fast (release). */
+  releaseMs: number;
+  /** Pointer speed (CSS px per second) that spreads the brackets fully. */
+  fullSpreadSpeed: number;
+  /** The measured speed is smoothed over this time constant, so one jumpy event does not spread. */
+  speedSmoothingMs: number;
+  /** After a click the pressed cursor stays this long before the round stops taking clicks. */
+  pressedMs: number;
 }
 
 export interface FxConfig {
@@ -127,6 +211,8 @@ export interface FxConfig {
     rampMs: number;
     /** The glow ellipse's opacity at full alert. Its blur radius is `layout.alertGlow.blur`. */
     glowOpacity: number;
+    /** Rounds 10–12: the alert gathers around the screen over this time (`layout.alertGlow.focus`). */
+    focusMs: number;
   };
   drop: {
     /** After round 9's click: the assembly falls over this time… */
@@ -137,6 +223,32 @@ export interface FxConfig {
     returnMs: number;
     /** Reduced motion: a short, plain move each way. */
     reducedMotionMs: number;
+    /**
+     * The room lurches with the drop (scaled, turned and shifted, `layout.background.drop`):
+     * it starts with the fall and takes this long, with this easing. It returns with the screen.
+     */
+    backgroundMs: number;
+    backgroundEasing: string;
+  };
+  /**
+   * Parallax (src/fx/parallax.ts): the layers ease toward the pointer, settling (99% of the
+   * way) in `settleMs`; when the pointer leaves the window they drift back to center in
+   * `leaveSettleMs`. Offsets in `layout.parallax`. Off with reduced motion.
+   */
+  parallax: { settleMs: number; leaveSettleMs: number };
+  /**
+   * TV noise over everything (src/fx/noise.ts): `tileCount` tiles of `tileSize` px made once
+   * at startup, shown `fps` times a second at a random offset. `grainPx`: CSS px per noise
+   * pixel. Static (one tile) with reduced motion.
+   */
+  noise: {
+    tileCount: number;
+    tileSize: number;
+    grainPx: number;
+    fps: number;
+    opacity: number;
+    /** CSS mix-blend-mode: hard-light lifts the blacks and roughens the light screen alike. */
+    blend: string;
   };
   blackout: {
     /** Round 11 darkens from 0 to this level by its deadline, as the doors close (1 = black). Round 12 stays there. */
@@ -146,7 +258,7 @@ export interface FxConfig {
   };
   /**
    * Round 12's last breath: a little light comes back for a moment over the broken scene
-   * (doors shut, at once), then it goes black again. It starts `delayAfterClickMs` after a
+   * (doors shut, at once), then it goes black again; `count` times, `gapMs` apart. It starts `delayAfterClickMs` after a
    * click, or when round 12 stops taking clicks (the round then ends with it). Rises over
    * `riseMs`, holds `holdMs`, falls back over `fallMs`. One flash only (under the 3 Hz
    * limit). Then `darkAfterMs` of full black, and the lights return on the score.
@@ -154,6 +266,9 @@ export interface FxConfig {
   lastBreath: {
     /** How much light comes back: 0.2 = the scene 20% visible (the darkness at 80%). */
     brightness: number;
+    /** It breathes this many times, with `gapMs` of black between (far under 3 flashes a second). */
+    count: number;
+    gapMs: number;
     delayAfterClickMs: number;
     darkAfterMs: number;
     riseMs: number;
@@ -186,8 +301,6 @@ export interface ObjectiveIntroConfig {
 export interface RoundSequenceConfig {
   /** 1. The shape fades in. The round timer starts when it is fully visible. */
   shapeFadeInMs: number;
-  /** 3. The "Sample 0X, logged" tooltip disappears (instantly) this long after the click. */
-  loggedTooltipMs: number;
   /** One full pulse of the shape fill (low → high → low) while the timer runs. Colors are tokens. */
   shapePulseMs: number;
   /** 4. The shape stays this long after the click (marker showing). */
@@ -270,7 +383,6 @@ export const gameConfig: GameConfig = {
   },
   roundSequence: {
     shapeFadeInMs: 400,
-    loggedTooltipMs: 500,
     shapePulseMs: 1000,
     postClickWaitMs: 1600,
     outroFadeMs: 400,
@@ -282,7 +394,50 @@ export const gameConfig: GameConfig = {
   endDarknessMs: 1000,
   endDarknessFadeMs: 300,
   scoreCountUpMs: 2500,
-  copiedTooltipMs: 2000,
+  chatMessage: {
+    copiedMs: 2000,
+    fadeMs: 150,
+    minVisibleMs: 2000,
+    pushMs: 200,
+    sequenceIntervalMs: 1200,
+    sequenceHoldMs: 4000,
+    maxVisible: 6,
+  },
+  chatDirector: {
+    idleAfterMs: 7000,
+    idleHoldAfterMoveMs: 2000,
+    fastBeforeMs: 1000,
+    bullseyePx: 4,
+    machine: { nearCPx: 4, minFromOPx: 10 },
+    goodStreak: { count: 3, minQuality: 0.85 },
+    missStreak: 2,
+    impatientClicks: 2,
+    easyAfterRound: 3,
+    startDelayMs: 600,
+    scoreDelayMs: 1800,
+    alertUntilChatOfRound: 10,
+    beats: [
+      { round: 4, pool: 'breathing', delayMs: 1500 },
+      { round: 7, pool: 'halfway', delayMs: 600 },
+      { round: 7, pool: 'flicker', delayMs: 5200 },
+      { round: 9, pool: 'loose', delayMs: 1500 },
+    ],
+  },
+  sampleTooltipFadeMs: 120,
+  screenEntrance: {
+    delayMs: 400,
+    durationMs: 1000,
+    risePercent: 24,
+    easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)',
+  },
+  screenCursor: {
+    dotLagMs: 60,
+    attackMs: 240,
+    releaseMs: 70,
+    fullSpreadSpeed: 2400,
+    speedSmoothingMs: 40,
+    pressedMs: 160,
+  },
   shapePointSpacingPx: 3,
   optical: {
     skeletonWeight: 0.35,
@@ -349,12 +504,27 @@ export const gameConfig: GameConfig = {
       intensePeriodMs: 900,
       rampMs: 2000,
       glowOpacity: 0.16,
+      focusMs: 1500,
     },
     drop: {
       fallMs: 420,
       shakeMs: 380,
       returnMs: 800,
       reducedMotionMs: 300,
+      backgroundMs: 900,
+      backgroundEasing: 'cubic-bezier(0.5, 0, 0.25, 1)',
+    },
+    parallax: {
+      settleMs: 500,
+      leaveSettleMs: 1500,
+    },
+    noise: {
+      tileCount: 8,
+      tileSize: 256,
+      grainPx: 1,
+      fps: 24,
+      opacity: 0.07,
+      blend: 'hard-light',
     },
     blackout: {
       closingDarkness: 1,
@@ -362,6 +532,8 @@ export const gameConfig: GameConfig = {
     },
     lastBreath: {
       brightness: 0.2,
+      count: 2,
+      gapMs: 700,
       delayAfterClickMs: 1000,
       darkAfterMs: 4000,
       riseMs: 150,
