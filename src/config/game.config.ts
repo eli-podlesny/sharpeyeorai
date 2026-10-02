@@ -92,6 +92,11 @@ export interface ChatMessageConfig {
   fadeMs: number;
   /** Every message stays at least this long, even when replaced or hidden early. */
   minVisibleMs: number;
+  /** A new message pushes the ones above it up, gliding over this time. */
+  pushMs: number;
+  /** Round chats (rounds 10–12): one line every `sequenceIntervalMs`; `sequenceHoldMs` after the last, all fade out. */
+  sequenceIntervalMs: number;
+  sequenceHoldMs: number;
 }
 
 /**
@@ -356,6 +361,9 @@ export const gameConfig: GameConfig = {
     alertMs: 4000,
     fadeMs: 150,
     minVisibleMs: 2000,
+    pushMs: 200,
+    sequenceIntervalMs: 1200,
+    sequenceHoldMs: 4000,
   },
   sampleTooltipFadeMs: 120,
   screenEntrance: {

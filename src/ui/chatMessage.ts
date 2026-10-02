@@ -87,11 +87,26 @@ export function showChatMessage(options: ChatMessageOptions): ChatMessage {
   });
   fit.observe(el);
 
-  const { fadeMs, minVisibleMs } = gameConfig.chatMessage;
-  const ms = prefersReducedMotion() ? 0 : fadeMs;
+  const { fadeMs, minVisibleMs, pushMs } = gameConfig.chatMessage;
+  const reduced = prefersReducedMotion();
+  const ms = reduced ? 0 : fadeMs;
   const shownAt = performance.now();
   el.style.opacity = '0';
+  // The new message goes in at the bottom and pushes the others up: they glide there
+  // (`pushMs`) from where they were, instead of jumping.
+  const before = new Map([...stack.children].map((c) => [c, c.getBoundingClientRect().top]));
   stack.append(el);
+  if (!reduced) {
+    for (const [child, top] of before) {
+      const dy = top - child.getBoundingClientRect().top;
+      if (dy !== 0) {
+        child.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], {
+          duration: pushMs,
+          easing: 'ease-out',
+        });
+      }
+    }
+  }
   commitStyles(el);
   fadeTo(el, 1, ms);
 
@@ -123,4 +138,48 @@ export function showChatMessage(options: ChatMessageOptions): ChatMessage {
     timer = window.setTimeout(() => hide(), Math.max(options.durationMs, minVisibleMs));
   }
   return { el, hide };
+}
+
+/** Pure: when each line of a chat sequence shows, and how long it stays so all go together. */
+export function chatSequenceTimes(
+  count: number,
+  intervalMs: number,
+  holdMs: number,
+): { atMs: number; durationMs: number }[] {
+  const endMs = (count - 1) * intervalMs + holdMs;
+  return Array.from({ length: count }, (_, i) => ({
+    atMs: i * intervalMs,
+    durationMs: endMs - i * intervalMs,
+  }));
+}
+
+/**
+ * A little conversation: one message every `chatMessage.sequenceIntervalMs`, each pushing
+ * the ones before it up; once the last is in, the whole chat stays `holdMs` and fades out
+ * together. Runs on its own timers, so it plays out even when the round ends first.
+ */
+export function showChatSequence(options: {
+  variant: ChatVariant;
+  lines: readonly string[];
+  holdMs?: number;
+  anchor?: HTMLElement;
+}): void {
+  const { sequenceIntervalMs, sequenceHoldMs } = gameConfig.chatMessage;
+  const times = chatSequenceTimes(
+    options.lines.length,
+    sequenceIntervalMs,
+    options.holdMs ?? sequenceHoldMs,
+  );
+  options.lines.forEach((title, i) => {
+    const t = times[i];
+    if (!t) return;
+    window.setTimeout(() => {
+      showChatMessage({
+        variant: options.variant,
+        title,
+        anchor: options.anchor,
+        durationMs: t.durationMs,
+      });
+    }, t.atMs);
+  });
 }

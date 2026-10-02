@@ -72,10 +72,12 @@ export type RoundConfig = {
   /** Scene effects tied to this round (src/fx/sceneController.ts); the scene mode comes from `gameConfig.fx.modeByRound`. */
   effects: readonly RoundEffect[];
   /**
-   * A chat message when the round starts (rounds 10 and 12), at the chat spot. In a round
-   * above the darkness it shows lit, with the round's content.
+   * A chat as the round starts (rounds 10–12), at the chat spot under the doors: one line
+   * every `chatMessage.sequenceIntervalMs`, all fading out together `holdMs` (default
+   * `chatMessage.sequenceHoldMs`) after the last. In a round above the darkness it shows
+   * lit, with the round's content.
    */
-  startMessage?: { copyKey: ChatKey; variant: 'light' | 'orange'; durationMs: number };
+  chat?: { lines: readonly ChatKey[]; variant: 'light' | 'orange'; holdMs?: number };
   /** The shape starts fading in this long after the round starts (round 12: time to read its message). */
   shapeDelayMs?: number;
   /** A dark question mark on the shape, at its centroid C, in the logo font (round 12). */
@@ -358,6 +360,7 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     ],
     // The screen is still dropped and glitches without pause.
     effects: ['stayDropped', 'glitchConstant', 'alertFocus'],
+    chat: { lines: ['whatsGoingOn', 'brokeSomething'], variant: 'light' },
   },
   11: {
     // Shrinks; the falloff follows the current size, so late clicks are judged more strictly.
@@ -366,8 +369,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     timeLimitMs: SHRINK_MS,
     // Still dropped and glitching; the doors close and the scene goes black over the same 8s.
     effects: ['stayDropped', 'glitchConstant', 'closingDoors', 'alertFocus'],
-    // "Hurry Up!" as it starts, before the doors have closed far.
-    startMessage: { copyKey: 'hurryUp', variant: 'light', durationMs: 2500 },
+    // The closing doors cover the chat as they come in.
+    chat: { lines: ['doorsClosing', 'hurryUp'], variant: 'light' },
   },
   12: {
     // An even triangle, shown for 1s (fading over the last 200ms). Clicks count for 4s; a
@@ -392,7 +395,7 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     shapeMark: true,
     effects: ['stayDropped', 'stayDark', 'alertFocus'],
     // "Last chance..." first, lit in the black; the triangle comes once it has been read.
-    startMessage: { copyKey: 'lastChance', variant: 'light', durationMs: 2000 },
+    chat: { lines: ['lastChance'], variant: 'light', holdMs: 2000 },
     shapeDelayMs: 2000,
   },
 };
