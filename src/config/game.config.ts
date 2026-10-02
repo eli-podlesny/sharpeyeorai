@@ -49,6 +49,7 @@ export interface GameConfig {
   scoreCountUpMs: number;
   /** Chat messages (src/ui/chatMessage.ts): "Copied" after Share, the alert. */
   chatMessage: ChatMessageConfig;
+  chatDirector: ChatDirectorConfig;
   /** The "Sample 0X, logged" tooltip fades in and out over this time. */
   sampleTooltipFadeMs: number;
   /**
@@ -86,8 +87,7 @@ export interface GlitchPattern {
 export interface ChatMessageConfig {
   /** "Copied" stays this long after Share result. */
   copiedMs: number;
-  /** "Alert! System Malfunction" stays this long once alert mode starts (after round 7). */
-  alertMs: number;
+
   /** A message fades in and out over this time (Figma shows no motion: a quick fade). */
   fadeMs: number;
   /** Every message stays at least this long, even when replaced or hidden early. */
@@ -99,12 +99,42 @@ export interface ChatMessageConfig {
   sequenceHoldMs: number;
   /** At most this many messages show at once in a stack; a new one removes the oldest. */
   maxVisible: number;
-  /** The chat director (src/ui/chatDirector.ts): no click this long into a round (round clock) → an idle chat. */
+}
+
+/** A story line at a round's start (`copy.chatPools.beats`), this long after it. */
+export interface ChatBeat {
+  round: number;
+  pool: 'breathing' | 'halfway' | 'flicker' | 'loose';
+  delayMs: number;
+}
+
+/** What makes the chat speak (src/ui/chatDirector.ts). Lines in `copy.chatPools`. */
+export interface ChatDirectorConfig {
+  /** No click this long into a round (round clock) → an idle chat, which stays until the mouse moves… */
   idleAfterMs: number;
+  /** …and then goes this long after the move. */
+  idleHoldAfterMoveMs: number;
   /** A click this soon after the shape is fully visible → a "too fast" line. */
   fastBeforeMs: number;
+  /** A click this close to O (content px) → a bullseye line. */
+  bullseyePx: number;
+  /** A click this close to C while O is at least `minFromOPx` away → a "machine pick" line. */
+  machine: { nearCPx: number; minFromOPx: number };
+  /** This many rounds in a row with quality ≥ `minQuality` → a streak line. */
+  goodStreak: { count: number; minQuality: number };
+  /** This many misses in a row → a miss-streak chat instead of the plain miss line. */
+  missStreak: number;
+  /** This many ignored clicks on the screen in a round (too early, or already decided) → an impatient line. */
+  impatientClicks: number;
   /** After this round's outro, an "easy, huh?" line. */
   easyAfterRound: number;
+  /** The first round's greeting comes this long after it starts. */
+  startDelayMs: number;
+  /** The score line comes this long after the score shows. */
+  scoreDelayMs: number;
+  /** "Alert! System Malfunction" stays from alert mode's start until this round's chat has faded. */
+  alertUntilChatOfRound: number;
+  beats: readonly ChatBeat[];
 }
 
 /**
@@ -366,16 +396,32 @@ export const gameConfig: GameConfig = {
   scoreCountUpMs: 2500,
   chatMessage: {
     copiedMs: 2000,
-    alertMs: 4000,
     fadeMs: 150,
     minVisibleMs: 2000,
     pushMs: 200,
     sequenceIntervalMs: 1200,
     sequenceHoldMs: 4000,
     maxVisible: 6,
+  },
+  chatDirector: {
     idleAfterMs: 7000,
+    idleHoldAfterMoveMs: 2000,
     fastBeforeMs: 1000,
+    bullseyePx: 4,
+    machine: { nearCPx: 4, minFromOPx: 10 },
+    goodStreak: { count: 3, minQuality: 0.85 },
+    missStreak: 2,
+    impatientClicks: 2,
     easyAfterRound: 3,
+    startDelayMs: 600,
+    scoreDelayMs: 1800,
+    alertUntilChatOfRound: 10,
+    beats: [
+      { round: 4, pool: 'breathing', delayMs: 1500 },
+      { round: 7, pool: 'halfway', delayMs: 600 },
+      { round: 7, pool: 'flicker', delayMs: 5200 },
+      { round: 9, pool: 'loose', delayMs: 1500 },
+    ],
   },
   sampleTooltipFadeMs: 120,
   screenEntrance: {

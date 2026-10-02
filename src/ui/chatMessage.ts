@@ -22,6 +22,8 @@ export interface ChatMessageOptions {
   durationMs?: number;
   /** The text can be selected and copied (the clipboard fallback). */
   selectable?: boolean;
+  /** Never dropped to make room for new messages (the alert). */
+  pinned?: boolean;
 }
 
 export interface ChatMessage {
@@ -37,6 +39,8 @@ let defaultStack: HTMLElement | null = null;
 
 /** Every message on screen, to clear them (the alert) or drop the oldest (the cap). */
 const live = new Map<HTMLElement, ChatMessage>();
+/** Messages the cap leaves alone. */
+const pinned = new WeakSet<HTMLElement>();
 
 /** Removes every message now, in every stack (the alert cuts in). */
 export function clearChatMessages(): void {
@@ -102,12 +106,10 @@ export function showChatMessage(options: ChatMessageOptions): ChatMessage {
   el.style.opacity = '0';
   // The new message goes in at the bottom and pushes the others up: they glide there
   // (`pushMs`) from where they were, instead of jumping.
-  // At most `maxVisible` at once: the oldest goes, at once.
+  // At most `maxVisible` at once: the oldest (not pinned) goes, at once.
   const shown = [...stack.children].filter((c): c is HTMLElement => live.has(c as HTMLElement));
-  for (const old of shown.slice(
-    0,
-    Math.max(shown.length - gameConfig.chatMessage.maxVisible + 1, 0),
-  )) {
+  const extra = Math.max(shown.length - gameConfig.chatMessage.maxVisible + 1, 0);
+  for (const old of shown.filter((c) => !pinned.has(c)).slice(0, extra)) {
     live.get(old)?.hide(true);
   }
   const before = new Map([...stack.children].map((c) => [c, c.getBoundingClientRect().top]));
@@ -156,6 +158,7 @@ export function showChatMessage(options: ChatMessageOptions): ChatMessage {
   }
   const message = { el, hide };
   live.set(el, message);
+  if (options.pinned) pinned.add(el);
   return message;
 }
 
@@ -190,25 +193,56 @@ export function showChatSequence(options: {
   anchor?: HTMLElement;
   /** The first line comes this long from now. */
   delayMs?: number;
+  /**
+   * The chat stays until the mouse moves (or a click); then it fades `holdMs` later
+   * (the idle chats: they only go once the player is back).
+   */
+  untilActivity?: boolean;
 }): ChatSequence {
   const { sequenceIntervalMs, sequenceHoldMs } = gameConfig.chatMessage;
-  const times = chatSequenceTimes(
-    options.lines.length,
-    sequenceIntervalMs,
-    options.holdMs ?? sequenceHoldMs,
-  );
+  const holdMs = options.holdMs ?? sequenceHoldMs;
+  const times = chatSequenceTimes(options.lines.length, sequenceIntervalMs, holdMs);
   let left = options.lines.length;
+  const shown: ChatMessage[] = [];
+
+  // Until activity: the lines come without an end; the first move after the first line
+  // starts the countdown, and once every line is in they all go together.
+  let activeAt: number | null = null;
+  let finishing = false;
+  const finish = (): void => {
+    if (finishing || left > 0 || activeAt === null) return;
+    finishing = true;
+    window.removeEventListener('pointermove', onActivity);
+    window.removeEventListener('pointerdown', onActivity);
+    const wait = Math.max(activeAt + holdMs - performance.now(), 0);
+    window.setTimeout(() => {
+      for (const m of shown) m.hide();
+    }, wait);
+  };
+  const onActivity = (): void => {
+    if (shown.length === 0 || activeAt !== null) return;
+    activeAt = performance.now();
+    finish();
+  };
+  if (options.untilActivity) {
+    window.addEventListener('pointermove', onActivity);
+    window.addEventListener('pointerdown', onActivity);
+  }
+
   const timers = options.lines.map((title, i) => {
-    const t = times[i] ?? { atMs: 0, durationMs: sequenceHoldMs };
+    const t = times[i] ?? { atMs: 0, durationMs: holdMs };
     return window.setTimeout(
       () => {
         left--;
-        showChatMessage({
-          variant: options.variant,
-          title,
-          anchor: options.anchor,
-          durationMs: t.durationMs,
-        });
+        shown.push(
+          showChatMessage({
+            variant: options.variant,
+            title,
+            anchor: options.anchor,
+            durationMs: options.untilActivity ? undefined : t.durationMs,
+          }),
+        );
+        if (options.untilActivity) finish();
       },
       (options.delayMs ?? 0) + t.atMs,
     );
@@ -220,6 +254,17 @@ export function showChatSequence(options: {
     cancel() {
       for (const id of timers) window.clearTimeout(id);
       left = 0;
+      if (options.untilActivity) finish();
     },
   };
+}
+
+/**
+ * How many chat messages are on screen right now, pinned ones (the alert) aside: quiet
+ * lines wait for an otherwise empty chat.
+ */
+export function chatMessageCount(): number {
+  let n = 0;
+  for (const el of live.keys()) if (!pinned.has(el)) n++;
+  return n;
 }

@@ -53,18 +53,21 @@ export const copy = {
     lastChance: 'Last chance...',
   },
   /**
-   * Chat pools (src/ui/chatDirector.ts): one entry is picked at random, never twice in a
-   * row of the same pool until all were used. An entry of `idle` is a little chat (up to 3
+   * Chat pools (src/ui/chatDirector.ts): one entry is picked at random, never twice from
+   * the same pool until all were used. An entry that is a list is a little chat (up to 3
    * lines, 1.2s apart); the others are single lines.
    */
   chatPools: {
-    /** No click 7s into a round. */
+    /** No click 7s into a round. They stay until the mouse moves. */
     idle: [
       ['Ptss...', 'Wake Up'],
       ['Hello?', 'Anyone in there?'],
       ['Is it frozen?', 'Blink if you can hear us'],
       ['Take your time.', 'We have all day.', "We don't."],
       ['Subject idle.', 'Poking the subject...', 'Poke.'],
+      ['Did they fall asleep?', 'Check the pulse.'],
+      ['Earth to subject.', 'Come in, subject.'],
+      ['The shape is not going to click itself.'],
     ],
     /** A click within 1s of the shape showing. */
     fast: [
@@ -80,6 +83,8 @@ export const copy = {
       'Was that a guess?',
       'Too fast to be human?',
       'Slow down, cowboy',
+      'Pre-aimed, were we?',
+      'Our stopwatch barely started',
     ],
     /** A click outside the shape. */
     miss: [
@@ -93,6 +98,74 @@ export const copy = {
       'Clicking the void again?',
       'Nope. Outside.',
       'We saw that.',
+      'Logging that as "creative".',
+      'The center is usually inside, fyi',
+    ],
+    /** Two misses in a row: replaces the plain miss line. */
+    missStreak: [
+      ['Again?', 'Somebody get this subject glasses.'],
+      ['Two for two.', 'Outside, both times.'],
+      ['Is the mouse upside down?'],
+      ['We are writing this down.', 'In red.'],
+      ["It's a pattern now."],
+    ],
+    /** A click within a few px of the optical center. */
+    bullseye: [
+      'Dead center. Creepy.',
+      'Okay, that was clean.',
+      'Pixel perfect. Huh.',
+      'Who taught you that?',
+      'Right on the spot.',
+      "That's... exactly it.",
+      'Bullseye.',
+      'Hm. Lucky, or good?',
+    ],
+    /** A click on the computed center while the optical one is clearly elsewhere. */
+    machine: [
+      "That's the computed center. Interesting.",
+      'Mathematically correct. Humanly odd.',
+      'Spoken like a machine.',
+      'Our algorithm picked the same spot.',
+      'Are you running on batteries?',
+      'Beep boop?',
+    ],
+    /** Three precise rounds in a row. */
+    goodStreak: [
+      ['Three in a row.', 'Okay, show-off.'],
+      ['Consistent. We hate that.'],
+      ['Someone check if this is a bot.'],
+      ['Streak noted.', "Don't get cocky."],
+      ['Is this your job or something?'],
+    ],
+    /** Clicking the screen before the shape is ready, or after the round is decided. */
+    impatient: [
+      "Patience. It's loading.",
+      'Wait for it...',
+      'Easy, easy. Not yet.',
+      'Clicking harder will not help.',
+      'One click per shape, please.',
+      'The button is not a drum.',
+    ],
+    /** The mouse leaves the window mid-round (once a game). */
+    away: [
+      'Where do you think you are going?',
+      'Come back. The test is not over.',
+      "Leaving? We'll wait.",
+      'Hey. Eyes on the screen.',
+    ],
+    /** The tab comes back after being hidden mid-round (once a game). */
+    back: [
+      'Welcome back. We paused for you.',
+      "Oh, you're back. We didn't move.",
+      'Took a break? Clock was frozen. You are welcome.',
+    ],
+    /** The very first round starts. */
+    start: [
+      ['Subject online.', "Let's see those eyes."],
+      ['Mic check.', 'Can you see the shape?'],
+      ['Test 01. Recording.'],
+      ['Okay, here we go.', 'Try not to blink.'],
+      ['Calibrating subject...', 'Good enough.'],
     ],
     /** After round 3. */
     easy: [
@@ -101,6 +174,47 @@ export const copy = {
       "Too easy? It won't last.",
       'Enjoying yourself?',
     ],
+    /** Story beats at a round's start (ms later: `chatDirector.beats`). */
+    beats: {
+      /** The room starts breathing after round 3. */
+      breathing: [
+        'Is the room... breathing?',
+        'Did the walls just move?',
+        "Don't look at the walls.",
+      ],
+      /** Halfway. */
+      halfway: ['Halfway there.', 'Six down. Six to go.', 'Half of you is done.'],
+      /** The first glitch. */
+      flicker: [
+        'Did the screen just flicker?',
+        'That flicker is normal. Probably.',
+        'Ignore the glitch.',
+      ],
+      /** The screen is about to fall. */
+      loose: [
+        'Hold still. Something is loose.',
+        'Is the screen... tilting?',
+        'Who checked the bolts?',
+      ],
+    },
+    /** As the score shows, by score tier (`persona.accuracy`). */
+    score: {
+      sharp: [
+        'Impressive. Suspicious, but impressive.',
+        'Those eyes are going in the report.',
+        'Results logged. We may call you back.',
+      ],
+      decent: [
+        'Not bad. Not great. Logged.',
+        'Average eyes. Above-average patience.',
+        'Results logged. Thanks for your time.',
+      ],
+      blurry: [
+        "We'll pretend that didn't happen.",
+        'Results logged. Somewhere deep.',
+        'Have you considered glasses?',
+      ],
+    },
   },
   /** Objective lines, referenced by `copyKey` in rounds.config.ts. */
   objectives: {
