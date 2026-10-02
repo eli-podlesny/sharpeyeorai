@@ -155,9 +155,13 @@ export function createScoreScene(ctx: SceneContext): Scene {
     root.inert = true;
     scope.mount(ctx.content, root);
 
+    // The room shows first; then the screen enters from below (after the game; not on a
+    // debug jump, where it is already there).
+    const enterMs = ctx.screen.show(gameConfig.screenEntrance.delayMs);
+
     // "Calculating" first, like "Initializing": it starts behind the shut doors, the doors
     // open onto it (zooming in), and it stays `calculatingMs` once they are open.
-    const doorAt = gameConfig.loadingStartBeforeDoorsMs;
+    const doorAt = enterMs + gameConfig.loadingStartBeforeDoorsMs;
     const doorMs = gameConfig.doorOpenMs;
     const fadeMs = gameConfig.calculatingFadeMs;
     const calcEnd = doorAt + doorMs + gameConfig.calculatingMs;
@@ -192,7 +196,8 @@ export function createScoreScene(ctx: SceneContext): Scene {
       details.setAttribute('aria-expanded', String(open));
     });
 
-    // One chat message at a time: a new Share replaces the last one; leaving removes it.
+    // A new Share replaces the last message (which still stays its minimum time, stacked
+    // above the new one); leaving the score removes it.
     let message: ChatMessage | null = null;
     scope.onDispose(() => message?.hide(true));
 
@@ -204,7 +209,7 @@ export function createScoreScene(ctx: SceneContext): Scene {
         url: copy.score.shareUrl,
       });
       const report = (copied: boolean): void => {
-        message?.hide(true);
+        message?.hide();
         message = copied
           ? showChatMessage({
               variant: 'light',

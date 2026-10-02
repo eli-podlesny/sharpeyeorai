@@ -178,6 +178,8 @@
 /* screen-hud — over the opening, above the content, below the doors. Clicks pass through. */
 .screen-hud {
   position: absolute;
+  /* HUD parallax (src/fx/parallax.ts), on top of the doors' reveal zoom */
+  translate: var(--parallax-hud-x, 0) var(--parallax-hud-y, 0);
   pointer-events: none;
   color: var(--screen-text);
   font-family: var(--font-hud);

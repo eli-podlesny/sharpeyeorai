@@ -5,7 +5,6 @@ import { getRound, opticalSettings } from '../config/rounds.config';
 import type { SceneContext } from '../core/game';
 import { contentSize, toContentCoords } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
-import type { Scope } from '../core/scope';
 import type { Point } from '../core/stage';
 import { setU, u } from '../core/units';
 import {
@@ -33,6 +32,7 @@ import {
 import { h } from '../ui/dom';
 import { addShapeMark, createShapeSvg, updateShapeSvg } from '../ui/shapeSvg';
 import { commitStyles, fadeTo, moveTo, prefersReducedMotion } from '../ui/motion';
+import { createChatStack, showChatMessage } from '../ui/chatMessage';
 import { showSampleTooltip, type SampleData } from '../ui/sampleTooltip';
 
 const { round: L } = layout;
@@ -61,12 +61,11 @@ function createClickMarker(at: Point): HTMLElement {
 
 /**
  * "Sample 0X  LOGGED" (or NO INPUT after a timeout), pinned to the top-right corner.
- * Position and time only: no points during the game. Gone `loggedTooltipMs` later.
+ * Position and time only: no points during the game. It goes in `play`, the layer that
+ * fades out with the shape, so it stays exactly as long as the shape.
  */
-function showSample(container: HTMLElement, data: SampleData, scope: Scope, ms: number): void {
-  const tip = showSampleTooltip(container, L.loggedTooltip, data, prefersReducedMotion());
-  scope.timeout(() => tip.hide(), ms);
-  scope.onDispose(() => tip.el.remove());
+function showSample(play: HTMLElement, data: SampleData): void {
+  showSampleTooltip(play, L.loggedTooltip, data, prefersReducedMotion());
 }
 
 const markersOn = (): boolean => document.documentElement.hasAttribute('data-debug-markers');
@@ -224,11 +223,30 @@ export function createRoundScene(ctx: SceneContext): Scene {
       else if (endNow) startOutro();
     };
 
-    // 1. The shape fades in, rising and zooming in.
+    // 0. A round may open with a chat message (10: "Hurry Up!"; 12: "Last chance...", lit
+    // in the dark with the round's content, the triangle waiting `shapeDelayMs` for it).
     bus.emit('round.intro.start', { roundId });
     timeline?.onIntroStart?.(tl);
-    fadeTo(play, 1, seq.shapeFadeInMs, seq.fadeEasing);
-    moveTo(playMotion, {}, seq.shapeMoveInMs, seq.slideEasing);
+    if (round.startMessage) {
+      let anchor: HTMLElement | undefined;
+      if (round.aboveDarkness) {
+        anchor = createChatStack();
+        root.append(anchor);
+      }
+      showChatMessage({
+        variant: round.startMessage.variant,
+        title: copy.chat[round.startMessage.copyKey],
+        durationMs: round.startMessage.durationMs,
+        anchor,
+      });
+    }
+    const shapeStartMs = round.shapeDelayMs ?? 0;
+
+    // 1. The shape fades in, rising and zooming in.
+    scope.timeout(() => {
+      fadeTo(play, 1, seq.shapeFadeInMs, seq.fadeEasing);
+      moveTo(playMotion, {}, seq.shapeMoveInMs, seq.slideEasing);
+    }, shapeStartMs);
 
     // 2. The shape is fully visible: the round clock starts, the fill pulses, clicks count
     // and moving shapes start moving.
@@ -240,7 +258,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
       bus.emit('round.intro.end', { roundId });
       bus.emit('round.shape.visible', { roundId });
       timeline?.onShapeVisible?.(tl);
-    }, seq.shapeFadeInMs);
+    }, shapeStartMs + seq.shapeFadeInMs);
 
     scope.frame((now) => {
       clock.setPaused('debug', roundDebug.paused, now);
@@ -282,12 +300,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
         hud.setTime(deadline);
         bus.emit('round.timeout', { roundId });
         if (round.clickFeedback) {
-          showSample(
-            root,
-            { kind: 'noInput', roundId, deadlineMs: deadline },
-            scope,
-            seq.loggedTooltipMs,
-          );
+          showSample(play, { kind: 'noInput', roundId, deadlineMs: deadline });
         }
         decide(createTimeoutResult(targetAt(round, contentSize, seed, shownMs)), 0);
       }
@@ -314,12 +327,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
       bus.emit('round.click', { roundId, content: point, local, latencyMs });
       if (round.clickFeedback) {
         playMotion.append(createClickMarker(point));
-        showSample(
-          root,
-          { kind: 'logged', roundId, at: local, latencyMs },
-          scope,
-          seq.loggedTooltipMs,
-        );
+        showSample(play, { kind: 'logged', roundId, at: local, latencyMs });
       }
       timeline?.onClick?.(tl, { content: point, latencyMs });
       // 4. Wait, then the outro (round 12: the outro at once).

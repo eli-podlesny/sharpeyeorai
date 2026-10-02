@@ -46,10 +46,14 @@ export function createEndingScene(ctx: SceneContext): Scene {
       }, closeMs);
     }
 
-    // Fully black: effects off, screen back in place, out of sight. After a round 12 click
-    // the last breath (fx.lastBreath) is still to come: the broken scene stays until it is over.
+    // Fully black: effects off, screen back in place and away, out of sight (it enters again,
+    // from below, once the lights are on: src/scenes/score.ts). After a round 12 click the
+    // last breath (fx.lastBreath) is still to come: the broken scene stays until it is over.
     const breathLeft = alreadyDark ? Math.max(breathEnd, 0) : 0;
-    scope.timeout(() => ctx.setSceneMode('normal'), darkAt + breathLeft);
+    scope.timeout(() => {
+      ctx.setSceneMode('normal');
+      ctx.screen.hide();
+    }, darkAt + breathLeft);
 
     const lightAt = darkAt + holdMs;
     scope.timeout(() => {

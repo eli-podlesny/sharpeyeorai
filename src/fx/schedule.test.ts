@@ -171,12 +171,24 @@ describe('tween', () => {
 describe('round 12: the last breath', () => {
   const b = gameConfig.fx.lastBreath;
 
-  it('rises, holds and falls back to black, once', () => {
+  it('rises, holds and falls back to black, twice, with black between', () => {
+    const one = b.riseMs + b.holdMs + b.fallMs;
+    expect(b.count).toBe(2);
     expect(breathPhaseAt(-1)).toBe('waiting');
     expect(breathPhaseAt(0)).toBe('rising');
     expect(breathPhaseAt(b.riseMs)).toBe('holding');
     expect(breathPhaseAt(b.riseMs + b.holdMs)).toBe('falling');
-    expect(breathPhaseAt(b.riseMs + b.holdMs + b.fallMs)).toBe('done');
+    expect(breathPhaseAt(one)).toBe('gap');
+    expect(breathPhaseAt(one + b.gapMs)).toBe('rising');
+    expect(breathPhaseAt(one + b.gapMs + b.riseMs)).toBe('holding');
+    expect(breathPhaseAt(2 * one + b.gapMs - 1)).toBe('falling');
+    expect(breathPhaseAt(2 * one + b.gapMs)).toBe('done');
+    expect(breathDurationMs()).toBe(2 * one + b.gapMs);
+  });
+
+  it('stays under 3 flashes a second', () => {
+    const one = b.riseMs + b.holdMs + b.fallMs;
+    expect(1000 / (one + b.gapMs)).toBeLessThan(3);
   });
 
   it('ends delayAfterClickMs + its own length after a click', () => {

@@ -26,7 +26,7 @@ describe('input rules', () => {
     expect(fixedRoundEndMs(round)).toBeNull();
   });
 
-  it('round 12 takes clicks for 4s only, then ignores input through its last breath (1.2s)', () => {
+  it('round 12 takes clicks for 4s only, then ignores input through its two last breaths (3.1s)', () => {
     const round = getRound(12);
     expect(inputDeadlineMs(round)).toBe(4000);
     expect(acceptsClick(round, 0)).toBe(true);
@@ -34,7 +34,7 @@ describe('input rules', () => {
     expect(acceptsClick(round, 3999)).toBe(true);
     expect(acceptsClick(round, 4000)).toBe(false);
     expect(acceptsClick(round, 7000)).toBe(false);
-    expect(fixedRoundEndMs(round)).toBe(5200);
+    expect(fixedRoundEndMs(round)).toBe(7100);
   });
 
   it('a click between two windows is ignored', () => {

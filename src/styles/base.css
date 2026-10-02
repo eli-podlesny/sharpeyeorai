@@ -72,12 +72,8 @@ html {
   cursor: var(--cursor-not-allowed, not-allowed);
 }
 
-/* Over the screen during a round (src/ui/screenCursor.ts): clicks ignored right now, or the
-   orange in-screen cursor shows instead of the system one. */
-html[data-screen-cursor='blocked'] {
-  cursor: var(--cursor-not-allowed, not-allowed);
-}
-
+/* Over the screen during a round (src/ui/screenCursor.ts) the orange in-screen cursor shows
+   instead of the system one. */
 html[data-screen-cursor='custom'],
 html[data-screen-cursor='custom'] * {
   cursor: none !important;

@@ -26,7 +26,10 @@ export interface ChatMessageOptions {
 
 export interface ChatMessage {
   el: HTMLElement;
-  /** Fades it out and removes it (at once with `immediate`). */
+  /**
+   * Fades it out and removes it, but never before it has been up `chatMessage.minVisibleMs`.
+   * `immediate`: gone now, whatever the time (a scene going away).
+   */
   hide(immediate?: boolean): void;
 }
 
@@ -39,18 +42,28 @@ let defaultStack: HTMLElement | null = null;
  */
 export function createChatLayer(): HTMLElement {
   const layer = h('div', 'chat-layer');
-  const stack = h('div', 'chat-stack');
-  setU(stack, { right: C.anchor.right, bottom: C.anchor.bottom });
-  stack.style.setProperty('--chat-overlap', u(-C.overlap));
+  const stack = createChatStack();
   layer.append(stack);
   defaultStack = stack;
   return layer;
 }
 
 /**
+ * A stack at the chat spot, for a box over the opening other than the chat layer (round 12
+ * shows its message lit, above the darkness, with the round's own content).
+ */
+export function createChatStack(): HTMLElement {
+  const stack = h('div', 'chat-stack');
+  setU(stack, { right: C.anchor.right, bottom: C.anchor.bottom });
+  stack.style.setProperty('--chat-overlap', u(-C.overlap));
+  return stack;
+}
+
+/**
  * Shows a chat message (Figma "tooltip chat"): the text on a hand-drawn panel with cut
  * corners, hugging the text up to `layout.chatMessage.maxWidth`, then wrapping. It fades in
- * (`chatMessage.fadeMs`), and out again after `durationMs` if given.
+ * (`chatMessage.fadeMs`), and out again after `durationMs` if given. Every message stays
+ * at least `chatMessage.minVisibleMs`.
  */
 export function showChatMessage(options: ChatMessageOptions): ChatMessage {
   const stack = options.anchor ?? defaultStack;
@@ -74,7 +87,9 @@ export function showChatMessage(options: ChatMessageOptions): ChatMessage {
   });
   fit.observe(el);
 
-  const ms = prefersReducedMotion() ? 0 : gameConfig.chatMessage.fadeMs;
+  const { fadeMs, minVisibleMs } = gameConfig.chatMessage;
+  const ms = prefersReducedMotion() ? 0 : fadeMs;
+  const shownAt = performance.now();
   el.style.opacity = '0';
   stack.append(el);
   commitStyles(el);
@@ -82,21 +97,30 @@ export function showChatMessage(options: ChatMessageOptions): ChatMessage {
 
   let gone = false;
   let timer: number | undefined;
-  const hide = (immediate = false): void => {
-    if (gone) return;
-    gone = true;
-    window.clearTimeout(timer);
-    const remove = (): void => {
-      fit.disconnect();
-      el.remove();
-    };
-    if (immediate || ms === 0) {
-      remove();
-      return;
-    }
+  const remove = (): void => {
+    fit.disconnect();
+    el.remove();
+  };
+  const fadeOut = (): void => {
+    if (ms === 0) return remove();
     fadeTo(el, 0, ms);
     window.setTimeout(remove, ms);
   };
-  if (options.durationMs !== undefined) timer = window.setTimeout(hide, options.durationMs);
+  const hide = (immediate = false): void => {
+    if (immediate) {
+      gone = true;
+      window.clearTimeout(timer);
+      remove();
+      return;
+    }
+    if (gone) return;
+    gone = true;
+    window.clearTimeout(timer);
+    const wait = Math.max(shownAt + minVisibleMs - performance.now(), 0);
+    timer = window.setTimeout(fadeOut, wait);
+  };
+  if (options.durationMs !== undefined) {
+    timer = window.setTimeout(() => hide(), Math.max(options.durationMs, minVisibleMs));
+  }
   return { el, hide };
 }

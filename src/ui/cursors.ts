@@ -38,8 +38,8 @@ export function cursorCandidates(key: CursorKey): string[] {
  * The metal pixel cursors (`assets-src/ui/cursors/`, copied by `npm run assets`): writes
  * one CSS variable per cursor on the root, with the first form this browser accepts, or
  * its native cursor. base.css uses them: default everywhere, pointer on buttons and
- * links, pointer-down while pressed, not-allowed on disabled controls and on the screen
- * while a round ignores clicks.
+ * links, pointer-down while pressed, not-allowed on disabled controls. Over the screen
+ * during a round the orange in-screen cursor takes over (src/ui/screenCursor.ts).
  */
 export function initCursors(): void {
   const root = document.documentElement;

@@ -4,13 +4,19 @@ import type { Point } from '../core/stage';
 import { prefersReducedMotion } from '../ui/motion';
 
 /**
- * Parallax: depth on mouse move. The background follows the pointer; the frame shadows
- * move against it (offsets in `layout.parallax`, at the window edges). Each layer gets the
+ * Parallax: depth on mouse move. The background follows the pointer; the frame shadows,
+ * the doors and the screen HUD move against it (offsets in `layout.parallax`, at the
+ * window edges). Each layer gets the
  * CSS `translate` property, which is applied on top of its `transform` (the drop, the inner
  * shadow's own placement), so nothing is overridden.
  */
 export interface ParallaxTarget {
-  el: HTMLElement;
+  /**
+   * The element to move (its `translate`), or the name of a pair of CSS variables written
+   * on the root, `--<name>-x` and `--<name>-y`, for elements that come and go (tooltips,
+   * chat messages): their CSS reads them.
+   */
+  el: HTMLElement | string;
   /** Offset with the pointer at the right / bottom edge (+1); the left / top get the opposite. */
   max: { readonly x: number; readonly y: number };
   /** `px`: window CSS px (the background); `unit`: unit px, scaling with the frame. */
@@ -49,13 +55,19 @@ export function createParallax(targets: ParallaxTarget[]): void {
   let away = true;
   let last: number | null = null;
   let running = false;
+  const root = document.documentElement;
 
   const write = (p: Point): void => {
     for (const t of targets) {
       const x = p.x * t.max.x;
       const y = p.y * t.max.y;
-      t.el.style.translate =
-        t.space === 'px' ? `${x.toFixed(2)}px ${y.toFixed(2)}px` : `${u(x)} ${u(y)}`;
+      const [tx, ty] = t.space === 'px' ? [`${x.toFixed(2)}px`, `${y.toFixed(2)}px`] : [u(x), u(y)];
+      if (typeof t.el === 'string') {
+        root.style.setProperty(`--${t.el}-x`, tx);
+        root.style.setProperty(`--${t.el}-y`, ty);
+      } else {
+        t.el.style.translate = `${tx} ${ty}`;
+      }
     }
   };
 

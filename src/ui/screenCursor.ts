@@ -13,9 +13,9 @@ const C = layout.screenCursor;
 
 /**
  * The orange in-screen cursor (Figma "custom cursor"): brackets on the pointer and a dot
- * that trails behind. It shows only while a round takes clicks and the pointer is over the
- * screen opening; the system cursor is hidden there meanwhile. Over the opening while a
- * round ignores clicks (its intro and outro), the system cursor turns to not-allowed.
+ * that trails behind. It shows during a round while the pointer is over the screen opening;
+ * the system cursor is hidden there meanwhile. While the round ignores clicks (after the
+ * click, its intro and outro) only the brackets show: the dot is the "you can click" sign.
  * Visual only: clicks are scored where the pointer is (the brackets' center), never the dot.
  */
 
@@ -74,7 +74,8 @@ export function bracketBars(
   return bars;
 }
 
-type Zone = 'none' | 'blocked' | 'custom';
+/** Off the opening (or no round): `none`. Over it: `active` (clicks count) or `idle` (brackets only). */
+type Zone = 'none' | 'idle' | 'active';
 
 const lerp = (a: number, b: number, k: number): number => a + (b - a) * k;
 
@@ -117,16 +118,15 @@ export function createScreenCursor(bus: EventBus): void {
 
   const setZone = (next: Zone): void => {
     if (next === zone) return;
-    const wasCustom = zone === 'custom';
+    const was = zone;
     zone = next;
     if (next === 'none') delete root.dataset.screenCursor;
-    else root.dataset.screenCursor = next;
-    el.hidden = next !== 'custom';
+    else root.dataset.screenCursor = 'custom';
+    el.hidden = next === 'none';
+    dot.style.visibility = next === 'active' ? '' : 'hidden';
     // Fresh each time it appears: no trail from where it was last seen.
-    if (next === 'custom' && !wasCustom && pointer) {
-      dotAt = { ...pointer };
-      spread = 0;
-    }
+    if (pointer && was === 'none') spread = 0;
+    if (pointer && next === 'active') dotAt = { ...pointer };
   };
 
   /** Over the opening, does the round take clicks right now? */
@@ -135,11 +135,11 @@ export function createScreenCursor(bus: EventBus): void {
     const c = toContentCoords(p.x, p.y);
     const inside = c.x >= 0 && c.y >= 0 && c.x <= contentSize.width && c.y <= contentSize.height;
     if (!inside || liveRound.current === null) return 'none';
-    if (now < pressedUntil) return 'custom';
+    if (now < pressedUntil) return 'active';
     const live = liveRound.current;
     const taking =
       openRound === live.roundId && acceptsClick(getRound(live.roundId), live.elapsedMs());
-    return taking ? 'custom' : 'blocked';
+    return taking ? 'active' : 'idle';
   };
 
   const draw = (pressed: boolean): void => {
@@ -173,7 +173,7 @@ export function createScreenCursor(bus: EventBus): void {
     }
     cursorReadout.speed = speed;
     setZone(zoneFor(pointer, now));
-    if (zone === 'custom' && pointer) {
+    if (zone !== 'none' && pointer) {
       if (reduced) {
         dotAt = { ...pointer };
         spread = 0;
@@ -204,7 +204,7 @@ export function createScreenCursor(bus: EventBus): void {
   window.addEventListener(
     'pointerdown',
     (e) => {
-      if (zone === 'custom' && e.button === 0) {
+      if (zone === 'active' && e.button === 0) {
         pressedUntil = performance.now() + cursorTuning.pressedMs;
       }
     },

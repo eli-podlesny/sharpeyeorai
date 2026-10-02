@@ -135,12 +135,20 @@ export const layout = {
 
   /**
    * Parallax at the window edges (pointer at ±1). The background in window CSS px, it
-   * follows the pointer; the frame shadows in unit px, against it (negative).
+   * follows the pointer; the frame shadows and the doors in unit px, against it (negative).
    */
   parallax: {
     background: { x: 12, y: 8 },
     frameShadow: { x: -8, y: -4 },
     frameInnerShadow: { x: -4, y: -2 },
+    /** Both door halves, against the pointer (inside their clip, so the slide is untouched). */
+    doors: { x: -2, y: -1 },
+    /**
+     * The screen HUD and what shows on the screen above the game (counter, progress, timer,
+     * objective, chat messages, sample tooltip), against the pointer, as CSS variables
+     * `--parallax-hud-x/-y` (src/styles/scenes.css, layers.css).
+     */
+    hud: { x: -1, y: -1 },
   },
 
   /** Metal system cursors: hotspots at 1× (CSS px from the top-left). */

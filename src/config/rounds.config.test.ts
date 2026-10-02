@@ -77,11 +77,12 @@ describe('rounds config', () => {
     expect(1000 / ((decoy?.onMs ?? 0) + (decoy?.offMs ?? 0))).toBeLessThanOrEqual(3);
   });
 
-  it('round 11 times out at 8s; round 12 takes clicks for 4s, then idles for its last breath', () => {
+  it('round 11 times out at 8s; round 12 takes clicks for 4s, then idles for its two last breaths', () => {
     expect(getRound(11).timeLimitMs).toBe(8000);
     const r12 = getRound(12);
     expect(r12.inputWindows).toEqual([[0, 4000]]);
-    expect(r12.postRoundIdleMs).toBe(1200);
+    // Two breaths of 1.2s with 0.7s of black between.
+    expect(r12.postRoundIdleMs).toBe(3100);
     expect(r12.hideAfter).toEqual({ visibleMs: 1000, fadeMs: 200 });
   });
 

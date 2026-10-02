@@ -51,6 +51,13 @@ export interface GameConfig {
   chatMessage: ChatMessageConfig;
   /** The "Sample 0X, logged" tooltip fades in and out over this time. */
   sampleTooltipFadeMs: number;
+  /**
+   * The screen unit (frame, screen, doors, HUD) enters from below, fading in, once the room
+   * is drawn: at the start of the game, and on the way to the score (src/fx/screenEntrance.ts).
+   * `delayMs` after the room shows, it rises `risePercent` of its own height over `durationMs`.
+   * Reduced motion: a fade only.
+   */
+  screenEntrance: { delayMs: number; durationMs: number; risePercent: number; easing: string };
   /** The orange in-screen cursor (src/ui/screenCursor.ts). Sizes in `layout.screenCursor`. */
   screenCursor: ScreenCursorConfig;
   /** Shape outlines are sampled about this many px apart (curves and straight edges). */
@@ -83,6 +90,8 @@ export interface ChatMessageConfig {
   alertMs: number;
   /** A message fades in and out over this time (Figma shows no motion: a quick fade). */
   fadeMs: number;
+  /** Every message stays at least this long, even when replaced or hidden early. */
+  minVisibleMs: number;
 }
 
 /**
@@ -204,7 +213,7 @@ export interface FxConfig {
   };
   /**
    * Round 12's last breath: a little light comes back for a moment over the broken scene
-   * (doors shut, at once), then it goes black again. It starts `delayAfterClickMs` after a
+   * (doors shut, at once), then it goes black again; `count` times, `gapMs` apart. It starts `delayAfterClickMs` after a
    * click, or when round 12 stops taking clicks (the round then ends with it). Rises over
    * `riseMs`, holds `holdMs`, falls back over `fallMs`. One flash only (under the 3 Hz
    * limit). Then `darkAfterMs` of full black, and the lights return on the score.
@@ -212,6 +221,9 @@ export interface FxConfig {
   lastBreath: {
     /** How much light comes back: 0.2 = the scene 20% visible (the darkness at 80%). */
     brightness: number;
+    /** It breathes this many times, with `gapMs` of black between (far under 3 flashes a second). */
+    count: number;
+    gapMs: number;
     delayAfterClickMs: number;
     darkAfterMs: number;
     riseMs: number;
@@ -244,8 +256,6 @@ export interface ObjectiveIntroConfig {
 export interface RoundSequenceConfig {
   /** 1. The shape fades in. The round timer starts when it is fully visible. */
   shapeFadeInMs: number;
-  /** 3. The "Sample 0X, logged" tooltip disappears (instantly) this long after the click. */
-  loggedTooltipMs: number;
   /** One full pulse of the shape fill (low → high → low) while the timer runs. Colors are tokens. */
   shapePulseMs: number;
   /** 4. The shape stays this long after the click (marker showing). */
@@ -328,7 +338,6 @@ export const gameConfig: GameConfig = {
   },
   roundSequence: {
     shapeFadeInMs: 400,
-    loggedTooltipMs: 500,
     shapePulseMs: 1000,
     postClickWaitMs: 1600,
     outroFadeMs: 400,
@@ -344,8 +353,15 @@ export const gameConfig: GameConfig = {
     copiedMs: 2000,
     alertMs: 4000,
     fadeMs: 150,
+    minVisibleMs: 2000,
   },
   sampleTooltipFadeMs: 120,
+  screenEntrance: {
+    delayMs: 400,
+    durationMs: 1000,
+    risePercent: 24,
+    easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)',
+  },
   screenCursor: {
     dotLagMs: 60,
     attackMs: 240,
@@ -447,6 +463,8 @@ export const gameConfig: GameConfig = {
     },
     lastBreath: {
       brightness: 0.2,
+      count: 2,
+      gapMs: 700,
       delayAfterClickMs: 1000,
       darkAfterMs: 4000,
       riseMs: 150,

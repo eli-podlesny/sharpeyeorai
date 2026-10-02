@@ -92,6 +92,13 @@ function droppedNow(): Pose {
   return droppedPose(window.innerHeight, unit.height);
 }
 
+/** The drop's own animations carry this id: cancelling them leaves others (the screen entrance) alone. */
+const DROP_ID = 'drop';
+
+function cancelDrop(el: HTMLElement): void {
+  for (const a of el.getAnimations()) if (a.id === DROP_ID) a.cancel();
+}
+
 /** The room's dropped pose for the window as it is now (parallax room kept on every side). */
 function backgroundDroppedNow(): BackgroundPose {
   const image = backgroundBoxSize(
@@ -141,12 +148,13 @@ export function createScreenDrop(
   const moveBackground = (end: BackgroundPose, ms: number, easing: string): void => {
     const drawn = getComputedStyle(background).transform;
     const from = drawn === 'none' ? backgroundPoseCss(BACKGROUND_HOME) : drawn;
-    for (const a of background.getAnimations()) a.cancel();
+    cancelDrop(background);
     background.style.transform = end === BACKGROUND_HOME ? '' : backgroundPoseCss(end);
     if (ms > 0) {
       background.animate([{ transform: from }, { transform: backgroundPoseCss(end) }], {
         duration: ms,
         easing,
+        id: DROP_ID,
       });
     }
   };
@@ -156,9 +164,9 @@ export function createScreenDrop(
     const drawn = getComputedStyle(assembly).transform;
     const from = drawn === 'none' ? css(HOME) : drawn;
     for (const el of targets) {
-      for (const a of el.getAnimations()) a.cancel();
+      cancelDrop(el);
       el.style.transform = end === HOME ? '' : css(end);
-      if (ms > 0) el.animate(frames(from), { duration: ms });
+      if (ms > 0) el.animate(frames(from), { duration: ms, id: DROP_ID });
     }
   };
 
@@ -216,7 +224,7 @@ export function createScreenDrop(
     reset() {
       down = false;
       for (const el of targets) {
-        for (const a of el.getAnimations()) a.cancel();
+        cancelDrop(el);
         el.style.transform = '';
       }
       moveBackground(BACKGROUND_HOME, 0, 'linear');

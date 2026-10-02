@@ -83,26 +83,40 @@ export function closingAmount(t: number, limitMs: number, speedUp: SpeedUp | nul
   return limitMs > 0 ? clamp01(t / limitMs) : 1;
 }
 
-export type BreathPhase = 'waiting' | 'rising' | 'holding' | 'falling' | 'done';
+export type BreathPhase = 'waiting' | 'rising' | 'holding' | 'falling' | 'gap' | 'done';
+
+type BreathTiming = {
+  riseMs: number;
+  holdMs: number;
+  fallMs: number;
+  count: number;
+  gapMs: number;
+};
 
 /**
  * Round 12's last breath at `t` ms from its start (negative = not yet): the lights rise,
- * hold and fall back to black (`fx.lastBreath`).
+ * hold and fall back to black, then stay black for `gapMs` (`gap`) before the next one,
+ * `count` times in all (`fx.lastBreath`).
  */
 export function breathPhaseAt(
   t: number,
-  cfg: { riseMs: number; holdMs: number; fallMs: number } = gameConfig.fx.lastBreath,
+  cfg: BreathTiming = gameConfig.fx.lastBreath,
 ): BreathPhase {
   if (t < 0) return 'waiting';
-  if (t < cfg.riseMs) return 'rising';
-  if (t < cfg.riseMs + cfg.holdMs) return 'holding';
-  if (t < cfg.riseMs + cfg.holdMs + cfg.fallMs) return 'falling';
-  return 'done';
+  const one = cfg.riseMs + cfg.holdMs + cfg.fallMs;
+  const index = Math.floor(t / (one + cfg.gapMs));
+  if (index >= cfg.count) return 'done';
+  const local = t - index * (one + cfg.gapMs);
+  if (local < cfg.riseMs) return 'rising';
+  if (local < cfg.riseMs + cfg.holdMs) return 'holding';
+  if (local < one) return 'falling';
+  return index === cfg.count - 1 ? 'done' : 'gap';
 }
 
-/** How long the last breath lasts, rise to fall. */
-export function breathDurationMs(cfg = gameConfig.fx.lastBreath): number {
-  return cfg.riseMs + cfg.holdMs + cfg.fallMs;
+/** How long the last breaths last, from the first rise to the last fall. */
+export function breathDurationMs(cfg: BreathTiming = gameConfig.fx.lastBreath): number {
+  const one = cfg.riseMs + cfg.holdMs + cfg.fallMs;
+  return cfg.count * one + Math.max(cfg.count - 1, 0) * cfg.gapMs;
 }
 
 /** When the last breath is over, in ms from a round 12 click (it starts `delayAfterClickMs` after it). */

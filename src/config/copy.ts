@@ -42,6 +42,10 @@ export const copy = {
   chat: {
     /** Orange, when alert mode starts (after round 7). */
     alert: 'Alert! System Malfunction',
+    /** At the start of round 10. */
+    hurryUp: 'Hurry Up!',
+    /** Before round 12's triangle, lit in the dark. */
+    lastChance: 'Last chance...',
   },
   /** Objective lines, referenced by `copyKey` in rounds.config.ts. */
   objectives: {
@@ -144,6 +148,7 @@ export const copy = {
 } as const;
 
 export type ObjectiveKey = keyof typeof copy.objectives;
+export type ChatKey = keyof typeof copy.chat;
 
 /** Replaces `{name}` placeholders in a copy string. */
 export function fill(template: string, values: Record<string, string | number>): string {

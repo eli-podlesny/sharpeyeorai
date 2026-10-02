@@ -191,6 +191,7 @@
 /* Sample tooltip (src/ui/sampleTooltip.ts): Figma "tooltip logged" */
 .sample-tip {
   position: absolute;
+  translate: var(--parallax-hud-x, 0) var(--parallax-hud-y, 0);
   z-index: 1;
   pointer-events: none;
 }
@@ -239,6 +240,7 @@
 
 .chat-stack {
   position: absolute;
+  translate: var(--parallax-hud-x, 0) var(--parallax-hud-y, 0);
   display: flex;
   flex-direction: column;
   align-items: flex-end;

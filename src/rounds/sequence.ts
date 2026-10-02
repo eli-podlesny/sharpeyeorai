@@ -66,7 +66,7 @@ export function buildObjectiveIntro(
  *   1. the shape fades in, rising and zooming in
  *   2. the round timer starts once the shape is fully visible (clicks before are ignored),
  *      and the shape fill pulses until the click
- *   3. the click: marker + tooltip (the tooltip disappears after `loggedTooltipMs`)
+ *   3. the click: marker + sample tooltip (it stays until the shape fades out, and fades with it)
  *   4. wait
  *   5. shape and marker fade out together, the shape zooming out in place
  *   6. pause, then the next round starts at step 1
@@ -79,7 +79,6 @@ export interface RoundSequence {
   shapeMoveInMs: number;
   /** The shape zooms out over this time while fading out; 0 with reduced motion. */
   shapeMoveOutMs: number;
-  loggedTooltipMs: number;
   shapePulseMs: number;
   postClickWaitMs: number;
   outroFadeMs: number;
@@ -100,7 +99,6 @@ export function buildRoundSequence(
     shapeFadeInMs: fade(config.shapeFadeInMs),
     shapeMoveInMs: reducedMotion ? 0 : config.shapeFadeInMs,
     shapeMoveOutMs: reducedMotion ? 0 : config.outroFadeMs,
-    loggedTooltipMs: config.loggedTooltipMs,
     shapePulseMs: config.shapePulseMs,
     postClickWaitMs: config.postClickWaitMs,
     outroFadeMs: fade(config.outroFadeMs),

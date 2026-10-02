@@ -2,7 +2,7 @@ import type { RoundMotion } from '../rounds/motion';
 import type { ShapeConfig } from '../rounds/shapes';
 import type { RoundTimeline } from '../rounds/timeline';
 import type { DecoyConfig, HideAfter, InputWindow } from '../rounds/timing';
-import type { ObjectiveKey } from './copy';
+import type { ChatKey, ObjectiveKey } from './copy';
 import { gameConfig, type OpticalConfig } from './game.config';
 import { layout } from './layout.config';
 
@@ -68,6 +68,13 @@ export type RoundConfig = {
   clickFeedback: boolean;
   /** Scene effects tied to this round (src/fx/sceneController.ts); the scene mode comes from `gameConfig.fx.modeByRound`. */
   effects: readonly RoundEffect[];
+  /**
+   * A chat message when the round starts (rounds 10 and 12), at the chat spot. In a round
+   * above the darkness it shows lit, with the round's content.
+   */
+  startMessage?: { copyKey: ChatKey; variant: 'light' | 'orange'; durationMs: number };
+  /** The shape starts fading in this long after the round starts (round 12: time to read its message). */
+  shapeDelayMs?: number;
   /** A dark question mark on the shape, at its centroid C, in the logo font (round 12). */
   shapeMark?: boolean;
   /** The round renders above the scene darkness, fully lit (round 12's triangle). */
@@ -200,6 +207,12 @@ function largeRect(): Pick<RoundConfig, 'shape' | 'offset' | 'rotationDeg' | 'mo
 /** Morphing rounds: the outline drifts by up to 3% of the shape's size, on a slow cycle of about 5s. */
 const MORPH: RoundMotion = { type: 'morph', amplitude: 0.03, cycleMs: 5000 };
 
+/** Round 12's last breaths, first rise to last fall (`fx.lastBreath`; breathDurationMs in schedule.ts). */
+function lastBreathsMs(): number {
+  const { riseMs, holdMs, fallMs, count, gapMs } = gameConfig.fx.lastBreath;
+  return count * (riseMs + holdMs + fallMs) + (count - 1) * gapMs;
+}
+
 /** Round 11's square shrinks from this size… */
 const SHRINK_FROM_PX = 200;
 /** …to this size, over this long; the round times out at the same moment. */
@@ -220,6 +233,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
       minRadius: 0.6,
       angleJitter: 0.25,
     },
+    // In the left part of the screen.
+    offset: { x: -240, y: DEFAULT_OFFSET.y },
   },
   3: {
     shape: {
@@ -232,6 +247,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
       pitOffsetX: -0.08,
       pitCenterY: 0.2,
     },
+    // Half its width to the right.
+    offset: { x: 140, y: DEFAULT_OFFSET.y },
   },
   4: {
     // A bean: rounded ends, a dent in the middle of the top edge. Gently morphs.
@@ -254,6 +271,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
       ],
     },
     motions: [MORPH],
+    // A bit left and down.
+    offset: { x: -100, y: 40 },
   },
   5: {
     // A soft triangle, apex up and a little right, heavier bottom left. Morphs like round 4
@@ -323,6 +342,7 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     motions: [{ type: 'spin', periodMs: 20000 }],
     // The screen is still dropped and glitches without pause.
     effects: ['stayDropped', 'glitchConstant'],
+    startMessage: { copyKey: 'hurryUp', variant: 'orange', durationMs: 2500 },
   },
   11: {
     // Shrinks; the falloff follows the current size, so late clicks are judged more strictly.
@@ -345,10 +365,7 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     fill: 'light',
     hideAfter: { visibleMs: 1000, fadeMs: 200 },
     inputWindows: [[0, 4000]],
-    postRoundIdleMs:
-      gameConfig.fx.lastBreath.riseMs +
-      gameConfig.fx.lastBreath.holdMs +
-      gameConfig.fx.lastBreath.fallMs,
+    postRoundIdleMs: lastBreathsMs(),
     clickEndsRound: true,
     showObjective: false,
     clickFeedback: false,
@@ -357,6 +374,9 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     aboveDarkness: true,
     shapeMark: true,
     effects: ['stayDropped', 'stayDark'],
+    // "Last chance..." first, lit in the black; the triangle comes once it has been read.
+    startMessage: { copyKey: 'lastChance', variant: 'light', durationMs: 2000 },
+    shapeDelayMs: 2000,
   },
 };
 
