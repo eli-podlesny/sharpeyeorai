@@ -1,6 +1,7 @@
 import { gameConfig } from '../config/game.config';
 import type { SceneContext } from '../core/game';
 import { defineScene, type Scene } from '../core/scenes';
+import { breathEndAfterClickMs } from '../fx/schedule';
 
 /**
  * After the last round: the doors close and the scene goes fully black, then every effect
@@ -42,8 +43,13 @@ export function createEndingScene(ctx: SceneContext): Scene {
       }, closeMs);
     }
 
-    // Fully black: effects off, screen back in place, out of sight.
-    scope.timeout(() => ctx.setSceneMode('normal'), darkAt);
+    // Fully black: effects off, screen back in place, out of sight. After a round 12 click
+    // the last breath (fx.lastBreath) is still to come: the broken scene stays until it is over.
+    const breathLeft =
+      alreadyDark && clicked
+        ? Math.max(breathEndAfterClickMs() - seq.outroFadeMs - seq.betweenRoundsMs, 0)
+        : 0;
+    scope.timeout(() => ctx.setSceneMode('normal'), darkAt + breathLeft);
 
     const lightAt = darkAt + holdMs;
     scope.timeout(() => {

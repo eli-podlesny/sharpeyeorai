@@ -146,6 +146,20 @@ export interface FxConfig {
     /** After a click in round 12 (which ends the game at once), the black lasts this long before the lights return on the score. */
     afterClickMs: number;
   };
+  /**
+   * Round 12's last breath: the lights come on for a moment over the broken scene, then it
+   * goes black again. It starts `delayAfterClickMs` after a click, or when round 12 stops
+   * taking clicks. Rises over `riseMs`, holds `holdMs`, falls back over `fallMs`. One flash
+   * only (under the 3 Hz limit). It must end before `blackout.afterClickMs`.
+   */
+  lastBreath: {
+    /** How much light comes back: 0.2 = the scene 20% visible (the darkness at 80%). */
+    brightness: number;
+    delayAfterClickMs: number;
+    riseMs: number;
+    holdMs: number;
+    fallMs: number;
+  };
 }
 
 /**
@@ -346,6 +360,13 @@ export const gameConfig: GameConfig = {
       closingDarkness: 1,
       speedUpMs: 800,
       afterClickMs: 3000,
+    },
+    lastBreath: {
+      brightness: 0.2,
+      delayAfterClickMs: 1000,
+      riseMs: 150,
+      holdMs: 450,
+      fallMs: 600,
     },
   },
 };

@@ -333,13 +333,15 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     effects: ['stayDropped', 'glitchConstant', 'closingDoors'],
   },
   12: {
-    // An even triangle, shown for 1s (fading over the last 200ms). Clicks count for 5s. With
-    // no click, 4s of ignored input follow (9s in all); a click ends the round at once.
+    // An even triangle, shown for 1s (fading over the last 200ms). Clicks count for 4s. With
+    // no click, 4s of ignored input follow (8s in all); a click ends the round at once.
+    // The lights come on for a moment (the last breath, `fx.lastBreath`) 1s after the click,
+    // or when the 4s for clicks are over.
     // No objective line, no click marker, no tooltip: just the triangle.
     shape: { type: 'triangle', side: 120 },
     fill: 'light',
     hideAfter: { visibleMs: 1000, fadeMs: 200 },
-    inputWindows: [[0, 5000]],
+    inputWindows: [[0, 4000]],
     postRoundIdleMs: 4000,
     clickEndsRound: true,
     showObjective: false,

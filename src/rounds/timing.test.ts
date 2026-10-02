@@ -26,15 +26,15 @@ describe('input rules', () => {
     expect(fixedRoundEndMs(round)).toBeNull();
   });
 
-  it('round 12 takes clicks for 5s only, then ignores input 4s: 9s in all', () => {
+  it('round 12 takes clicks for 4s only, then ignores input 4s: 8s in all', () => {
     const round = getRound(12);
-    expect(inputDeadlineMs(round)).toBe(5000);
+    expect(inputDeadlineMs(round)).toBe(4000);
     expect(acceptsClick(round, 0)).toBe(true);
     expect(acceptsClick(round, 2500)).toBe(true);
-    expect(acceptsClick(round, 4999)).toBe(true);
-    expect(acceptsClick(round, 5000)).toBe(false);
+    expect(acceptsClick(round, 3999)).toBe(true);
+    expect(acceptsClick(round, 4000)).toBe(false);
     expect(acceptsClick(round, 7000)).toBe(false);
-    expect(fixedRoundEndMs(round)).toBe(9000);
+    expect(fixedRoundEndMs(round)).toBe(8000);
   });
 
   it('a click between two windows is ignored', () => {

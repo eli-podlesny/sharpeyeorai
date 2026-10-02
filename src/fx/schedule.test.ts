@@ -4,6 +4,8 @@ import { getRound, rounds } from '../config/rounds.config';
 import {
   alertForMode,
   alertPulseAt,
+  breathEndAfterClickMs,
+  breathPhaseAt,
   breathingForMode,
   closingAmount,
   createFlashLimiter,
@@ -162,5 +164,21 @@ describe('tween', () => {
     tw.setTarget(4, 1000, 2000);
     expect(tw.value(1000)).toBeCloseTo(mid);
     expect(tw.value(3000)).toBe(4);
+  });
+});
+
+describe('round 12: the last breath', () => {
+  const b = gameConfig.fx.lastBreath;
+
+  it('rises, holds and falls back to black, once', () => {
+    expect(breathPhaseAt(-1)).toBe('waiting');
+    expect(breathPhaseAt(0)).toBe('rising');
+    expect(breathPhaseAt(b.riseMs)).toBe('holding');
+    expect(breathPhaseAt(b.riseMs + b.holdMs)).toBe('falling');
+    expect(breathPhaseAt(b.riseMs + b.holdMs + b.fallMs)).toBe('done');
+  });
+
+  it('is over before the lights return after a click', () => {
+    expect(breathEndAfterClickMs()).toBeLessThan(gameConfig.fx.blackout.afterClickMs);
   });
 });

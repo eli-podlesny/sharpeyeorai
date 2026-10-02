@@ -13,6 +13,7 @@ import { createScreenDrop } from './drop';
 import { createGlitch } from './glitch';
 import {
   alertForMode,
+  breathPhaseAt,
   breathingForMode,
   clamp01,
   closingAmount,
@@ -45,7 +46,7 @@ export interface SceneFx {
  * - Round effects (`effects` in rounds.config.ts): glitch every 4s (7–8), every 2s (9),
  *   without pause from round 9's click through 11; the screen drop right after round 9's click, kept down through
  *   round 12; the closing doors and blackout (11); the black scene around the lit triangle
- *   on the dropped screen (12). The screen goes home at the end, in the dark.
+ *   on the dropped screen, with a last breath of light (12). The screen goes home at the end, in the dark.
  *
  * Rounds 11–12 follow the round clock, so a hidden tab (or the debug pause) stops them too.
  */
@@ -70,6 +71,10 @@ export function createSceneController(
   /** Round 11: an early click starts the speed-up (real time, from this amount). */
   let speedUp: { at: number; fromAmount: number } | null = null;
   let closing = 0;
+  /** Round 12's last breath: when it starts (null = none), whether it ran, and lit now. */
+  let breathStart: number | null = null;
+  let breathed = false;
+  let breathLit = false;
 
   const has = (effect: RoundConfig['effects'][number]): boolean =>
     round?.effects.includes(effect) ?? false;
@@ -123,6 +128,8 @@ export function createSceneController(
     round = null;
     speedUp = null;
     closing = 0;
+    breathStart = null;
+    breathLit = false;
     glitch.stop();
     drop.reset();
     if (darkness.level > 0) darkness.setLevel(0, 0);
@@ -141,6 +148,9 @@ export function createSceneController(
     const now = performance.now();
     round = getRound(roundId);
     speedUp = null;
+    breathStart = null;
+    breathed = false;
+    breathLit = false;
     ctx.setSceneMode(sceneModeForRound(roundId));
 
     // Rounds 10–12 keep the screen down (a debug jump drops it at once). Any other round
@@ -177,6 +187,8 @@ export function createSceneController(
     if (has('closingDoors') && closing < 1) {
       speedUp = { at: performance.now(), fromAmount: closing };
     }
+    // Round 12: the last breath, a moment after the click.
+    if (has('stayDark')) startBreath(performance.now() + fx.lastBreath.delayAfterClickMs);
   });
 
   bus.on('round.outro.start', ({ roundId }) => {
@@ -205,14 +217,44 @@ export function createSceneController(
     holdClosing(amount);
   };
 
-  /** Round 12: black scene, lit smile; the doors close over the idle time. */
-  const tickStayDark = (): void => {
+  /**
+   * Round 12's last breath: a little light (`lastBreath.brightness`) comes back for a moment
+   * over the broken scene, then black again. Once per round: after a click, or when the time for clicks is over.
+   */
+  function startBreath(at: number): void {
+    if (breathed) return;
+    breathed = true;
+    breathStart = at;
+  }
+
+  const tickBreath = (now: number): void => {
+    if (breathStart === null) return;
+    const phase = breathPhaseAt(now - breathStart);
+    const lit = phase === 'rising' || phase === 'holding';
+    if (lit && !breathLit) {
+      darkness.setLevel(
+        fx.blackout.closingDarkness * (1 - fx.lastBreath.brightness),
+        fx.lastBreath.riseMs,
+      );
+      bus.emit('scene.dark', { dark: false, durationMs: fx.lastBreath.riseMs });
+    } else if (!lit && breathLit) {
+      darkness.setLevel(fx.blackout.closingDarkness, fx.lastBreath.fallMs);
+      bus.emit('scene.dark', { dark: true, durationMs: fx.lastBreath.fallMs });
+    }
+    breathLit = lit;
+    if (phase === 'done') breathStart = null;
+  };
+
+  /** Round 12: black scene, lit triangle; the doors close over the idle time. */
+  const tickStayDark = (now: number): void => {
     const live = liveRound.current;
     if (!round || live?.roundId !== round.id) return;
     const t = live.elapsedMs();
     const idleStart = inputDeadlineMs(round);
     const end = fixedRoundEndMs(round);
     if (idleStart !== null && end !== null && t >= idleStart) {
+      // No click came: the last breath, as the time for clicks runs out.
+      startBreath(now);
       doors.setClosedAmount(clamp01((t - idleStart) / (end - idleStart)));
     }
   };
@@ -224,7 +266,8 @@ export function createSceneController(
     glitch.update(now, reduced);
     if (scrub !== null) holdClosing(scrub);
     else if (has('closingDoors')) tickClosing(now);
-    else if (has('stayDark')) tickStayDark();
+    else if (has('stayDark')) tickStayDark(now);
+    tickBreath(now);
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
