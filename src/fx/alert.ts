@@ -14,7 +14,9 @@ export interface AlertFx {
  * and `--alert-high`, period `fx.alert.periodMs`) and `--alert-ramp` (how far alert covers
  * the normal room color; it fades in and out over `fx.alert.rampMs`). The colors stay in
  * tokens; CSS mixes them. No hard flashing: the pulse is a slow sine.
- * The glow is a window-sized ellipse at `fx.alert.glowOpacity`, letting clicks through.
+ * The glow is a window-sized, heavily blurred ellipse at `fx.alert.glowOpacity`, letting
+ * clicks through. It holds one ellipse per alert color and fades the high one in and out
+ * with the pulse (the same mix as the room color), so the blur never has to be redrawn.
  */
 export function createAlert(app: HTMLElement, glow: HTMLElement): AlertFx {
   const cfg = gameConfig.fx.alert;
@@ -22,6 +24,7 @@ export function createAlert(app: HTMLElement, glow: HTMLElement): AlertFx {
   let active = false;
   let pulseStart = 0;
   let idle = true;
+  const high = glow.querySelector<HTMLElement>('.alert-glow__ellipse--high');
 
   return {
     get active() {
@@ -41,6 +44,7 @@ export function createAlert(app: HTMLElement, glow: HTMLElement): AlertFx {
         app.style.removeProperty('--alert-mix');
         app.style.removeProperty('--alert-ramp');
         glow.style.opacity = '0';
+        if (high) high.style.opacity = '0';
         idle = true;
         return;
       }
@@ -48,6 +52,7 @@ export function createAlert(app: HTMLElement, glow: HTMLElement): AlertFx {
       app.style.setProperty('--alert-mix', (pulse * 100).toFixed(2));
       app.style.setProperty('--alert-ramp', (r * 100).toFixed(2));
       glow.style.opacity = (r * cfg.glowOpacity).toFixed(4);
+      if (high) high.style.opacity = pulse.toFixed(4);
     },
   };
 }

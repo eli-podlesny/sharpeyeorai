@@ -12,13 +12,24 @@ export type RoundPhase = 1 | 2 | 3 | 4;
 
 /**
  * Effects a round switches on (timings in `gameConfig.fx`):
- * - `glitchShort` / `glitchLong`: the screen glitches in a repeating pattern (rounds 7, 9).
- * - `screenDrop`: the screen assembly drops during the intro and returns in the outro (round 10).
- * - `closingDoors`: doors close and the scene darkens over the time limit (round 11).
- * - `darkAfterShape`: full darkness once the shape is gone; the doors close over the idle time (round 12).
+ * - `glitchSlow` / `glitchFast`: a short screen glitch every 4s (rounds 7–8) / every 2s (round 9).
+ * - `glitchConstant`: the screen glitches without pause (rounds 10–11; in round 10 from the
+ *   moment the screen has dropped).
+ * - `screenDrop`: the screen assembly drops during the intro (round 10).
+ * - `stayDropped`: the screen stays dropped (round 11). It returns home in the dark before
+ *   the next round without either tag.
+ * - `closingDoors`: doors close and the scene goes black over the time limit (round 11).
+ * - `stayDark`: the scene stays black; only the round's own content shows; the doors close
+ *   over the idle time (round 12).
  */
 export type RoundEffect =
-  'glitchShort' | 'glitchLong' | 'screenDrop' | 'closingDoors' | 'darkAfterShape';
+  | 'glitchSlow'
+  | 'glitchFast'
+  | 'glitchConstant'
+  | 'screenDrop'
+  | 'stayDropped'
+  | 'closingDoors'
+  | 'stayDark';
 
 /** Shape fill color: the default graphite, or the light logo color (round 12). Colors are tokens. */
 export type ShapeFill = 'default' | 'light';
@@ -268,8 +279,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
       { type: 'wave', periodMs: 6000, ampY: 40, phaseDeg: 0, margin: layout.round.motionMargin },
     ],
   },
-  // Short screen glitches all round.
-  7: { ...largeRect(), falloffRadius: REFERENCE_FALLOFF_PX, effects: ['glitchShort'] },
+  // A short screen glitch every 4s.
+  7: { ...largeRect(), falloffRadius: REFERENCE_FALLOFF_PX, effects: ['glitchSlow'] },
   8: {
     // An irregular seven-point star that jumps somewhere new every 1.2s.
     shape: {
@@ -281,6 +292,7 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
       innerRadii: [0.46, 0.62, 0.38, 0.56, 0.42, 0.66, 0.5],
     },
     motions: [{ type: 'jump', everyMs: 1200, margin: layout.round.motionMargin }],
+    effects: ['glitchSlow'],
   },
   9: {
     // A big circle with a medium and a small one bulging out of its upper right, merged into
@@ -295,8 +307,8 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     },
     // Each circle drifts and swells a little, so the merged outline slowly morphs.
     motions: [MORPH],
-    // Long screen glitches with short calm gaps.
-    effects: ['glitchLong'],
+    // A short screen glitch every 2s.
+    effects: ['glitchFast'],
   },
   10: {
     // A five-point star, stretched sideways.
@@ -305,16 +317,16 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     offset: { x: -120, y: DEFAULT_OFFSET.y },
     // One full turn, clockwise, every 20s.
     motions: [{ type: 'spin', periodMs: 20000 }],
-    // The whole screen drops, tilted, during the intro, and comes back in the outro.
-    effects: ['screenDrop'],
+    // The whole screen drops, tilted, during the intro; once down, it glitches without pause.
+    effects: ['screenDrop', 'glitchConstant'],
   },
   11: {
     // Shrinks; the falloff follows the current size, so late clicks are judged more strictly.
     shape: { type: 'rect', width: SHRINK_FROM_PX, height: SHRINK_FROM_PX },
     motions: [{ type: 'shrink', endScale: SHRINK_TO_PX / SHRINK_FROM_PX, durationMs: SHRINK_MS }],
     timeLimitMs: SHRINK_MS,
-    // The doors close and the scene darkens over the same 10s.
-    effects: ['closingDoors'],
+    // Still dropped and glitching; the doors close and the scene goes black over the same 10s.
+    effects: ['stayDropped', 'glitchConstant', 'closingDoors'],
   },
   12: {
     // Shown for 1s (fading over the last 200ms). Clicks count for 5s, then 4s of ignored
@@ -326,9 +338,9 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     postRoundIdleMs: 4000,
     showObjective: false,
     clickFeedback: false,
-    // Lit in the dark scene; once the smile is gone, full darkness and the doors close.
+    // The scene stays black; only the smile shows, lit. The doors close over the idle time.
     aboveDarkness: true,
-    effects: ['darkAfterShape'],
+    effects: ['stayDark'],
   },
 };
 

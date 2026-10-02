@@ -54,8 +54,16 @@ export function createLayerStack(): LayerStack {
   assembly.style.transformOrigin = `${rem(origin.x)} ${rem(origin.y)}`;
   assembly.append(createFrameGlowLayer(), screen.el, doors.el, createFrameLayer());
 
+  // Two blurred ellipses, one per alert color: the pulse cross-fades them, so the heavy
+  // blur is drawn once and only opacity changes per frame.
   const alertGlow = createLayerElement('alert-glow');
   alertGlow.classList.add('layer--window');
+  for (const tone of ['low', 'high'] as const) {
+    const ellipse = document.createElement('div');
+    ellipse.className = `alert-glow__ellipse alert-glow__ellipse--${tone}`;
+    ellipse.style.filter = `blur(${rem(layout.alertGlow.blur)})`;
+    alertGlow.append(ellipse);
+  }
 
   const spotlight = createLayerElement('spotlight');
   placeBox(spotlight, layout.screen);

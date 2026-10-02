@@ -42,8 +42,10 @@ export interface SceneFx {
  *   round when a round's outro ends (so "after round 3's outro" the scene is distorted).
  *   normal → nothing; distorted → subtle breathing; alert → strong breathing + alert pulse;
  *   blackout → the same, darkening. Leaving the rounds puts everything back.
- * - Round effects (`effects` in rounds.config.ts): glitches (7, 9), the screen drop (10),
- *   the closing doors and darkness (11), the dark after the smile (12).
+ * - Round effects (`effects` in rounds.config.ts): glitch every 4s (7–8), every 2s (9),
+ *   without pause once the screen has dropped (10–11); the screen drop (10, kept in 11);
+ *   the closing doors and blackout (11); the black scene around the lit smile (12).
+ *   The screen returns home in the dark, at round 12's start.
  *
  * Rounds 11–12 follow the round clock, so a hidden tab (or the debug pause) stops them too.
  */
@@ -67,11 +69,13 @@ export function createSceneController(
   /** Round 11: an early click starts the speed-up (real time, from this amount). */
   let speedUp: { at: number; fromAmount: number } | null = null;
   let closing = 0;
-  /** Round 12: full darkness reached after the smile. */
-  let fullDark = false;
 
   const has = (effect: RoundConfig['effects'][number]): boolean =>
     round?.effects.includes(effect) ?? false;
+
+  /** Which glitch a round has, if any. */
+  const glitchKind = (effects: RoundConfig['effects']): string | undefined =>
+    effects.find((e) => e.startsWith('glitch'));
 
   const applyAlert = (now: number): void => {
     const active = forcedAlert ?? alertForMode(ctx.sceneMode);
@@ -80,10 +84,12 @@ export function createSceneController(
     bus.emit('alert.show', { active });
   };
 
-  const setDrop = (down: boolean): void => {
-    if (down === drop.down) return;
+  /** Drops the screen or brings it back; returns how long the move takes (0 if no change). */
+  const setDrop = (down: boolean): number => {
+    if (down === drop.down) return 0;
     const ms = down ? drop.drop(prefersReducedMotion()) : drop.restore(prefersReducedMotion());
     bus.emit('screen.drop', { down, durationMs: ms });
+    return ms;
   };
 
   const applyMode = (mode: SceneMode): void => {
@@ -109,7 +115,6 @@ export function createSceneController(
   const resetAll = (): void => {
     round = null;
     speedUp = null;
-    fullDark = false;
     closing = 0;
     glitch.stop();
     drop.reset();
@@ -129,21 +134,25 @@ export function createSceneController(
     const now = performance.now();
     round = getRound(roundId);
     speedUp = null;
-    fullDark = false;
     ctx.setSceneMode(sceneModeForRound(roundId));
 
-    if (has('glitchShort')) glitch.setPattern(fx.glitch.short, now);
-    else if (has('glitchLong')) glitch.setPattern(fx.glitch.long, now);
-    else glitch.stop();
-
-    if (has('screenDrop')) setDrop(true);
+    // The screen drops (round 10), stays down (round 11, or drops at once after a debug
+    // jump), or goes home at once: after round 11 that happens unseen, in the dark.
+    let downAt = now;
+    if (has('screenDrop') || has('stayDropped')) downAt += setDrop(true);
     else if (drop.down) drop.reset();
+
+    if (has('glitchSlow')) glitch.setPattern(fx.glitch.slow, now);
+    else if (has('glitchFast')) glitch.setPattern(fx.glitch.fast, now);
+    // Starts once the screen is down; a constant glitch from the round before keeps going.
+    else if (has('glitchConstant')) glitch.setConstant(downAt);
+    else glitch.stop();
 
     if (has('closingDoors')) {
       closing = 0;
       darkness.setLevel(0, 0);
-    } else if (has('darkAfterShape')) {
-      // The doors snapped open in the dark (the round scene opens them); the scene stays dim.
+    } else if (has('stayDark')) {
+      // The doors snapped open in the dark (the round scene opens them); it stays black.
       darkness.setLevel(fx.blackout.closingDarkness, 0);
     } else if (darkness.level > 0 && scrub === null) {
       darkness.setLevel(0, 0);
@@ -156,9 +165,12 @@ export function createSceneController(
     }
   });
 
-  bus.on('round.outro.start', () => {
-    glitch.stop();
-    if (has('screenDrop')) setDrop(false);
+  bus.on('round.outro.start', ({ roundId }) => {
+    const next = roundId < gameConfig.roundCount ? getRound(roundId + 1).effects : [];
+    // The glitch keeps its rhythm into a next round with the same kind (7 → 8, 10 → 11).
+    if (glitchKind(round?.effects ?? []) !== glitchKind(next)) glitch.stop();
+    // The screen comes back in the outro, unless the next round keeps it down.
+    if (drop.down && !next.includes('stayDropped')) setDrop(false);
   });
 
   bus.on('round.outro.end', ({ roundId }) => {
@@ -179,15 +191,11 @@ export function createSceneController(
     holdClosing(amount);
   };
 
-  /** Round 12: lit smile in the dim scene, then full dark, then the doors close over the idle time. */
-  const tickDarkAfterShape = (): void => {
+  /** Round 12: black scene, lit smile; the doors close over the idle time. */
+  const tickStayDark = (): void => {
     const live = liveRound.current;
     if (!round || live?.roundId !== round.id) return;
     const t = live.elapsedMs();
-    if (!fullDark && round.hideAfter && t >= round.hideAfter.visibleMs) {
-      fullDark = true;
-      darkness.setLevel(1, fx.blackout.fullDarkFadeMs);
-    }
     const idleStart = inputDeadlineMs(round);
     const end = fixedRoundEndMs(round);
     if (idleStart !== null && end !== null && t >= idleStart) {
@@ -202,7 +210,7 @@ export function createSceneController(
     glitch.update(now, reduced);
     if (scrub !== null) holdClosing(scrub);
     else if (has('closingDoors')) tickClosing(now);
-    else if (has('darkAfterShape')) tickDarkAfterShape();
+    else if (has('stayDark')) tickStayDark();
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -231,7 +239,7 @@ export function createSceneController(
       if (wasScrubbing && scrub === null && !has('closingDoors')) {
         // Let go outside round 11: lights and doors back as they were.
         closing = 0;
-        darkness.setLevel(has('darkAfterShape') ? fx.blackout.closingDarkness : 0, 0);
+        darkness.setLevel(has('stayDark') ? fx.blackout.closingDarkness : 0, 0);
         doors.setOpen(!doorsShutBeforeScrub, 0);
       }
     },

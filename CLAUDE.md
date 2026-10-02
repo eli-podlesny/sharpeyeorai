@@ -134,16 +134,16 @@ Colors and type are not final. Always use tokens, never hard-coded values, so th
   | --- | --- | --- |
   | Ready → round 3 | `normal` | none |
   | After round 3's outro | `distorted` | background breathing, subtle (4px) |
-  | Round 7 | `distorted` | + screen glitch: 200ms every 1400ms (calm first) |
-  | After round 7's outro | `alert` | room color pulses #111 ↔ hazard (2.4s), glow ellipse at 16%; breathing strong (10px, 2× faster). No system-message popup yet |
-  | Round 9 | `alert` | + glitch: 800ms on, 400ms calm |
-  | Round 10 | `alert` | + the screen assembly drops (1200ms, heavy, with a settle: left, −8°, 0.8×) during the intro, and returns in the outro |
-  | Round 11 | `blackout` | alert and breathing continue; doors close and the scene darkens to 90% over exactly the 10s deadline (round clock); an early click speeds both up to finish (800ms) |
-  | Round 12 | `blackout` | doors snap open in the dark; the smile renders above the darkness (`aboveDarkness`), then full dark; doors close over the 4s idle |
+  | Round 7 | `distorted` | + screen glitch: a short burst (120ms) every 4s, calm first; the rhythm runs on through round 8 |
+  | After round 7's outro | `alert` | room color pulses #111 ↔ hazard (2.4s), glow ellipse at 16% with a 300px blur (`layout.alertGlow.blur`); breathing strong (10px, 2× faster); glitch every 4s. No system-message popup yet |
+  | Round 9 | `alert` | + glitch every 2s |
+  | Round 10 | `alert` | + the screen assembly drops (1200ms, heavy, with a settle: left, −8°, 0.8×) during the intro; once down, the glitch runs without pause |
+  | Round 11 | `blackout` | the screen stays dropped and glitching; alert and breathing continue; doors close and the scene goes fully black over exactly the 10s deadline (round clock); an early click speeds both up to finish (800ms). The doors cover the logged tooltip |
+  | Round 12 | `blackout` | stays fully black; the screen returns home and the doors snap open, unseen; only the smile shows, lit above the darkness (`aboveDarkness`); doors close over the 4s idle |
   | End | `normal` | full black 3s; effects off and the screen home in the dark; lights return; doors open on the score |
 
 - Breathing: WebGL shader displaces the background with slow smooth noise; presets ease over 2s; one draw call, texture uploaded once, canvas sized to the layer (pixel ratio capped). No WebGL or reduced motion → static image.
-- Glitch (`src/fx/glitch.ts`): 2–4 shifted slices, jitter, slight opacity drop and monochrome noise, inside the screen only (screen background, HUD, objective, shape). Visual only (an SVG displacement filter: hit-testing and scoring are untouched). Burst starts are flash-limited to 3 per second. Reduced motion: the screen only dims.
+- Glitch (`src/fx/glitch.ts`): subtle: 2–4 thin slices shifted up to 12px, slight jitter, a small opacity drop and faint monochrome noise, inside the screen only (screen background, HUD, objective, shape). Patterns: every 4s (7–8), every 2s (9), constant (10 after the drop, 11). Visual only (an SVG displacement filter: hit-testing and scoring are untouched). Burst starts are flash-limited to 3 per second; a constant glitch keeps its brightness steady. Reduced motion: the screen only dims.
 - Reduced motion overall: no breathing, glitch dims only, the drop is a short plain move (300ms); the alert pulse stays (slow and soft).
 - Round 1 ignores time in scoring. Every round has a configurable `timeWeight`.
 
@@ -251,3 +251,4 @@ Mobile layout, leaderboard/database, sound playback, narrator/intro cinematic, f
 - v0.6: moving shapes are scored on the frame displayed at the click and freeze on click (all of them). The round clock pauses while the tab is hidden. The decoy blinks twice, slowly (under 3 Hz). Moving shapes never pass behind the HUD. Round 12 always runs its full 9s, with no objective line, marker or tooltip. Round 11 has no visible countdown (the v0.7 doors will carry the deadline; they may partly cover the HUD then). The score Details stay a table (no per-round diagrams); timeouts read "no input".
 - v0.6 review: the oval sways slower (6s per loop). Morphing is smaller and slower (3%, 5s). Round 5 also bobs; round 7 leans back and forth (and is a little smaller so it still fits); round 8 jumps every 1200ms; round 9 morphs; round 10 turns once every 20s.
 - v0.7: WebGL is allowed for the background layer only (breathing). One scene controller drives all effects from round events. No alert "System Message" box for now. Round 10's drop lasts ~1200ms and keeps going while the shape is visible. Round 11: the whole scene (screen and shape too) darkens; an early click makes doors and darkness hurry to finish. Round 12: no intro text; the smile is lit above the darkness. The end keeps a few seconds of full black; the screen returns home in the dark and the score is revealed in normal lighting. Reduced motion: glitch becomes a gentle dim; the alert pulse stays.
+- v0.7 review: the glitch is subtler and rarer (every 4s from round 7, every 2s from round 9, constant in round 10 once the screen has dropped and in round 11). The alert glow has a 300px blur. Round 11 keeps the screen dropped and glitching and goes fully black; round 12 never brightens, only the smile shows. The screen keeps its contents (tooltips) under the doors.

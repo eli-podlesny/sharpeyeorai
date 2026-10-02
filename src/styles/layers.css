@@ -112,6 +112,12 @@
 }
 
 /* 4. screen */
+/* Everything on the screen (tooltips included) stays under the doors: no z-index inside
+   can lift it above them (round 11's doors cover the "logged" tooltip). */
+.layer--screen {
+  isolation: isolate;
+}
+
 .screen__base,
 .screen__texture,
 .screen-content {
@@ -290,10 +296,26 @@
   pointer-events: auto;
 }
 
-/* Alert glow: a soft ellipse over the whole scene in the alert color. Opacity set by alert.ts. */
+/* Alert glow: a soft, heavily blurred ellipse over the whole scene in the alert color.
+   The high (orange) ellipse fades over the low one with the pulse; opacities set by alert.ts. */
 .layer--alert-glow {
+  opacity: 0;
+  will-change: opacity;
+}
+
+.alert-glow__ellipse {
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  background: var(--alert-color);
+  will-change: opacity;
+}
+
+.alert-glow__ellipse--low {
+  background: var(--alert-low);
+}
+
+.alert-glow__ellipse--high {
+  background: var(--alert-high);
   opacity: 0;
 }
 

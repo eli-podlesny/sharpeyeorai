@@ -15,8 +15,14 @@ import { createFlashLimiter, glitchActiveAt, glitchCycleAt } from './schedule';
  * Reduced motion: no slices, jitter or noise; the screen only dims gently.
  */
 export interface GlitchFx {
-  /** Glitch in a repeating pattern from `now` on (calm first), or stop with null. */
+  /**
+   * Glitch in a repeating pattern from `now` on (calm first), or stop with null. The same
+   * pattern again keeps its rhythm, so it runs on across rounds.
+   */
   setPattern(pattern: GlitchPattern | null, now: number): void;
+  /** Glitch without pause from `from` on (rounds 10–11), until stopped. Keeps a running one going. */
+  setConstant(from: number): void;
+  readonly constant: boolean;
   /** One burst on the next frame (debug panel); skipped if it would break the flash limit. */
   burst(ms: number): void;
   /** Ends any burst now and stops the pattern. */
@@ -132,6 +138,8 @@ export function createGlitch(screen: HTMLElement, seed: number): GlitchFx {
 
   const limiter = createFlashLimiter(cfg.maxFlashesPerSecond);
   let pattern: GlitchPattern | null = null;
+  /** Constant glitch starts at this time; null when not constant. */
+  let constantFrom: number | null = null;
   let patternStart = 0;
   let lastCycle = -1;
   /** The current burst ends at this time; null when calm. */
@@ -168,17 +176,29 @@ export function createGlitch(screen: HTMLElement, seed: number): GlitchFx {
   let pendingBurstMs = 0;
 
   return {
+    get constant() {
+      return constantFrom !== null;
+    },
+    setConstant(from) {
+      pattern = null;
+      if (constantFrom === null) constantFrom = from;
+    },
     setPattern(next, now) {
+      if (next && next === pattern && constantFrom === null) return;
+      // An endless burst would never end on its own: end it when switching away.
+      const wasConstant = constantFrom !== null;
+      constantFrom = null;
       pattern = next;
       patternStart = now;
       lastCycle = -1;
-      if (!next && burstEnd !== null) end();
+      if ((wasConstant || !next) && burstEnd !== null) end();
     },
     burst(ms) {
       pendingBurstMs = ms;
     },
     stop() {
       pattern = null;
+      constantFrom = null;
       pendingBurstMs = 0;
       if (burstEnd !== null) end();
     },
@@ -187,6 +207,10 @@ export function createGlitch(screen: HTMLElement, seed: number): GlitchFx {
       if (pendingBurstMs > 0 && burstEnd === null) {
         begin(now, pendingBurstMs, reducedMotion);
         pendingBurstMs = 0;
+      }
+      // One endless burst: slices keep re-rolling, brightness stays put (no flashing).
+      if (constantFrom !== null && now >= constantFrom && burstEnd === null) {
+        begin(now, Infinity, reducedMotion);
       }
       if (pattern && burstEnd === null) {
         const t = now - patternStart;

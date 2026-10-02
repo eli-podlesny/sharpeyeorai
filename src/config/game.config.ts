@@ -75,9 +75,10 @@ export interface FxConfig {
     maxPixelRatio: number;
   };
   glitch: {
-    /** Round 7: short bursts. Round 9: long bursts with short calm gaps. */
-    short: GlitchPattern;
-    long: GlitchPattern;
+    /** Rounds 7–8: a short burst every 4s. Rounds 10–11 glitch without pause instead. */
+    slow: GlitchPattern;
+    /** Round 9: a short burst every 2s. */
+    fast: GlitchPattern;
     /** Safety: glitch bursts never start more often than this per second. */
     maxFlashesPerSecond: number;
     /** Horizontal slices shifted sideways per burst. */
@@ -108,7 +109,7 @@ export interface FxConfig {
     periodMs: number;
     /** Alert fades in over the room color (and out again) over this time. */
     rampMs: number;
-    /** The glow ellipse's opacity at full alert. */
+    /** The glow ellipse's opacity at full alert. Its blur radius is `layout.alertGlow.blur`. */
     glowOpacity: number;
   };
   drop: {
@@ -120,12 +121,10 @@ export interface FxConfig {
     reducedMotionMs: number;
   };
   blackout: {
-    /** Round 11 darkens from 0 to this level by its deadline, as the doors close. */
+    /** Round 11 darkens from 0 to this level by its deadline, as the doors close (1 = black). Round 12 stays there. */
     closingDarkness: number;
     /** After an early click in round 11, doors and darkness hurry to the end over this time. */
     speedUpMs: number;
-    /** Round 12: after the smiley is gone, the scene goes fully dark over this time. */
-    fullDarkFadeMs: number;
   };
 }
 
@@ -292,18 +291,18 @@ export const gameConfig: GameConfig = {
       maxPixelRatio: 1.5,
     },
     glitch: {
-      short: { onMs: 200, offMs: 1200 },
-      long: { onMs: 800, offMs: 400 },
+      slow: { onMs: 120, offMs: 3880 },
+      fast: { onMs: 120, offMs: 1880 },
       maxFlashesPerSecond: 3,
       minSlices: 2,
       maxSlices: 4,
-      sliceMinHeightPx: 12,
-      sliceMaxHeightPx: 90,
-      maxShiftPx: 36,
-      jitterPx: 4,
-      rerollMs: 70,
-      opacity: 0.86,
-      noiseOpacity: 0.22,
+      sliceMinHeightPx: 6,
+      sliceMaxHeightPx: 40,
+      maxShiftPx: 12,
+      jitterPx: 1.5,
+      rerollMs: 90,
+      opacity: 0.95,
+      noiseOpacity: 0.08,
       debugBurstMs: 400,
       reducedMotionOpacity: 0.8,
       reducedMotionFadeMs: 150,
@@ -319,9 +318,8 @@ export const gameConfig: GameConfig = {
       reducedMotionMs: 300,
     },
     blackout: {
-      closingDarkness: 0.9,
+      closingDarkness: 1,
       speedUpMs: 800,
-      fullDarkFadeMs: 400,
     },
   },
 };

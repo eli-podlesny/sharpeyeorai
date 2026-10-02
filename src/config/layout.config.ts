@@ -79,6 +79,11 @@ export const layout = {
     },
   },
 
+  /** Alert mode's window-sized glow ellipse (from round 8): a soft layer blur of this radius. */
+  alertGlow: {
+    blur: 300,
+  },
+
   hud: {
     logoTop: 24,
     logoFontSize: 24,
