@@ -12,7 +12,7 @@ The owner is a designer who is new to Claude Code. Explain what you are about to
 
 ## Current version
 
-**v1.1b — in progress** (`feat/v1.1b-feel`, version `1.1.0-b`): parallax, the metal system cursors, the orange in-screen cursor, the sample tooltip and chat message components, TV noise, and the room lurching with the screen drop. v1.1a is released (tag `v1.1.0-a`). Briefs in `docs/briefs/`. (Releases are now numbered 0.x by brief; the roadmap table below is kept for scope reference.)
+**v1.1b — released** (tag `v1.1.0-b`): parallax, the metal system cursors, the orange in-screen cursor, the sample tooltip and chat message components with the chat director, TV noise, the screen entrance, the room lurching with the screen drop, and the v1.1b review changes (see the decision log). Next: the next brief in `docs/briefs/`. Briefs in `docs/briefs/`. (Releases are now numbered 0.x by brief; the roadmap table below is kept for scope reference.)
 
 | Version | Scope                                                                                                                                      |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
