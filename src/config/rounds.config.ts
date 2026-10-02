@@ -336,10 +336,12 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     // An even triangle, shown for 1s (fading over the last 200ms). Clicks count for 4s; a
     // click ends the round at once. The last breath (`fx.lastBreath`, a little light over the
     // broken scene, doors shut) comes 1s after the click, or when the 4s for clicks are over;
-    // with no click the round ends with it (its idle time is the breath). Then 3s of black
+    // with no click the round ends with it (its idle time is the breath). Then 4s of black
     // and the lights return on the score (src/scenes/ending.ts).
-    // No objective line, no click marker, no tooltip: just the triangle.
+    // No objective line, no click marker, no tooltip: just the triangle, in the top-right area
+    // of the screen (below the timer, inside the free area).
     shape: { type: 'triangle', side: 120 },
+    offset: { x: 300, y: -180 },
     fill: 'light',
     hideAfter: { visibleMs: 1000, fadeMs: 200 },
     inputWindows: [[0, 4000]],

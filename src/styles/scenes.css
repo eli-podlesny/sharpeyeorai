@@ -260,7 +260,8 @@
 }
 
 .score-total {
-  font-weight: var(--weight-display-bold);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-mono-bold);
   font-variant-numeric: tabular-nums;
   color: var(--score-total);
 }

@@ -363,7 +363,7 @@ export const gameConfig: GameConfig = {
     lastBreath: {
       brightness: 0.2,
       delayAfterClickMs: 1000,
-      darkAfterMs: 3000,
+      darkAfterMs: 4000,
       riseMs: 150,
       holdMs: 450,
       fallMs: 600,
