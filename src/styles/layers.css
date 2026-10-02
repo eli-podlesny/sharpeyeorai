@@ -67,10 +67,14 @@
   display: contents;
 }
 
-/* 1. background — window plus overscan on each side, multiplied over the room color */
+/* 1. background — window plus overscan on each side, multiplied over the room color.
+   The blend sits on the layer, not on the image: parallax and the drop move the layer
+   (translate, transform), which isolates its children, so a blend on them would only
+   see the empty layer. Only one child shows at a time (the <img> or the breathing canvas). */
 .layer--background {
   inset: calc(var(--bg-overscan) * -100vh) calc(var(--bg-overscan) * -100vw);
   pointer-events: none;
+  mix-blend-mode: multiply;
 }
 
 .background__art {
@@ -79,7 +83,6 @@
   top: 50%;
   height: auto;
   transform: translate(-50%, -50%);
-  mix-blend-mode: multiply;
   user-select: none;
 }
 
@@ -89,7 +92,6 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  mix-blend-mode: multiply;
 }
 
 .background__canvas[hidden] {
@@ -372,6 +374,47 @@
   white-space: nowrap;
 }
 
+/* TV noise (src/fx/noise.ts): over everything in the game, darkness included; clicks pass.
+   Opacity, blend and tile size come from config. */
+.tv-noise {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none;
+  background-repeat: repeat;
+  image-rendering: pixelated;
+}
+
+/* The orange in-screen cursor (src/ui/screenCursor.ts), above the noise, below the debug panel */
+.screen-cursor {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  pointer-events: none;
+}
+
+.screen-cursor[hidden] {
+  display: none;
+}
+
+.screen-cursor__brackets,
+.screen-cursor__dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  will-change: transform;
+}
+
+.screen-cursor__brackets rect {
+  fill: var(--screen-cursor);
+}
+
+.screen-cursor__dot circle {
+  fill: none;
+  stroke: var(--screen-cursor);
+}
+
 /* Debug overlay — fixed screen pixels, not scaled */
 .debug-overlay {
   position: fixed;
@@ -419,7 +462,6 @@
 }
 
 .debug-overlay__button {
-  cursor: pointer;
 }
 
 .debug-overlay__button.is-active {
@@ -427,7 +469,6 @@
 }
 
 .debug-overlay__button:disabled {
-  cursor: default;
   opacity: 0.5;
 }
 
@@ -443,7 +484,6 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  cursor: pointer;
 }
 
 /* Debug shape gallery: every round's shape as a screen thumbnail, with C/O/M markers */

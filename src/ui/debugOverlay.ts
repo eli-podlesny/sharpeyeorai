@@ -21,6 +21,7 @@ import { acceptsClick, fixedRoundEndMs, inputDeadlineMs } from '../rounds/timing
 import { scoreRound } from '../scoring/summary';
 import { h } from './dom';
 import { createLayoutOutline } from './layoutOutline';
+import { cursorReadout, cursorTuning } from './screenCursor';
 import { openShapeGallery } from './shapeGallery';
 
 /** Physical key (same spot on any layout) or the typed character. */
@@ -39,6 +40,13 @@ const REROLL_ROUND = 2;
 const FPS_WINDOW_MS = 500;
 /** Steps of the round 11 darkening scrubber. */
 const SCRUB_STEPS = 100;
+/** Sliders for the in-screen cursor's feel (ms, and the max spread in px from the center). */
+const CURSOR_SLIDERS = [
+  { key: 'dotLagMs', label: 'dot lag', min: 0, max: 300, step: 5 },
+  { key: 'attackMs', label: 'attack', min: 0, max: 1000, step: 10 },
+  { key: 'releaseMs', label: 'release', min: 0, max: 500, step: 5 },
+  { key: 'maxHalf', label: 'max spread', min: 10, max: 40, step: 1 },
+] as const;
 
 export interface DebugOverlayOptions {
   game: Game;
@@ -231,7 +239,37 @@ export function initDebugOverlay({ game, bus, fx, open, outlineHost }: DebugOver
   scrub.addEventListener('input', applyScrub);
   scrubRow.append(scrubLabel, scrub);
 
-  el.append(info, states, controls, shapes, motionRow, autoplay, modeRow, fxRow, scrubRow, events);
+  // The orange in-screen cursor's feel: dot lag, spread attack and release, max spread
+  const cursorRows = CURSOR_SLIDERS.map(({ key, label, min, max, step }) => {
+    const row = h('label', 'debug-overlay__row debug-overlay__toggle');
+    const slider = h('input', 'debug-overlay__range');
+    slider.type = 'range';
+    slider.min = String(min);
+    slider.max = String(max);
+    slider.step = String(step);
+    slider.value = String(cursorTuning[key]);
+    const value = h('span', '', String(cursorTuning[key]));
+    slider.addEventListener('input', () => {
+      cursorTuning[key] = Number(slider.value);
+      value.textContent = slider.value;
+    });
+    row.append(`cursor ${label} `, slider, value);
+    return row;
+  });
+
+  el.append(
+    info,
+    states,
+    controls,
+    shapes,
+    motionRow,
+    autoplay,
+    modeRow,
+    fxRow,
+    scrubRow,
+    ...cursorRows,
+    events,
+  );
   document.body.append(el);
 
   let mouse: Point = { x: NaN, y: NaN };
@@ -291,6 +329,7 @@ export function initDebugOverlay({ game, bus, fx, open, outlineHost }: DebugOver
       `shape   ${round === null ? '—' : shapeSeed(game.context.session, round)}`,
       `clock   ${liveClock()}`,
       `live    ${liveScore()}`,
+      `cursor  ${cursorReadout.speed.toFixed(0)} px/s`,
     ].join('\n');
     events.textContent = log.length ? log.join('\n') : 'no events yet';
     for (const [name, button] of stateButtons) {

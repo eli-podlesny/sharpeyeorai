@@ -1,10 +1,11 @@
-import { copy, fill, padRound } from '../config/copy';
+import { copy } from '../config/copy';
 import { gameConfig } from '../config/game.config';
 import { layout } from '../config/layout.config';
 import { getRound, opticalSettings } from '../config/rounds.config';
 import type { SceneContext } from '../core/game';
 import { contentSize, toContentCoords } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
+import type { Scope } from '../core/scope';
 import type { Point } from '../core/stage';
 import { setU, u } from '../core/units';
 import {
@@ -32,7 +33,7 @@ import {
 import { h } from '../ui/dom';
 import { addShapeMark, createShapeSvg, updateShapeSvg } from '../ui/shapeSvg';
 import { commitStyles, fadeTo, moveTo, prefersReducedMotion } from '../ui/motion';
-import { showTooltipAtCorner } from '../ui/tooltip';
+import { showSampleTooltip, type SampleData } from '../ui/sampleTooltip';
 
 const { round: L } = layout;
 
@@ -58,20 +59,14 @@ function createClickMarker(at: Point): HTMLElement {
   return marker;
 }
 
-/** "Sample 0X, logged", pinned to the top-right corner. Position and time only: no points during the game. */
-function showLoggedTooltip(
-  roundId: number,
-  click: Point,
-  latencyMs: number,
-  container: HTMLElement,
-): HTMLElement {
-  return showTooltipAtCorner(container, L.loggedTooltip, {
-    title: fill(copy.round.logged, { n: padRound(roundId) }),
-    lines: [
-      fill(copy.round.loggedPosition, { x: click.x.toFixed(1), y: click.y.toFixed(1) }),
-      fill(copy.round.loggedTime, { ms: latencyMs }),
-    ],
-  });
+/**
+ * "Sample 0X  LOGGED" (or NO INPUT after a timeout), pinned to the top-right corner.
+ * Position and time only: no points during the game. Gone `loggedTooltipMs` later.
+ */
+function showSample(container: HTMLElement, data: SampleData, scope: Scope, ms: number): void {
+  const tip = showSampleTooltip(container, L.loggedTooltip, data, prefersReducedMotion());
+  scope.timeout(() => tip.hide(), ms);
+  scope.onDispose(() => tip.el.remove());
 }
 
 const markersOn = (): boolean => document.documentElement.hasAttribute('data-debug-markers');
@@ -286,6 +281,14 @@ export function createRoundScene(ctx: SceneContext): Scene {
       if (clock.started && !decided && deadline !== null && t >= deadline) {
         hud.setTime(deadline);
         bus.emit('round.timeout', { roundId });
+        if (round.clickFeedback) {
+          showSample(
+            root,
+            { kind: 'noInput', roundId, deadlineMs: deadline },
+            scope,
+            seq.loggedTooltipMs,
+          );
+        }
         decide(createTimeoutResult(targetAt(round, contentSize, seed, shownMs)), 0);
       }
       if (clock.started && fixedEnd !== null && t >= fixedEnd) startOutro();
@@ -311,8 +314,12 @@ export function createRoundScene(ctx: SceneContext): Scene {
       bus.emit('round.click', { roundId, content: point, local, latencyMs });
       if (round.clickFeedback) {
         playMotion.append(createClickMarker(point));
-        const tip = showLoggedTooltip(roundId, local, latencyMs, root);
-        scope.timeout(() => tip.remove(), seq.loggedTooltipMs);
+        showSample(
+          root,
+          { kind: 'logged', roundId, at: local, latencyMs },
+          scope,
+          seq.loggedTooltipMs,
+        );
       }
       timeline?.onClick?.(tl, { content: point, latencyMs });
       // 4. Wait, then the outro (round 12: the outro at once).

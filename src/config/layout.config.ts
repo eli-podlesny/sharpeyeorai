@@ -92,10 +92,10 @@ const ANCHORS = {
   /** "Sample 0X, logged" tooltip: its top-right corner, in the opening's top-right corner. */
   loggedTooltip: { right: 6.195, top: 8.166 },
   /**
-   * Chat tooltip spot (Figma "hud placement"): its bottom-right corner, in the opening's
-   * bottom-right corner. The score screen's "Copied" tooltip shows here.
+   * Chat message spot (Figma "hud placement"): its bottom-right corner, in the opening's
+   * bottom-right corner. "Copied" and the alert show here.
    */
-  chatTooltip: { right: 6.195, bottom: 8.465 },
+  chatMessage: { right: 6.195, bottom: 8.465 },
   /** Objective line: bottom-center, its bottom this far up, clear of the bottom notch. */
   objective: { bottom: 9 },
 } as const;
@@ -124,6 +124,52 @@ export const layout = {
     /** The art's size in the Figma frame: breathing amplitudes are in these px. */
     refWidth: 1976,
     refHeight: 1078,
+    /**
+     * With the screen drop the room lurches: scaled up, turned clockwise (degrees), and
+     * shifted right and up so its bottom-left part comes into view. The shift is worked
+     * out per window (src/fx/backgroundDrop.ts) so the image still covers it, parallax
+     * included: `reach` 1 = as far toward the bottom-left as the cover allows.
+     */
+    drop: { scale: 1.4, rotateDeg: 6, reach: 1 },
+  },
+
+  /**
+   * Parallax at the window edges (pointer at ±1). The background in window CSS px, it
+   * follows the pointer; the frame shadows in unit px, against it (negative).
+   */
+  parallax: {
+    background: { x: 12, y: 8 },
+    frameShadow: { x: -8, y: -4 },
+    frameInnerShadow: { x: -4, y: -2 },
+  },
+
+  /** Metal system cursors: hotspots at 1× (CSS px from the top-left). */
+  systemCursor: {
+    default: { x: 0, y: 0 },
+    pointer: { x: 4, y: 0 },
+    pointerDown: { x: 4, y: 2 },
+    notAllowed: { x: 7, y: 7 },
+  },
+
+  /**
+   * The orange in-screen cursor, in window CSS px like a system cursor (Figma "custom
+   * cursor"). Brackets: a square `half` px from the center to each side, its eight bars
+   * `thickness` thick and `bar` long, each ending `gap` px from the center line, so the
+   * corners stay open. It spreads to `maxHalf` / `maxBar` with speed. The dot's radius
+   * goes from `r` to `maxR` with the spread. Pressed: `pressedHalf`, `pressedGap`, `pressedR`.
+   */
+  screenCursor: {
+    half: 10,
+    maxHalf: 16,
+    pressedHalf: 9,
+    bar: 4,
+    maxBar: 8,
+    gap: 4,
+    pressedGap: 3,
+    thickness: 2,
+    dot: { r: 2, maxR: 4, pressedR: 3, stroke: 2 },
+    /** The dot never trails further than this from the brackets' center. */
+    maxDotOffset: 40,
   },
 
   /**
@@ -252,16 +298,44 @@ export const layout = {
     shapeMarkSize: 44,
   },
 
-  /** The shared tooltip (in-round "logged" sample, "Copied"), placed this far from its point. */
-  tooltip: {
-    offsetX: 16,
-    offsetY: 16,
+  /**
+   * The hand-drawn panel shape of the sample tooltip and chat messages (src/ui/panelShape.ts):
+   * corners cut `cut` px at the top-left and bottom-right, a `border` px outline drawn
+   * with the shapes' pencil filter.
+   */
+  panel: { cut: 12, border: 2 },
+
+  /** "Sample 0X, logged" (Figma "tooltip logged"): a fixed box, rows in it. */
+  sampleTooltip: {
+    width: 176,
+    height: 104,
+    paddingX: 12,
+    titleTop: 8,
+    lineHeight: 16,
+    titleSize: 14,
+    dividerY: 32,
+    rowsTop: 40,
+    rowStep: 18,
+    labelSize: 14,
+    valueSize: 12,
+    /** Values are right-aligned and filled with leading dots to this many characters. */
+    valueChars: 19,
+  },
+
+  /** Chat messages (Figma "tooltip chat"): they hug their text up to `maxWidth`, then wrap. */
+  chatMessage: {
+    paddingX: 12,
+    paddingY: 8,
     fontSize: 12,
     lineHeight: 16,
-    paddingX: 8,
-    paddingY: 6,
-    /** Width limit for tooltips with wrapping text. */
-    maxWidth: 280,
+    maxWidth: 192,
+    /** Stacked messages overlap the one above by this much. */
+    overlap: 4,
+    /** Where they stack: bottom-right of the opening. */
+    anchor: {
+      right: pctW(ANCHORS.chatMessage.right),
+      bottom: pctH(ANCHORS.chatMessage.bottom),
+    },
   },
 
   /** Ready, loading, calculating and score scenes (placeholder layouts). */
@@ -278,11 +352,6 @@ export const layout = {
     label: { top: 80, fontSize: 16, lineHeight: 24, letterSpacing: 8 },
     /** `nudgeX`: moved right this far, so the number looks centered (optical balance). */
     total: { top: 185, fontSize: 80, lineHeight: 88, nudgeX: 4 },
-    /** "Copied" (and "Copy this:") tooltip: at the chat tooltip spot, bottom-right. */
-    copiedTooltip: {
-      right: pctW(ANCHORS.chatTooltip.right),
-      bottom: pctH(ANCHORS.chatTooltip.bottom),
-    },
     headline: { top: 280, fontSize: 20, lineHeight: 24 },
     line: { top: 312, fontSize: 16, lineHeight: 24, maxWidth: 440 },
     /** Not in the Figma frame: placed under the two-line body. */

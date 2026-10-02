@@ -47,8 +47,12 @@ export interface GameConfig {
   endDarknessFadeMs: number;
   /** How long the score counts up from 0 on the score screen. */
   scoreCountUpMs: number;
-  /** How long the "Copied" tooltip stays after Share result. */
-  copiedTooltipMs: number;
+  /** Chat messages (src/ui/chatMessage.ts): "Copied" after Share, the alert. */
+  chatMessage: ChatMessageConfig;
+  /** The "Sample 0X, logged" tooltip fades in and out over this time. */
+  sampleTooltipFadeMs: number;
+  /** The orange in-screen cursor (src/ui/screenCursor.ts). Sizes in `layout.screenCursor`. */
+  screenCursor: ScreenCursorConfig;
   /** Shape outlines are sampled about this many px apart (curves and straight edges). */
   shapePointSpacingPx: number;
   optical: OpticalConfig;
@@ -70,6 +74,34 @@ export interface BreathingPreset {
 export interface GlitchPattern {
   onMs: number;
   offMs: number;
+}
+
+export interface ChatMessageConfig {
+  /** "Copied" stays this long after Share result. */
+  copiedMs: number;
+  /** "Alert! System Malfunction" stays this long once alert mode starts (after round 7). */
+  alertMs: number;
+  /** A message fades in and out over this time (Figma shows no motion: a quick fade). */
+  fadeMs: number;
+}
+
+/**
+ * The in-screen cursor's feel. Every follow is frame-rate-independent exponential
+ * smoothing: `…Ms` is its time constant (63% of the way after that long).
+ */
+export interface ScreenCursorConfig {
+  /** The dot trails the brackets with this time constant (larger = more lag). */
+  dotLagMs: number;
+  /** Brackets spread with speed this slowly (attack)… */
+  attackMs: number;
+  /** …and close back this fast (release). */
+  releaseMs: number;
+  /** Pointer speed (CSS px per second) that spreads the brackets fully. */
+  fullSpreadSpeed: number;
+  /** The measured speed is smoothed over this time constant, so one jumpy event does not spread. */
+  speedSmoothingMs: number;
+  /** After a click the pressed cursor stays this long before the round stops taking clicks. */
+  pressedMs: number;
 }
 
 export interface FxConfig {
@@ -137,6 +169,32 @@ export interface FxConfig {
     returnMs: number;
     /** Reduced motion: a short, plain move each way. */
     reducedMotionMs: number;
+    /**
+     * The room lurches with the drop (scaled, turned and shifted, `layout.background.drop`):
+     * it starts with the fall and takes this long, with this easing. It returns with the screen.
+     */
+    backgroundMs: number;
+    backgroundEasing: string;
+  };
+  /**
+   * Parallax (src/fx/parallax.ts): the layers ease toward the pointer, settling (99% of the
+   * way) in `settleMs`; when the pointer leaves the window they drift back to center in
+   * `leaveSettleMs`. Offsets in `layout.parallax`. Off with reduced motion.
+   */
+  parallax: { settleMs: number; leaveSettleMs: number };
+  /**
+   * TV noise over everything (src/fx/noise.ts): `tileCount` tiles of `tileSize` px made once
+   * at startup, shown `fps` times a second at a random offset. `grainPx`: CSS px per noise
+   * pixel. Static (one tile) with reduced motion.
+   */
+  noise: {
+    tileCount: number;
+    tileSize: number;
+    grainPx: number;
+    fps: number;
+    opacity: number;
+    /** CSS mix-blend-mode: hard-light lifts the blacks and roughens the light screen alike. */
+    blend: string;
   };
   blackout: {
     /** Round 11 darkens from 0 to this level by its deadline, as the doors close (1 = black). Round 12 stays there. */
@@ -282,7 +340,20 @@ export const gameConfig: GameConfig = {
   endDarknessMs: 1000,
   endDarknessFadeMs: 300,
   scoreCountUpMs: 2500,
-  copiedTooltipMs: 2000,
+  chatMessage: {
+    copiedMs: 2000,
+    alertMs: 4000,
+    fadeMs: 150,
+  },
+  sampleTooltipFadeMs: 120,
+  screenCursor: {
+    dotLagMs: 60,
+    attackMs: 240,
+    releaseMs: 70,
+    fullSpreadSpeed: 2400,
+    speedSmoothingMs: 40,
+    pressedMs: 160,
+  },
   shapePointSpacingPx: 3,
   optical: {
     skeletonWeight: 0.35,
@@ -355,6 +426,20 @@ export const gameConfig: GameConfig = {
       shakeMs: 380,
       returnMs: 800,
       reducedMotionMs: 300,
+      backgroundMs: 900,
+      backgroundEasing: 'cubic-bezier(0.5, 0, 0.25, 1)',
+    },
+    parallax: {
+      settleMs: 500,
+      leaveSettleMs: 1500,
+    },
+    noise: {
+      tileCount: 8,
+      tileSize: 256,
+      grainPx: 1,
+      fps: 24,
+      opacity: 0.07,
+      blend: 'hard-light',
     },
     blackout: {
       closingDarkness: 1,

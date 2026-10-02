@@ -3,9 +3,6 @@ import { freeScreenArea } from '../config/rounds.config';
 import { placeBox } from '../layers/layer';
 import { h } from './dom';
 
-/** The logged tooltip's placement box in the Figma "hud placement" frame. */
-const TOOLTIP_BOX = { width: 147, height: 120 };
-
 /**
  * Debug: outlines the screen opening, the surface, the HUD anchors and the shapes' safe
  * areas over the frame art, to check the alignment. Lives in a unit box (`host`), so it
@@ -63,9 +60,23 @@ export function createLayoutOutline(host: HTMLElement): { setVisible(visible: bo
     'anchor',
   );
   const tip = round.loggedTooltip;
+  const { width: tipW, height: tipH } = layout.sampleTooltip;
   add(
-    inOpening({ left: right(tip.right, TOOLTIP_BOX.width), top: tip.top, ...TOOLTIP_BOX }),
+    inOpening({ left: right(tip.right, tipW), top: tip.top, width: tipW, height: tipH }),
     'logged tooltip',
+    'anchor',
+  );
+  const chat = layout.chatMessage;
+  const chatW = chat.maxWidth;
+  const chatH = chat.lineHeight + 2 * chat.paddingY;
+  add(
+    inOpening({
+      left: right(chat.anchor.right, chatW),
+      top: opening.height - chat.anchor.bottom - chatH,
+      width: chatW,
+      height: chatH,
+    }),
+    'chat message',
     'anchor',
   );
   add(

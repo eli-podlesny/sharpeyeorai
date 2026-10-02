@@ -5,7 +5,7 @@ import type { Point } from '../core/stage';
 import { shapePath, type PlacedShape, type Size } from '../rounds/geometry';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const PENCIL_FILTER_ID = 'shape-pencil';
+export const PENCIL_FILTER_ID = 'shape-pencil';
 
 export function svg<K extends keyof SVGElementTagNameMap>(
   tag: K,
@@ -27,7 +27,7 @@ function attrs<E extends Element>(el: E, values: Record<string, string | number>
  * reads as pencil or dry brush. Numbers in content px (`layout.round.pencil`), so it
  * scales with the shape. Visual only: hit-testing and scoring use the geometry.
  */
-function ensurePencilFilter(): void {
+export function ensurePencilFilter(): void {
   if (document.getElementById(PENCIL_FILTER_ID)) return;
   const { wobble, grain } = layout.round.pencil;
   const host = attrs(svg('svg'), { width: 0, height: 0, 'aria-hidden': 'true' });

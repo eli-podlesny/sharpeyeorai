@@ -39,7 +39,6 @@
   color: var(--button-text);
   background: var(--button-bg);
   border: solid var(--button-border);
-  cursor: pointer;
 }
 
 .scene-button:hover {
@@ -173,39 +172,115 @@
   font-weight: var(--weight-display-bold);
 }
 
-/* Shared tooltip (src/ui/tooltip.ts) */
-.tooltip {
+/* Hand-drawn panel behind the sample tooltip and chat messages (src/ui/panelShape.ts) */
+.panel-shape {
   position: absolute;
-  z-index: 1;
-  white-space: pre;
-  font-family: var(--font-mono);
-  font-weight: var(--weight-mono-regular);
-  color: var(--tooltip-text);
-  background: var(--tooltip-bg);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
   pointer-events: none;
 }
 
-.tooltip--wrap {
+.panel-shape__line {
+  fill: none;
+  stroke: var(--panel-border);
+  stroke-linejoin: miter;
+}
+
+/* Sample tooltip (src/ui/sampleTooltip.ts): Figma "tooltip logged" */
+.sample-tip {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.sample-tip .panel-shape__fill {
+  fill: var(--sample-tip-bg);
+}
+
+.sample-tip__row {
+  position: absolute;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  white-space: pre;
+}
+
+.sample-tip__sample {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display-medium);
+  color: var(--sample-tip-label);
+}
+
+.sample-tip__status {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-mono-bold);
+  color: var(--sample-tip-status);
+}
+
+.sample-tip__label {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display-bold);
+  color: var(--sample-tip-label);
+}
+
+.sample-tip__value {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-mono-medium);
+  color: var(--sample-tip-value);
+}
+
+/* Chat messages (src/ui/chatMessage.ts): Figma "tooltip chat", stacked bottom-right */
+.chat-layer {
+  position: absolute;
+  pointer-events: none;
+}
+
+.chat-stack {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.chat-message {
+  position: relative;
   width: max-content;
-  white-space: normal;
+  font-family: var(--font-display);
+  font-weight: var(--weight-display-bold);
+  overflow-wrap: break-word;
+}
+
+.chat-message + .chat-message {
+  margin-top: var(--chat-overlap);
+}
+
+.chat-message__text {
+  position: relative;
+}
+
+.chat-message--light {
+  color: var(--chat-light-text);
+}
+
+.chat-message--light .panel-shape__fill {
+  fill: var(--chat-light-bg);
+}
+
+.chat-message--orange {
+  color: var(--chat-orange-text);
+}
+
+.chat-message--orange .panel-shape__fill {
+  fill: var(--chat-orange-bg);
+}
+
+/* The clipboard fallback: the share text can be selected and copied by hand */
+.chat-message--selectable {
   pointer-events: auto;
   user-select: text;
-}
-
-.tooltip__title {
-  font-weight: var(--weight-mono-bold);
-}
-
-.tooltip--flip-x {
-  transform: translateX(-100%);
-}
-
-.tooltip--flip-y {
-  transform: translateY(-100%);
-}
-
-.tooltip--flip-x.tooltip--flip-y {
-  transform: translate(-100%, -100%);
+  cursor: text;
 }
 
 /* Debug markers: C = cross, O = circle. Shown only with the debug toggle on. */
@@ -299,7 +374,6 @@
   color: var(--screen-text-dim);
   background: none;
   border: 0;
-  cursor: pointer;
 }
 
 .score-link:hover {

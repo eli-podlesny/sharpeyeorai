@@ -10,7 +10,7 @@ import { createSampleResults } from '../rounds/autoplay';
 import { summarize, type SessionSummary } from '../scoring/summary';
 import { h } from '../ui/dom';
 import { fadeTo, prefersReducedMotion } from '../ui/motion';
-import { showTooltipAtCorner } from '../ui/tooltip';
+import { showChatMessage, type ChatMessage } from '../ui/chatMessage';
 import { createFillingBar, createPanel, createTitle } from './layout';
 
 const { score: L } = layout;
@@ -192,13 +192,9 @@ export function createScoreScene(ctx: SceneContext): Scene {
       details.setAttribute('aria-expanded', String(open));
     });
 
-    let tip: HTMLElement | null = null;
-    let tipVersion = 0;
-    const replaceTip = (next: HTMLElement): void => {
-      tip?.remove();
-      tip = next;
-      tipVersion++;
-    };
+    // One chat message at a time: a new Share replaces the last one; leaving removes it.
+    let message: ChatMessage | null = null;
+    scope.onDispose(() => message?.hide(true));
 
     scope.listen(share, 'click', () => {
       const text = fill(copy.score.shareText, {
@@ -208,23 +204,20 @@ export function createScoreScene(ctx: SceneContext): Scene {
         url: copy.score.shareUrl,
       });
       const report = (copied: boolean): void => {
-        const at = L.copiedTooltip;
-        if (copied) {
-          replaceTip(showTooltipAtCorner(root, at, { title: copy.score.copied }));
-          const version = tipVersion;
-          scope.timeout(() => {
-            if (version === tipVersion) tip?.remove();
-          }, gameConfig.copiedTooltipMs);
-        } else {
-          // No clipboard: show the text so it can be copied by hand. It stays until replaced.
-          replaceTip(
-            showTooltipAtCorner(root, at, {
+        message?.hide(true);
+        message = copied
+          ? showChatMessage({
+              variant: 'light',
+              title: copy.score.copied,
+              durationMs: gameConfig.chatMessage.copiedMs,
+            })
+          : // No clipboard: show the text so it can be copied by hand. It stays until replaced.
+            showChatMessage({
+              variant: 'light',
               title: copy.score.copyFailed,
-              lines: [text],
-              wrap: true,
-            }),
-          );
-        }
+              body: text,
+              selectable: true,
+            });
         ctx.bus.emit('score.share', { text, copied });
       };
       if (!navigator.clipboard) {

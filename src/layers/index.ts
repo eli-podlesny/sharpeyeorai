@@ -9,6 +9,7 @@ import { createLayerElement, createUnitBox, placeBox } from './layer';
 import { createScreenLayer, openingInSurface } from './screen';
 import { createScreenHud, type ScreenHudControl } from './screenHud';
 import { createVignetteLayer } from './vignette';
+import { createChatLayer } from '../ui/chatMessage';
 import type { DoorsControl } from './doors';
 
 export interface LayerStack {
@@ -17,6 +18,9 @@ export interface LayerStack {
   background: BackgroundLayer;
   /** The screen unit: frame, shadows, screen and doors, which move as one piece (the drop). */
   assembly: HTMLElement;
+  /** The frame's outer shadow ("frame as shadow") and its inner shadow: parallax moves them. */
+  frameGlow: HTMLElement;
+  frameInnerShadow: HTMLElement;
   /** The screen layer (base, content, screen HUD, texture): what the glitch distorts. */
   screen: HTMLElement;
   /** Where scenes render: inside the screen opening, and above the doors in the HUD. */
@@ -47,12 +51,20 @@ export function createLayerStack(): LayerStack {
   const screenHud = createScreenHud();
   placeBox(screenHud.el, openingInSurface);
   screen.addAboveContent(screenHud.el);
-  const doors = createDoorsLayer([screen.content, screenHud.el]);
+  // Chat messages ("Copied", the alert) over the opening, above the HUD, under the doors.
+  const chat = createChatLayer();
+  placeBox(chat, openingInSurface);
+  screen.addAboveContent(chat);
+  const doors = createDoorsLayer([screen.content, screenHud.el, chat]);
   const hud = createHudLayer();
   const darkness = createDarknessLayer();
 
   const assembly = createUnitBox('assembly');
-  assembly.append(createFrameGlowLayer(), screen.el, doors.el, createFrameLayer());
+  const frameGlow = createFrameGlowLayer();
+  const frame = createFrameLayer();
+  const frameInnerShadow = frame.querySelector<HTMLElement>('.frame__inner-shadow');
+  if (!frameInnerShadow) throw new Error('Missing frame inner shadow');
+  assembly.append(frameGlow, screen.el, doors.el, frame);
 
   // Two blurred ellipses, one per alert color: the pulse cross-fades them, so the heavy
   // blur is drawn once and only opacity changes per frame. Blur scales with the window height.
@@ -86,6 +98,8 @@ export function createLayerStack(): LayerStack {
     ],
     background,
     assembly,
+    frameGlow,
+    frameInnerShadow,
     screen: screen.el,
     screenContent: screen.content,
     hudScreenSlot: hud.screenSlot,

@@ -1,6 +1,7 @@
 import '@fontsource/turret-road/500.css';
 import '@fontsource/turret-road/800.css';
 import '@fontsource/kode-mono/400.css';
+import '@fontsource/kode-mono/500.css';
 import '@fontsource/kode-mono/700.css';
 import './styles/tokens.css';
 import './styles/base.css';
@@ -13,11 +14,16 @@ import { registerUnit } from './core/input';
 import { parseUrlParams } from './core/params';
 import { preloadImages } from './core/preload';
 import { initStage } from './core/stage';
+import { layout } from './config/layout.config';
+import { createNoise } from './fx/noise';
+import { createParallax } from './fx/parallax';
 import { createSceneController } from './fx/sceneController';
 import { createLayerStack } from './layers';
 import { allArtImages } from './layers/art';
 import { createScenes } from './scenes';
+import { initCursors } from './ui/cursors';
 import { initDebugOverlay } from './ui/debugOverlay';
+import { createScreenCursor } from './ui/screenCursor';
 
 const app = document.querySelector<HTMLElement>('#app');
 if (!app) throw new Error('Missing #app element');
@@ -46,6 +52,19 @@ const game = createGame({
 app.dataset.sceneMode = game.context.sceneMode;
 bus.on('scene.mode', ({ mode }) => (app.dataset.sceneMode = mode));
 const fx = createSceneController(game.context, layers, app);
+
+// Depth on mouse move: the room follows the pointer, the frame shadows move against it.
+const { parallax } = layout;
+createParallax([
+  { el: layers.background.el, max: parallax.background, space: 'px' },
+  { el: layers.frameGlow, max: parallax.frameShadow, space: 'unit' },
+  { el: layers.frameInnerShadow, max: parallax.frameInnerShadow, space: 'unit' },
+]);
+
+// The metal system cursors, TV snow over everything, and the orange cursor on the screen.
+initCursors();
+createNoise();
+createScreenCursor(bus);
 
 initDebugOverlay({ game, bus, fx, open: params.debug, outlineHost: layers.hudUnit });
 

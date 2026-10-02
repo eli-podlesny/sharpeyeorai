@@ -1,3 +1,4 @@
+import { copy } from '../config/copy';
 import { gameConfig } from '../config/game.config';
 import { getRound, type RoundConfig } from '../config/rounds.config';
 import type { SceneContext } from '../core/game';
@@ -6,6 +7,7 @@ import type { SceneMode } from '../core/state';
 import type { LayerStack } from '../layers';
 import { liveRound } from '../rounds/clock';
 import { inputDeadlineMs } from '../rounds/timing';
+import { showChatMessage, type ChatMessage } from '../ui/chatMessage';
 import { prefersReducedMotion } from '../ui/motion';
 import { createAlert } from './alert';
 import { createBreathing } from './breathing';
@@ -61,7 +63,7 @@ export function createSceneController(
   const alert = createAlert(app, layers.alertGlow);
   const glitch = createGlitch(layers.screen, randomSeed());
   // Round 12's lit shape (in the spotlight layer) drops with the screen, so it sits on it.
-  const drop = createScreenDrop(layers.assembly, [layers.spotlightUnit]);
+  const drop = createScreenDrop(layers.assembly, [layers.spotlightUnit], layers.background.el);
 
   let round: RoundConfig | null = null;
   let forcedAlert: boolean | null = null;
@@ -83,10 +85,21 @@ export function createSceneController(
   const glitchKind = (effects: RoundConfig['effects']): string | undefined =>
     effects.find((e) => e.startsWith('glitch'));
 
+  /** "Alert! System Malfunction", in orange at the chat spot, when alert mode starts. */
+  let alertMessage: ChatMessage | null = null;
+
   const applyAlert = (now: number, rampMs?: number): void => {
     const active = forcedAlert ?? alertForMode(ctx.sceneMode);
     if (active === alert.active) return;
     alert.setActive(active, now, rampMs);
+    alertMessage?.hide(rampMs === 0);
+    alertMessage = active
+      ? showChatMessage({
+          variant: 'orange',
+          title: copy.chat.alert,
+          durationMs: gameConfig.chatMessage.alertMs,
+        })
+      : null;
     bus.emit('alert.show', { active });
   };
 

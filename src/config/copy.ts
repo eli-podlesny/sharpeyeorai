@@ -23,11 +23,25 @@ export const copy = {
     timeLabel: 'Time: ',
     /** `{ms}` is padded with `padDigits()`, so the idle timer reads 0000ms. */
     timeValue: '{ms}ms',
-    logged: 'Sample {n}, logged',
+    /** The sample tooltip after a click (or a timeout): "Sample 04" and its status. */
+    sample: 'Sample {n}',
+    logged: 'LOGGED',
+    noInput: 'NO INPUT',
+    sampleX: 'x:',
+    sampleY: 'y:',
+    sampleT: 't:',
+    /** Position values (2 decimals, decimal comma as in Figma) and time (`{ms}` padded). */
+    samplePx: '{v}px',
+    sampleMs: '+{ms}ms',
+    /** Shown for x and y when no click came. */
+    sampleNone: '—',
     /** Printed on round 12's triangle. */
     shapeMark: '?',
-    loggedPosition: 'x {x}  y {y}',
-    loggedTime: 't {ms}ms',
+  },
+  /** Chat messages (src/ui/chatMessage.ts). */
+  chat: {
+    /** Orange, when alert mode starts (after round 7). */
+    alert: 'Alert! System Malfunction',
   },
   /** Objective lines, referenced by `copyKey` in rounds.config.ts. */
   objectives: {

@@ -10,8 +10,13 @@
   --color-concrete: #beb8ad;
   --color-bone: #e6e1d7;
   --color-paper: #f6f4ee;
+  /* Figma's dim value grey (sample tooltip values) */
+  --color-smoke: #666;
   /* Only for interactive elements, click targets, alerts, the score number, the Drama tint */
   --color-hazard: #ee4d00;
+  /* Figma's orange for the in-screen cursor and the alert chat message (v1.1b). Not yet
+     unified with hazard: set it to var(--color-hazard) to make them one. */
+  --color-signal: #ff561e;
 
   /* Room tint: the background image is multiplied over this color (Figma: #777 oval) */
   --color-room: var(--color-ash);
@@ -22,6 +27,7 @@
   --weight-display-medium: 500;
   --weight-display-bold: 800;
   --weight-mono-regular: 400;
+  --weight-mono-medium: 500;
   --weight-mono-bold: 700;
   /* Screen HUD: round counter and timer */
   --font-hud: var(--font-mono);
@@ -49,8 +55,18 @@
   --shape-border: var(--color-ink);
   --click-marker: var(--color-hazard);
   --decoy-dot: var(--color-hazard);
-  --tooltip-bg: var(--color-ink);
-  --tooltip-text: var(--color-paper);
+  /* Hand-drawn panels: the sample tooltip and chat messages share the outline */
+  --panel-border: var(--color-graphite);
+  --sample-tip-bg: var(--color-concrete);
+  --sample-tip-label: var(--color-graphite);
+  --sample-tip-status: var(--color-ink);
+  --sample-tip-value: var(--color-smoke);
+  --chat-light-bg: var(--color-paper);
+  --chat-light-text: var(--color-ink);
+  --chat-orange-bg: var(--color-signal);
+  --chat-orange-text: var(--color-paper);
+  /* The orange in-screen cursor */
+  --screen-cursor: var(--color-signal);
   --table-rule: color-mix(in srgb, var(--color-ink) 24%, transparent);
   --score-total: var(--color-hazard);
 
