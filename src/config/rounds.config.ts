@@ -68,7 +68,9 @@ export type RoundConfig = {
   clickFeedback: boolean;
   /** Scene effects tied to this round (src/fx/sceneController.ts); the scene mode comes from `gameConfig.fx.modeByRound`. */
   effects: readonly RoundEffect[];
-  /** The round renders above the scene darkness, fully lit (round 12's smiley). */
+  /** A dark question mark on the shape, at its centroid C, in the logo font (round 12). */
+  shapeMark?: boolean;
+  /** The round renders above the scene darkness, fully lit (round 12's triangle). */
   aboveDarkness: boolean;
   copyKey: ObjectiveKey;
   /** Hooks into the round sequence (moving shapes, glitches…). Empty for now. */
@@ -104,11 +106,11 @@ export function freeScreenArea(margin: number = layout.round.largeShapeMargin): 
   width: number;
   height: number;
 } {
-  const { screen, screenHud } = layout;
+  const { opening, screenHud } = layout;
   const hudBottom = Math.max(screenHud.progress.top, screenHud.timer.top) + screenHud.lineHeight;
   const top = hudBottom + margin;
   const bottom = screenHud.objective.top - margin;
-  return { left: margin, top, width: screen.width - 2 * margin, height: bottom - top };
+  return { left: margin, top, width: opening.width - 2 * margin, height: bottom - top };
 }
 
 /** Round 7's rectangle turns this far clockwise. */
@@ -189,8 +191,8 @@ function largeRect(): Pick<RoundConfig, 'shape' | 'offset' | 'rotationDeg' | 'mo
     rotationDeg: LARGE_RECT_ROTATION_DEG,
     motions: [LARGE_RECT_SKEW],
     offset: {
-      x: area.left + area.width / 2 - layout.screen.width / 2,
-      y: area.top + area.height / 2 - layout.screen.height / 2,
+      x: area.left + area.width / 2 - layout.opening.width / 2,
+      y: area.top + area.height / 2 - layout.opening.height / 2,
     },
   };
 }
@@ -202,7 +204,7 @@ const MORPH: RoundMotion = { type: 'morph', amplitude: 0.03, cycleMs: 5000 };
 const SHRINK_FROM_PX = 200;
 /** …to this size, over this long; the round times out at the same moment. */
 const SHRINK_TO_PX = 40;
-const SHRINK_MS = 10000;
+const SHRINK_MS = 8000;
 
 /** What makes each round different. Rounds not listed keep the default square. */
 const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
@@ -327,24 +329,33 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     shape: { type: 'rect', width: SHRINK_FROM_PX, height: SHRINK_FROM_PX },
     motions: [{ type: 'shrink', endScale: SHRINK_TO_PX / SHRINK_FROM_PX, durationMs: SHRINK_MS }],
     timeLimitMs: SHRINK_MS,
-    // Still dropped and glitching; the doors close and the scene goes black over the same 10s.
+    // Still dropped and glitching; the doors close and the scene goes black over the same 8s.
     effects: ['stayDropped', 'glitchConstant', 'closingDoors'],
   },
   12: {
-    // An even triangle, shown for 1s (fading over the last 200ms). Clicks count for 5s. With
-    // no click, 4s of ignored input follow (9s in all); a click ends the round at once.
-    // No objective line, no click marker, no tooltip: just the triangle.
+    // An even triangle, shown for 1s (fading over the last 200ms). Clicks count for 4s; a
+    // click ends the round at once. The last breath (`fx.lastBreath`, a little light over the
+    // broken scene, doors shut) comes 1s after the click, or when the 4s for clicks are over;
+    // with no click the round ends with it (its idle time is the breath). Then 4s of black
+    // and the lights return on the score (src/scenes/ending.ts).
+    // No objective line, no click marker, no tooltip: just the triangle, in the top-right area
+    // of the screen (below the timer, inside the free area).
     shape: { type: 'triangle', side: 120 },
+    offset: { x: 300, y: -180 },
     fill: 'light',
     hideAfter: { visibleMs: 1000, fadeMs: 200 },
-    inputWindows: [[0, 5000]],
-    postRoundIdleMs: 4000,
+    inputWindows: [[0, 4000]],
+    postRoundIdleMs:
+      gameConfig.fx.lastBreath.riseMs +
+      gameConfig.fx.lastBreath.holdMs +
+      gameConfig.fx.lastBreath.fallMs,
     clickEndsRound: true,
     showObjective: false,
     clickFeedback: false,
     // The scene stays black; only the triangle shows, lit, on the dropped screen. The doors
     // close over the idle time.
     aboveDarkness: true,
+    shapeMark: true,
     effects: ['stayDropped', 'stayDark'],
   },
 };

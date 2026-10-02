@@ -112,7 +112,7 @@ export function createGlitch(screen: HTMLElement, seed: number): GlitchFx {
   const reroll = (): void => {
     const w = screen.offsetWidth;
     const h = screen.offsetHeight;
-    const px = w / layout.screen.width; // screen px → CSS px
+    const px = w / layout.surface.width; // unit px → CSS px
     const scale = 2 * (cfg.maxShiftPx + cfg.jitterPx) * px;
     filter.setAttribute('x', '0');
     filter.setAttribute('y', '0');

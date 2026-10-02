@@ -6,7 +6,7 @@ import type { SceneContext } from '../core/game';
 import { contentSize, toContentCoords } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
 import type { Point } from '../core/stage';
-import { rem, setRem } from '../core/units';
+import { setU, u } from '../core/units';
 import {
   createRoundClock,
   DEBUG_STEP_MS,
@@ -30,7 +30,7 @@ import {
   shapeOpacityAt,
 } from '../rounds/timing';
 import { h } from '../ui/dom';
-import { createShapeSvg, updateShapeSvg } from '../ui/shapeSvg';
+import { addShapeMark, createShapeSvg, updateShapeSvg } from '../ui/shapeSvg';
 import { commitStyles, fadeTo, moveTo, prefersReducedMotion } from '../ui/motion';
 import { showTooltipAtCorner } from '../ui/tooltip';
 
@@ -41,15 +41,15 @@ type MarkerKind = 'computed' | 'optical' | 'pole';
 /** Debug markers: a cross at C, a circle at O, a square at M. Hidden unless the debug toggle is on. */
 function createMarker(kind: MarkerKind, at: Point): HTMLElement {
   const marker = h('div', `debug-marker debug-marker--${kind}`);
-  setRem(marker, { left: at.x, top: at.y, width: L.markerSize, height: L.markerSize });
-  marker.style.setProperty('--marker-stroke', rem(L.markerStroke));
+  setU(marker, { left: at.x, top: at.y, width: L.markerSize, height: L.markerSize });
+  marker.style.setProperty('--marker-stroke', u(L.markerStroke));
   return marker;
 }
 
 /** The dot left where the player clicked. */
 function createClickMarker(at: Point): HTMLElement {
   const marker = h('div', 'round-click-marker');
-  setRem(marker, {
+  setU(marker, {
     left: at.x,
     top: at.y,
     width: L.clickMarkerSize,
@@ -104,14 +104,14 @@ export function createRoundScene(ctx: SceneContext): Scene {
     const moving = isMoving(round);
 
     const root = h('div', 'round');
-    setRem(root, { fontSize: L.textSize, lineHeight: L.lineHeight });
+    setU(root, { fontSize: L.textSize, lineHeight: L.lineHeight });
 
     // Shape, debug markers and (later) the click marker fade, rise and zoom together:
     // the outer layer fades, the inner one moves and scales around the shape's center.
     const play = h('div', 'round-play fade');
     play.style.opacity = '0';
     const playMotion = h('div', 'round-play move');
-    playMotion.style.transformOrigin = `${rem(anchor.x)} ${rem(anchor.y)}`;
+    playMotion.style.transformOrigin = `${u(anchor.x)} ${u(anchor.y)}`;
     moveTo(playMotion, { y: L.shapeEnter.rise, scale: L.shapeEnter.scale }, 0);
     play.append(playMotion);
     const shape = createShapeSvg(restTarget.shape, contentSize, {
@@ -119,6 +119,9 @@ export function createRoundScene(ctx: SceneContext): Scene {
       strokeWidth: L.shapeBorder,
       type: round.shape.type,
     });
+    if (round.shapeMark) {
+      addShapeMark(shape, restTarget.centers.C, copy.round.shapeMark, L.shapeMarkSize);
+    }
     const markers: Record<MarkerKind, HTMLElement> = {
       computed: createMarker('computed', restTarget.centers.C),
       pole: createMarker('pole', restTarget.centers.M),
@@ -128,7 +131,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
 
     const decoy = round.decoy ? h('div', 'round-decoy') : null;
     if (decoy) {
-      setRem(decoy, { width: L.decoySize, height: L.decoySize });
+      setU(decoy, { width: L.decoySize, height: L.decoySize });
       decoy.hidden = true;
       playMotion.append(decoy);
     }
@@ -173,9 +176,9 @@ export function createRoundScene(ctx: SceneContext): Scene {
     let finished = false;
 
     const placeMarkers = (centers: Centers): void => {
-      setRem(markers.computed, { left: centers.C.x, top: centers.C.y });
-      setRem(markers.pole, { left: centers.M.x, top: centers.M.y });
-      setRem(markers.optical, { left: centers.O.x, top: centers.O.y });
+      setU(markers.computed, { left: centers.C.x, top: centers.C.y });
+      setU(markers.pole, { left: centers.M.x, top: centers.M.y });
+      setU(markers.optical, { left: centers.O.x, top: centers.O.y });
     };
 
     // 5. Shape and marker fade out, the shape zooming out in place. After the last round,
@@ -186,7 +189,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
       outroStarted = true;
       stage = 'outro';
       bus.emit('round.outro.start', { roundId });
-      playMotion.style.transformOrigin = `${rem(shown.anchor.x)} ${rem(shown.anchor.y)}`;
+      playMotion.style.transformOrigin = `${u(shown.anchor.x)} ${u(shown.anchor.y)}`;
       fadeTo(play, 0, seq.outroFadeMs, seq.fadeEasing);
       moveTo(playMotion, { scale: L.shapeEnter.scale }, seq.shapeMoveOutMs, seq.fadeEasing);
       const isLast = roundId === gameConfig.roundCount;
@@ -274,7 +277,7 @@ export function createRoundScene(ctx: SceneContext): Scene {
             round.decoy.target === 'computed'
               ? materialCentroid(shown.outer, shown.holes)
               : shapeCenters(shown, opticalSettings(round)).O;
-          setRem(decoy, { left: at.x, top: at.y });
+          setU(decoy, { left: at.x, top: at.y });
         }
         decoy.hidden = !lit;
       }

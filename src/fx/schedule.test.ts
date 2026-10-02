@@ -4,6 +4,9 @@ import { getRound, rounds } from '../config/rounds.config';
 import {
   alertForMode,
   alertPulseAt,
+  breathDurationMs,
+  breathEndAfterClickMs,
+  breathPhaseAt,
   breathingForMode,
   closingAmount,
   createFlashLimiter,
@@ -119,13 +122,13 @@ describe('flash limiter', () => {
 describe('round 11 closing', () => {
   const limit = getRound(11).timeLimitMs ?? 0;
 
-  it('closes linearly and is fully shut exactly at the 10s deadline', () => {
-    expect(limit).toBe(10000);
+  it('closes linearly and is fully shut exactly at the 8s deadline', () => {
+    expect(limit).toBe(8000);
     expect(closingAmount(0, limit, null)).toBe(0);
-    expect(closingAmount(5000, limit, null)).toBe(0.5);
-    expect(closingAmount(9999, limit, null)).toBeLessThan(1);
+    expect(closingAmount(4000, limit, null)).toBe(0.5);
+    expect(closingAmount(7999, limit, null)).toBeLessThan(1);
+    expect(closingAmount(8000, limit, null)).toBe(1);
     expect(closingAmount(10000, limit, null)).toBe(1);
-    expect(closingAmount(12000, limit, null)).toBe(1);
   });
 
   it('speeds up to finish after an early click, from where it was', () => {
@@ -162,5 +165,25 @@ describe('tween', () => {
     tw.setTarget(4, 1000, 2000);
     expect(tw.value(1000)).toBeCloseTo(mid);
     expect(tw.value(3000)).toBe(4);
+  });
+});
+
+describe('round 12: the last breath', () => {
+  const b = gameConfig.fx.lastBreath;
+
+  it('rises, holds and falls back to black, once', () => {
+    expect(breathPhaseAt(-1)).toBe('waiting');
+    expect(breathPhaseAt(0)).toBe('rising');
+    expect(breathPhaseAt(b.riseMs)).toBe('holding');
+    expect(breathPhaseAt(b.riseMs + b.holdMs)).toBe('falling');
+    expect(breathPhaseAt(b.riseMs + b.holdMs + b.fallMs)).toBe('done');
+  });
+
+  it('ends delayAfterClickMs + its own length after a click', () => {
+    expect(breathEndAfterClickMs()).toBe(b.delayAfterClickMs + breathDurationMs());
+  });
+
+  it('ends round 12 when no click came: its idle time is the breath', () => {
+    expect(getRound(12).postRoundIdleMs).toBe(breathDurationMs());
   });
 });

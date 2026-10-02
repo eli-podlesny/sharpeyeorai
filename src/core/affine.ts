@@ -4,7 +4,7 @@ import type { Point } from './stage';
  * A 2D CSS transform matrix, as in `matrix(a, b, c, d, e, f)`:
  *   x' = a·x + c·y + e
  *   y' = b·x + d·y + f
- * Here e and f are in design px (CSS gives them in screen px; divide by the stage scale).
+ * Here e and f are in unit px (CSS gives them in window px; divide by the unit scale).
  */
 export interface Affine {
   a: number;
@@ -79,7 +79,7 @@ export function transformPoint(p: Point, m: Affine, origin: Point): Point {
 
 /**
  * Reads a computed CSS transform (`none`, `matrix(…)` or `matrix3d(…)`) as a 2D matrix,
- * with the translation converted to design px by dividing by `pxPerDesignPx`.
+ * with the translation converted to unit px by dividing by `pxPerDesignPx` (window px per unit px).
  */
 export function parseCssTransform(value: string, pxPerDesignPx: number): Affine {
   const match = /^matrix(3d)?\((.+)\)$/.exec(value.trim());

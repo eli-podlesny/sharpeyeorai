@@ -24,6 +24,8 @@ export const copy = {
     /** `{ms}` is padded with `padDigits()`, so the idle timer reads 0000ms. */
     timeValue: '{ms}ms',
     logged: 'Sample {n}, logged',
+    /** Printed on round 12's triangle. */
+    shapeMark: '?',
     loggedPosition: 'x {x}  y {y}',
     loggedTime: 't {ms}ms',
   },
@@ -40,7 +42,7 @@ export const copy = {
     total: '{total}pts',
     sampleNote: 'Sample data — no rounds played',
     details: 'Details',
-    hideDetails: 'Summary',
+    hideDetails: 'Score',
     share: 'Share result',
     playAgain: 'Play again',
     colRound: 'Test',

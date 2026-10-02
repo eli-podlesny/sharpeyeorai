@@ -18,23 +18,23 @@ describe('input rules', () => {
     expect(acceptsClick(round, 60000)).toBe(true);
   });
 
-  it('round 11 times out at 10s', () => {
+  it('round 11 times out at 8s', () => {
     const round = getRound(11);
-    expect(inputDeadlineMs(round)).toBe(10000);
-    expect(acceptsClick(round, 9999)).toBe(true);
-    expect(acceptsClick(round, 10000)).toBe(false);
+    expect(inputDeadlineMs(round)).toBe(8000);
+    expect(acceptsClick(round, 7999)).toBe(true);
+    expect(acceptsClick(round, 8000)).toBe(false);
     expect(fixedRoundEndMs(round)).toBeNull();
   });
 
-  it('round 12 takes clicks for 5s only, then ignores input 4s: 9s in all', () => {
+  it('round 12 takes clicks for 4s only, then ignores input through its last breath (1.2s)', () => {
     const round = getRound(12);
-    expect(inputDeadlineMs(round)).toBe(5000);
+    expect(inputDeadlineMs(round)).toBe(4000);
     expect(acceptsClick(round, 0)).toBe(true);
     expect(acceptsClick(round, 2500)).toBe(true);
-    expect(acceptsClick(round, 4999)).toBe(true);
-    expect(acceptsClick(round, 5000)).toBe(false);
+    expect(acceptsClick(round, 3999)).toBe(true);
+    expect(acceptsClick(round, 4000)).toBe(false);
     expect(acceptsClick(round, 7000)).toBe(false);
-    expect(fixedRoundEndMs(round)).toBe(9000);
+    expect(fixedRoundEndMs(round)).toBe(5200);
   });
 
   it('a click between two windows is ignored', () => {

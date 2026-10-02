@@ -29,7 +29,7 @@ export const TRANSITIONS: Readonly<Record<GameState, readonly GameState[]>> = {
 
 /**
  * Scene-wide look. src/fx/sceneController.ts sets it per round (`gameConfig.fx.modeByRound`)
- * and turns it into effects; it is also mirrored to `data-scene-mode` on the stage.
+ * and turns it into effects; it is also mirrored to `data-scene-mode` on the app element.
  */
 export const SCENE_MODES = ['normal', 'distorted', 'alert', 'blackout'] as const;
 

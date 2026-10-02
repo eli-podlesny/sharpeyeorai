@@ -83,6 +83,33 @@ export function closingAmount(t: number, limitMs: number, speedUp: SpeedUp | nul
   return limitMs > 0 ? clamp01(t / limitMs) : 1;
 }
 
+export type BreathPhase = 'waiting' | 'rising' | 'holding' | 'falling' | 'done';
+
+/**
+ * Round 12's last breath at `t` ms from its start (negative = not yet): the lights rise,
+ * hold and fall back to black (`fx.lastBreath`).
+ */
+export function breathPhaseAt(
+  t: number,
+  cfg: { riseMs: number; holdMs: number; fallMs: number } = gameConfig.fx.lastBreath,
+): BreathPhase {
+  if (t < 0) return 'waiting';
+  if (t < cfg.riseMs) return 'rising';
+  if (t < cfg.riseMs + cfg.holdMs) return 'holding';
+  if (t < cfg.riseMs + cfg.holdMs + cfg.fallMs) return 'falling';
+  return 'done';
+}
+
+/** How long the last breath lasts, rise to fall. */
+export function breathDurationMs(cfg = gameConfig.fx.lastBreath): number {
+  return cfg.riseMs + cfg.holdMs + cfg.fallMs;
+}
+
+/** When the last breath is over, in ms from a round 12 click (it starts `delayAfterClickMs` after it). */
+export function breathEndAfterClickMs(cfg = gameConfig.fx.lastBreath): number {
+  return cfg.delayAfterClickMs + breathDurationMs(cfg);
+}
+
 /** Brightness pulse of the alert, 0 (#111) → 1 (orange) → 0, smooth, starting dark. */
 export function alertPulseAt(t: number, periodMs: number): number {
   return 0.5 - 0.5 * Math.cos((2 * Math.PI * t) / periodMs);

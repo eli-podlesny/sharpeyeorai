@@ -1,16 +1,17 @@
 import { gameConfig } from '../config/game.config';
 import type { SceneContext } from '../core/game';
 import { defineScene, type Scene } from '../core/scenes';
+import { breathEndAfterClickMs } from '../fx/schedule';
 
 /**
  * After the last round: the doors close and the scene goes fully black, then every effect
  * switches off and the screen returns to its place (scene mode `normal`), out of sight.
  * Then the lights come back and the score scene opens the doors onto the result.
  *
- * Round 12 leaves the scene black already. With no click there, the black lasts
- * `endDarknessMs`. A click ends round 12 at once, and then the black lasts
- * `fx.blackout.afterClickMs` counted from the click (the round's fade-out and pause included).
- * Doors that are still open in the black are shut at once, unseen.
+ * Round 12 leaves the scene black already, with its last breath of light (`fx.lastBreath`)
+ * just over (no click: the round ends with it) or still to come (1s after a click). The
+ * black then lasts `lastBreath.darkAfterMs` from the end of the breath. Otherwise (a debug
+ * jump) the black lasts `endDarknessMs`. Doors still open in the black shut at once, unseen.
  */
 export function createEndingScene(ctx: SceneContext): Scene {
   return defineScene((scope) => {
@@ -21,10 +22,13 @@ export function createEndingScene(ctx: SceneContext): Scene {
     const closeMs = doors.isClosed || alreadyDark ? 0 : gameConfig.doorCloseMs;
     const fadeMs = gameConfig.endDarknessFadeMs;
     const darkAt = closeMs + (alreadyDark ? 0 : fadeMs);
-    const holdMs =
-      alreadyDark && clicked
-        ? Math.max(gameConfig.fx.blackout.afterClickMs - seq.outroFadeMs - seq.betweenRoundsMs, 0)
-        : gameConfig.endDarknessMs;
+    // From round 12: when its last breath ends, from now (negative: it already has; the
+    // round's fade-out and pause ran since it ended).
+    const sinceRoundEnd = seq.outroFadeMs + seq.betweenRoundsMs;
+    const breathEnd = clicked ? breathEndAfterClickMs() - sinceRoundEnd : -sinceRoundEnd;
+    const holdMs = alreadyDark
+      ? Math.max(breathEnd + gameConfig.fx.lastBreath.darkAfterMs, 0)
+      : gameConfig.endDarknessMs;
 
     // Leaving early (debug jump) must not keep the window dark.
     scope.onDispose(() => darkness.setLevel(0, 0));
@@ -42,8 +46,10 @@ export function createEndingScene(ctx: SceneContext): Scene {
       }, closeMs);
     }
 
-    // Fully black: effects off, screen back in place, out of sight.
-    scope.timeout(() => ctx.setSceneMode('normal'), darkAt);
+    // Fully black: effects off, screen back in place, out of sight. After a round 12 click
+    // the last breath (fx.lastBreath) is still to come: the broken scene stays until it is over.
+    const breathLeft = alreadyDark ? Math.max(breathEnd, 0) : 0;
+    scope.timeout(() => ctx.setSceneMode('normal'), darkAt + breathLeft);
 
     const lightAt = darkAt + holdMs;
     scope.timeout(() => {

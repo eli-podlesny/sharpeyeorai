@@ -1,4 +1,4 @@
-import { rem } from '../core/units';
+import { u } from '../core/units';
 
 export const prefersReducedMotion = (): boolean =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -25,7 +25,7 @@ export function moveTo(
 ): void {
   el.style.setProperty('--move-ms', `${ms}ms`);
   el.style.setProperty('--move-ease', easing);
-  const parts = [y !== 0 && `translateY(${rem(y)})`, scale !== 1 && `scale(${scale})`];
+  const parts = [y !== 0 && `translateY(${u(y)})`, scale !== 1 && `scale(${scale})`];
   el.style.transform = parts.filter(Boolean).join(' ');
 }
 

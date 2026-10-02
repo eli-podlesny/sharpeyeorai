@@ -1,13 +1,11 @@
-import {
-  DESIGN_HEIGHT,
-  DESIGN_WIDTH,
-  MIN_WINDOW_WIDTH,
-  REM_BASE_PX,
-} from '../config/layout.config';
+import { FRAME_ASPECT, layout } from '../config/layout.config';
 
 /**
- * The stage is the 1440 × 900 design area. It scales to fit the window (contain)
- * by changing the root font size: every stage size is in rem, so one number scales it all.
+ * The stage is the window. Three groups size themselves against it (see layout.config.ts):
+ * the viewport HUD in fixed px, the background covering it, and the unit — the frame and
+ * everything in it — fitted inside with fixed margins. The unit's size is set in CSS
+ * (`.unit` in layers.css) from variables written here; `computeUnitRect` is the same
+ * formula in TypeScript, so input mapping and tests use exactly what CSS draws.
  */
 
 export interface Point {
@@ -15,53 +13,43 @@ export interface Point {
   y: number;
 }
 
-/** The on-screen rectangle of the stage element (as from getBoundingClientRect). */
-export interface StageRect {
+/** The unit's box in window CSS px, before any transform (the drop). */
+export interface UnitRect {
   left: number;
   top: number;
   width: number;
+  height: number;
 }
-
-/** Scale that fits the design into the window, never below the minimum window width. */
-export function computeScale(windowWidth: number, windowHeight: number): number {
-  const fit = Math.min(windowWidth / DESIGN_WIDTH, windowHeight / DESIGN_HEIGHT);
-  const minScale = MIN_WINDOW_WIDTH / DESIGN_WIDTH;
-  return Math.max(fit, minScale);
-}
-
-/** Pure conversion from screen coordinates to design pixels, given where the stage is. */
-export function clientToStage(clientX: number, clientY: number, rect: StageRect): Point {
-  const scale = rect.width / DESIGN_WIDTH;
-  return {
-    x: (clientX - rect.left) / scale,
-    y: (clientY - rect.top) / scale,
-  };
-}
-
-let stageEl: HTMLElement | null = null;
-let currentScale = 1;
 
 /**
- * Converts a mouse position (clientX/clientY) to stage design pixels.
- * All input must go through here, so scaling — and later shake or distortion — lives in one place.
+ * The largest frame-shaped box that fits the window with `unitMarginY` above and below and
+ * at least `unitMarginX` at the sides, capped at `maxUnitHeight`, centered both ways.
  */
-export function toStageCoords(clientX: number, clientY: number): Point {
-  if (!stageEl) throw new Error('Stage not initialised: call initStage() first.');
-  return clientToStage(clientX, clientY, stageEl.getBoundingClientRect());
+export function computeUnitRect(windowWidth: number, windowHeight: number): UnitRect {
+  const { unitMarginX, unitMarginY, maxUnitHeight } = layout.viewport;
+  const height = Math.max(
+    0,
+    Math.min(
+      windowHeight - 2 * unitMarginY,
+      (windowWidth - 2 * unitMarginX) / FRAME_ASPECT,
+      maxUnitHeight,
+    ),
+  );
+  const width = height * FRAME_ASPECT;
+  return { left: (windowWidth - width) / 2, top: (windowHeight - height) / 2, width, height };
 }
 
-export function getScale(): number {
-  return currentScale;
+/** CSS px on screen per unit reference px, for a unit drawn `unitHeight` px tall. */
+export function unitScale(unitHeight: number): number {
+  return unitHeight / layout.unit.height;
 }
 
-function applyScale(): void {
-  currentScale = computeScale(window.innerWidth, window.innerHeight);
-  document.documentElement.style.fontSize = `${REM_BASE_PX * currentScale}px`;
-}
-
-/** Sets up scaling for the given stage element and keeps it updated on resize. */
-export function initStage(el: HTMLElement): void {
-  stageEl = el;
-  applyScale();
-  window.addEventListener('resize', applyScale);
+/** Writes the sizing variables the CSS layout reads (`#app`, see layers.css). */
+export function initStage(app: HTMLElement): void {
+  const { unitMarginX, unitMarginY, maxUnitHeight, bgOverscan } = layout.viewport;
+  app.style.setProperty('--frame-ar', String(FRAME_ASPECT));
+  app.style.setProperty('--unit-margin-x', `${unitMarginX}px`);
+  app.style.setProperty('--unit-margin-y', `${unitMarginY}px`);
+  app.style.setProperty('--unit-max-height', `${maxUnitHeight}px`);
+  app.style.setProperty('--bg-overscan', String(bgOverscan));
 }

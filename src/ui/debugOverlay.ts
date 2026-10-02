@@ -11,7 +11,7 @@ import type { Game } from '../core/game';
 import type { SceneFx } from '../fx/sceneController';
 import { contentSize, toContentCoords } from '../core/input';
 import { randomSeed } from '../core/rng';
-import { getScale, toStageCoords, type Point } from '../core/stage';
+import { computeUnitRect, unitScale, type Point } from '../core/stage';
 import { GAME_STATES, SCENE_MODES, type GameState, type SceneMode } from '../core/state';
 import { autoplayResults } from '../rounds/autoplay';
 import { liveRound, roundDebug } from '../rounds/clock';
@@ -20,6 +20,7 @@ import { targetAt } from '../rounds/target';
 import { acceptsClick, fixedRoundEndMs, inputDeadlineMs } from '../rounds/timing';
 import { scoreRound } from '../scoring/summary';
 import { h } from './dom';
+import { createLayoutOutline } from './layoutOutline';
 import { openShapeGallery } from './shapeGallery';
 
 /** Physical key (same spot on any layout) or the typed character. */
@@ -46,6 +47,8 @@ export interface DebugOverlayOptions {
   fx: SceneFx;
   /** Start open (`?debug=1`). */
   open: boolean;
+  /** A unit box above the frame, for the layout outlines. */
+  outlineHost: HTMLElement;
 }
 
 function summarize(payload: unknown): string {
@@ -57,15 +60,16 @@ function summarize(payload: unknown): string {
 
 /**
  * Developer panel, hidden by default. The backtick key (`) toggles it.
- * Shows scale, mouse position, current state and round, live dO / dC / q under the
+ * Shows the unit size and scale, the mouse in window and content px, current state and round, live dO / dC / q under the
  * cursor during a round, the last events, controls to jump anywhere in the game,
  * autoplay presets that fill all rounds and go straight to the score, the scene mode,
  * motion controls: pause/resume and step one frame of the round clock, with the
  * round time, time left before the deadline and whether input is open; and effect
  * controls: force a scene mode, trigger a glitch, toggle alert and the screen drop,
- * scrub round 11's darkening. The FPS shows at the top.
+ * scrub round 11's darkening. The FPS shows at the top. "layout" outlines the screen
+ * opening, the HUD anchors and the safe areas over the frame art.
  */
-export function initDebugOverlay({ game, bus, fx, open }: DebugOverlayOptions): void {
+export function initDebugOverlay({ game, bus, fx, open, outlineHost }: DebugOverlayOptions): void {
   const el = h('div', 'debug-overlay');
   el.hidden = !open;
   el.setAttribute('aria-label', 'Debug panel');
@@ -107,7 +111,15 @@ export function initDebugOverlay({ game, bus, fx, open }: DebugOverlayOptions): 
   });
   markersLabel.append(markers, ' C/O/M markers');
 
-  controls.append(roundInput, goRound, restart, markersLabel);
+  // Outlines of the opening, HUD anchors and safe areas, to check them against the frame art
+  const outline = createLayoutOutline(outlineHost);
+  const outlineLabel = h('label', 'debug-overlay__toggle');
+  const outlineToggle = h('input', '');
+  outlineToggle.type = 'checkbox';
+  outlineToggle.addEventListener('change', () => outline.setVisible(outlineToggle.checked));
+  outlineLabel.append(outlineToggle, ' layout');
+
+  controls.append(roundInput, goRound, restart, markersLabel, outlineLabel);
 
   // Shapes: reroll the random blob, and see every shape at once
   const shapes = h('div', 'debug-overlay__row');
@@ -222,7 +234,7 @@ export function initDebugOverlay({ game, bus, fx, open }: DebugOverlayOptions): 
   el.append(info, states, controls, shapes, motionRow, autoplay, modeRow, fxRow, scrubRow, events);
   document.body.append(el);
 
-  let mouse = { x: NaN, y: NaN };
+  let mouse: Point = { x: NaN, y: NaN };
   let mouseContent: Point = { x: NaN, y: NaN };
   let state: GameState | null = null;
   let round: number | null = null;
@@ -265,13 +277,15 @@ export function initDebugOverlay({ game, bus, fx, open }: DebugOverlayOptions): 
 
   const render = (): void => {
     if (el.hidden) return;
-    const stage = Number.isNaN(mouse.x) ? '—' : `${mouse.x.toFixed(1)}, ${mouse.y.toFixed(1)}`;
+    const at = (p: Point): string =>
+      Number.isNaN(p.x) ? '—' : `${p.x.toFixed(1)}, ${p.y.toFixed(1)}`;
+    const unit = computeUnitRect(window.innerWidth, window.innerHeight);
     const showRound = state === 'round' && round !== null;
     info.textContent = [
       `fps     ${fps === null ? '—' : fps.toFixed(0)}${fx.breathingSupported ? '' : '  (no WebGL)'}`,
-      `scale   ${getScale().toFixed(4)}`,
       `window  ${window.innerWidth} × ${window.innerHeight}`,
-      `stage   ${stage}`,
+      `unit    ${unit.width.toFixed(0)} × ${unit.height.toFixed(0)}  scale ${unitScale(unit.height).toFixed(4)}`,
+      `mouse   ${at(mouse)}  →  content ${at(mouseContent)}`,
       `state   ${state ?? '—'}${showRound ? `  (round ${round}/${gameConfig.roundCount})` : ''}`,
       `seed    ${game.context.session.seed}`,
       `shape   ${round === null ? '—' : shapeSeed(game.context.session, round)}`,
@@ -329,7 +343,7 @@ export function initDebugOverlay({ game, bus, fx, open }: DebugOverlayOptions): 
   });
 
   window.addEventListener('mousemove', (e) => {
-    mouse = toStageCoords(e.clientX, e.clientY);
+    mouse = { x: e.clientX, y: e.clientY };
     mouseContent = toContentCoords(e.clientX, e.clientY);
     render();
   });

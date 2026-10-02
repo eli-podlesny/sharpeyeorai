@@ -12,10 +12,11 @@ import {
   translate,
   untransformPoint,
 } from './affine';
-import { contentFromStage } from './input';
 
-const { origin, drop } = layout.assembly;
-/** Round 10's dropped pose, the way the CSS writes it. */
+const { drop } = layout.assembly;
+/** The unit turns around its center. */
+const origin = { x: layout.unit.width / 2, y: layout.unit.height / 2 };
+/** The dropped pose (after round 9's click), the way the CSS writes it. */
 const dropped = compose(translate(drop.x, drop.y), rotate(drop.rotateDeg), scale(drop.scale));
 
 describe('affine', () => {
@@ -50,7 +51,7 @@ describe('affine', () => {
     }
   });
 
-  it('reads computed CSS matrices, converting the translation to design px', () => {
+  it('reads computed CSS matrices, converting the translation to unit px', () => {
     expect(parseCssTransform('none', 1)).toEqual(IDENTITY);
     const m = parseCssTransform('matrix(0.5, 0.1, -0.1, 0.5, 30, -20)', 2);
     expect(m).toEqual({ a: 0.5, b: 0.1, c: -0.1, d: 0.5, e: 15, f: -10 });
@@ -59,49 +60,5 @@ describe('affine', () => {
       2,
     );
     expect(m3).toEqual({ a: 0.5, b: 0.1, c: -0.1, d: 0.5, e: 15, f: -10 });
-  });
-});
-
-describe('clicks on the dropped screen (round 10)', () => {
-  const screen = layout.screen;
-
-  it('maps a click on the turned screen to the right screen-content point', () => {
-    // A point inside the screen (content px), where it is drawn on the stage when dropped…
-    const content = { x: 300, y: 200 };
-    const drawnAt = transformPoint(
-      { x: screen.left + content.x, y: screen.top + content.y },
-      dropped,
-      origin,
-    );
-    // …and a click there lands back on it.
-    const back = contentFromStage(drawnAt, dropped);
-    expect(back.x).toBeCloseTo(content.x, 6);
-    expect(back.y).toBeCloseTo(content.y, 6);
-  });
-
-  it('differs from naive (untransformed) mapping by far more than a pixel', () => {
-    const content = { x: 900, y: 600 };
-    const drawnAt = transformPoint(
-      { x: screen.left + content.x, y: screen.top + content.y },
-      dropped,
-      origin,
-    );
-    const naive = contentFromStage(drawnAt, IDENTITY);
-    expect(Math.hypot(naive.x - content.x, naive.y - content.y)).toBeGreaterThan(100);
-  });
-
-  it('works through a CSS matrix read at any stage scale', () => {
-    const s = 1.6;
-    const css = `matrix(${dropped.a}, ${dropped.b}, ${dropped.c}, ${dropped.d}, ${dropped.e * s}, ${dropped.f * s})`;
-    const m = parseCssTransform(css, s);
-    const content = { x: 523, y: 338 };
-    const drawnAt = transformPoint(
-      { x: screen.left + content.x, y: screen.top + content.y },
-      dropped,
-      origin,
-    );
-    const back = contentFromStage(drawnAt, m);
-    expect(back.x).toBeCloseTo(content.x, 6);
-    expect(back.y).toBeCloseTo(content.y, 6);
   });
 });

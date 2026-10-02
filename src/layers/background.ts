@@ -1,12 +1,12 @@
+import { manifest } from '../assets/manifest';
 import { layout } from '../config/layout.config';
-import { createLayerElement } from './placeholder';
-
-const PLACEHOLDER_SRC = '/placeholders/background.svg';
+import { createArt } from './art';
+import { createLayerElement } from './layer';
 
 /**
- * The room illustration. Centered on the window (not the stage) and at least
- * 110vw × 110vh, so it always bleeds past the edges. It is multiplied over the
- * room color token, so the tint can change without editing the image.
+ * The room illustration. Covers the window plus `bgOverscan` on every side (room for
+ * parallax and distortion later), so it never shows an edge. It is multiplied over the
+ * room color, so the tint can change without editing the image.
  */
 export interface BackgroundLayer {
   el: HTMLElement;
@@ -16,17 +16,17 @@ export interface BackgroundLayer {
 
 export function createBackgroundLayer(): BackgroundLayer {
   const el = createLayerElement('background');
-  const { artWidth, artHeight, minWidthVw, minHeightVh } = layout.background;
+  const { width, height } = manifest.background;
+  const ratio = width / height;
+  const cover = 1 + 2 * layout.viewport.bgOverscan;
 
-  const img = document.createElement('img');
-  img.className = 'background__art';
-  img.src = PLACEHOLDER_SRC;
-  img.alt = '';
-  img.draggable = false;
-  img.style.aspectRatio = `${artWidth} / ${artHeight}`;
-  // Cover: as wide as the window needs, or as wide as the height needs, whichever is larger.
-  img.style.width = `max(${minWidthVw}vw, ${minHeightVh}vh * ${artWidth / artHeight})`;
+  // Cover the layer: as wide as the layer, or as wide as its height needs, whichever is larger.
+  const art = createArt('background', 'background__art', (win) =>
+    Math.max(cover * win.width, cover * win.height * ratio),
+  );
+  art.img.style.aspectRatio = `${width} / ${height}`;
+  art.img.style.width = `max(100%, ${cover * 100}vh * ${ratio})`;
 
-  el.append(img);
-  return { el, art: img };
+  el.append(art.el);
+  return { el, art: art.img };
 }

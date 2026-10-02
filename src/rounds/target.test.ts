@@ -6,7 +6,7 @@ import { shapeAt } from './motion';
 import { createResult, createTimeoutResult } from './session';
 import { roundTarget, targetAt } from './target';
 
-const content = { width: layout.screen.width, height: layout.screen.height };
+const content = { width: layout.opening.width, height: layout.opening.height };
 const SEED = 42;
 
 describe('scoring a moving shape against the frame on screen', () => {
@@ -37,8 +37,8 @@ describe('scoring a moving shape against the frame on screen', () => {
   it('round 11: the falloff follows the current size', () => {
     const round = getRound(11);
     expect(targetAt(round, content, SEED, 0).falloffRadius).toBeCloseTo(100, 6);
-    expect(targetAt(round, content, SEED, 5000).falloffRadius).toBeCloseTo(60, 6);
-    expect(targetAt(round, content, SEED, 10000).falloffRadius).toBeCloseTo(20, 6);
+    expect(targetAt(round, content, SEED, 4000).falloffRadius).toBeCloseTo(60, 6);
+    expect(targetAt(round, content, SEED, 8000).falloffRadius).toBeCloseTo(20, 6);
   });
 
   it('still shapes give the same target at any time', () => {
@@ -49,7 +49,7 @@ describe('scoring a moving shape against the frame on screen', () => {
 
 describe('timeouts', () => {
   const r11 = getRound(11);
-  const timeout = createTimeoutResult(targetAt(r11, content, SEED, 10000));
+  const timeout = createTimeoutResult(targetAt(r11, content, SEED, 8000));
 
   it('have no click and score 0', () => {
     expect(timeout.click).toBeNull();

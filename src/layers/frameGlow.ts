@@ -1,16 +1,17 @@
 import { layout } from '../config/layout.config';
-import { rem } from '../core/units';
-import { createLayerElement, createPlaceholderLabel, placeBox } from './placeholder';
+import { u } from '../core/units';
+import { createArt, unitShare } from './art';
+import { createLayerElement, placeBox } from './layer';
 
-/** Blurred copy of the frame, sitting behind it. */
+/** The frame's shadow behind it ("frame as shadow" in Figma): the frame art, darkened and blurred. */
 export function createFrameGlowLayer(): HTMLElement {
   const el = createLayerElement('frame-glow');
-  placeBox(el, layout.frame);
+  const { unit, frameShadow } = layout;
+  placeBox(el, { left: 0, top: frameShadow.offsetY, width: unit.width, height: unit.height });
 
-  const glow = document.createElement('div');
-  glow.className = 'frame-glow__blur';
-  glow.style.filter = `blur(${rem(layout.frameGlow.blur)})`;
+  const art = createArt('frame', 'frame-glow__art', unitShare(unit.width, unit.width));
+  art.img.style.filter = `brightness(${frameShadow.brightness}) blur(${u(frameShadow.blur)})`;
 
-  el.append(glow, createPlaceholderLabel('frame-glow'));
+  el.append(art.el);
   return el;
 }

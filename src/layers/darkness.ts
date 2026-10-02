@@ -1,5 +1,5 @@
 import { fadeTo } from '../ui/motion';
-import { createLayerElement } from './placeholder';
+import { createLayerElement } from './layer';
 
 /** How dark the whole window is: 0 = normal lighting, 1 = black. */
 export interface DarknessControl {
@@ -10,8 +10,8 @@ export interface DarknessControl {
 
 /**
  * A dark overlay over the whole window, above the scene (rounds 11–12 and the end of the
- * game). It lives on the stage so that the `spotlight` layer can sit above it; it is sized
- * in vw/vh to cover the window whatever the stage scale.
+ * game). It is a window layer below the spotlight unit, so round 12's lit shape can sit above
+ * it.
  */
 export function createDarknessLayer(): { el: HTMLElement; control: DarknessControl } {
   const el = createLayerElement('darkness');

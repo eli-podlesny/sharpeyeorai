@@ -4,7 +4,7 @@
   box-sizing: border-box;
 }
 
-/* The root font size is set by src/core/stage.ts: 1rem = 16 design px × scale. */
+/* A fixed root size: the screen unit scales with container units instead (src/core/units.ts). */
 html {
   font-size: 16px;
 }

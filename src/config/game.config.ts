@@ -8,10 +8,20 @@ import type { SceneMode } from '../core/state';
 export type StartMode = 'button' | 'auto';
 
 export interface GameConfig {
+  /**
+   * Art preloading waits for each image to decode, but no longer than this: decoding never
+   * finishes while the tab is in the background, and the game must not stall there.
+   */
+  artDecodeTimeoutMs: number;
   startMode: StartMode;
   autoStartDelayMs: number;
   /** How long the blast doors take to slide apart. */
   doorOpenMs: number;
+  /**
+   * While the doors open, what is behind them (screen content and HUD) zooms in from
+   * `fromScale` to 1 over the same time. Not on closing; none with reduced motion.
+   */
+  doorReveal: { fromScale: number; easing: string };
   /** How long the blast doors take to slide shut (end of the game). */
   doorCloseMs: number;
   /** "Initializing" starts behind the shut doors; the doors start opening this much later. */
@@ -20,8 +30,12 @@ export interface GameConfig {
   loadingMs: number;
   /** "Initializing" fades out over this time before round 1's intro. */
   loadingFadeOutMs: number;
-  /** How long "Calculating" stays on screen. Unused while Calculating is out of the flow. */
+  /**
+   * The score screen opens on "Calculating", which stays this long after the doors are
+   * fully open; then it fades out and the score fades in over `calculatingFadeMs` each.
+   */
   calculatingMs: number;
+  calculatingFadeMs: number;
   roundCount: number;
   /** Before round 1: "Objective:" and the objective line (src/rounds/sequence.ts). */
   objectiveIntro: ObjectiveIntroConfig;
@@ -107,6 +121,8 @@ export interface FxConfig {
   alert: {
     /** One full pulse #111 → orange → #111. */
     periodMs: number;
+    /** Round 11 (blackout): the alarm speeds up to this period (still far under 3 Hz). */
+    intensePeriodMs: number;
     /** Alert fades in over the room color (and out again) over this time. */
     rampMs: number;
     /** The glow ellipse's opacity at full alert. Its blur radius is `layout.alertGlow.blur`. */
@@ -127,8 +143,22 @@ export interface FxConfig {
     closingDarkness: number;
     /** After an early click in round 11, doors and darkness hurry to the end over this time. */
     speedUpMs: number;
-    /** After a click in round 12 (which ends the game at once), the black lasts this long before the lights return on the score. */
-    afterClickMs: number;
+  };
+  /**
+   * Round 12's last breath: a little light comes back for a moment over the broken scene
+   * (doors shut, at once), then it goes black again. It starts `delayAfterClickMs` after a
+   * click, or when round 12 stops taking clicks (the round then ends with it). Rises over
+   * `riseMs`, holds `holdMs`, falls back over `fallMs`. One flash only (under the 3 Hz
+   * limit). Then `darkAfterMs` of full black, and the lights return on the score.
+   */
+  lastBreath: {
+    /** How much light comes back: 0.2 = the scene 20% visible (the darkness at 80%). */
+    brightness: number;
+    delayAfterClickMs: number;
+    darkAfterMs: number;
+    riseMs: number;
+    holdMs: number;
+    fallMs: number;
   };
 }
 
@@ -217,20 +247,23 @@ export interface PersonaConfig {
 }
 
 export const gameConfig: GameConfig = {
+  artDecodeTimeoutMs: 1500,
   startMode: 'button',
   autoStartDelayMs: 1500,
-  doorOpenMs: 2000,
+  doorOpenMs: 2200,
+  doorReveal: { fromScale: 0.9, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' },
   doorCloseMs: 2000,
   loadingStartBeforeDoorsMs: 300,
   loadingMs: 2500,
   loadingFadeOutMs: 200,
-  calculatingMs: 1500,
+  calculatingMs: 600,
+  calculatingFadeMs: 200,
   roundCount: 12,
   objectiveIntro: {
     titleInMs: 400,
     textDelayMs: 200,
     textInMs: 200,
-    holdMs: 1200,
+    holdMs: 1600,
     outMs: 400,
     inEasing: 'ease-out',
     outEasing: 'ease-in-out',
@@ -313,6 +346,7 @@ export const gameConfig: GameConfig = {
     },
     alert: {
       periodMs: 2400,
+      intensePeriodMs: 900,
       rampMs: 2000,
       glowOpacity: 0.16,
     },
@@ -325,7 +359,14 @@ export const gameConfig: GameConfig = {
     blackout: {
       closingDarkness: 1,
       speedUpMs: 800,
-      afterClickMs: 3000,
+    },
+    lastBreath: {
+      brightness: 0.2,
+      delayAfterClickMs: 1000,
+      darkAfterMs: 4000,
+      riseMs: 150,
+      holdMs: 450,
+      fallMs: 600,
     },
   },
 };

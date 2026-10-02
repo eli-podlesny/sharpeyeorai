@@ -1,4 +1,4 @@
-/* Scene looks. Sizes and positions come from layout.config.ts (set inline in rem). */
+/* Scene looks. Sizes and positions come from layout.config.ts (set inline with u(), container units). */
 
 /* Simple centered column: ready, loading, calculating, score */
 .scene-panel {
@@ -90,8 +90,14 @@
 .round-shape__path {
   fill: var(--shape-fill);
   fill-rule: evenodd;
+}
+
+/* The outline, drawn over the fill, with the hand-drawn (pencil) filter */
+.round-shape__outline {
+  fill: none;
   stroke: var(--shape-border);
-  stroke-linejoin: miter;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 /* Round 12: the light logo color instead of graphite */
@@ -102,6 +108,17 @@
 }
 
 /* While the timer runs the fill pulses (--pulse-ms per cycle); on the click it freezes */
+/* Round 12's question mark, in the logo font, centered on its point */
+.round-shape__mark {
+  fill: var(--shape-mark);
+  font-family: var(--font-display);
+  font-weight: var(--weight-display-bold);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  user-select: none;
+}
+
 .round-shape.is-pulsing .round-shape__path {
   animation: shape-pulse var(--pulse-ms, 1000ms) ease-in-out infinite;
 }
@@ -243,7 +260,8 @@
 }
 
 .score-total {
-  font-weight: var(--weight-display-bold);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-mono-bold);
   font-variant-numeric: tabular-nums;
   color: var(--score-total);
 }
@@ -292,7 +310,6 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
   margin: 0;
   text-align: center;
   font-family: var(--font-mono);

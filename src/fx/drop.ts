@@ -1,9 +1,9 @@
 import { gameConfig } from '../config/game.config';
 import { layout } from '../config/layout.config';
-import { rem } from '../core/units';
+import { computeUnitRect, unitScale } from '../core/stage';
 
 /**
- * The screen drop: the whole screen assembly (frame, glow, screen, doors) falls after
+ * The screen drop: the whole screen unit (frame, shadows, screen, doors) falls after
  * round 9's click, lands with a short shake, and stays down until the end of the game.
  */
 export interface ScreenDropFx {
@@ -25,7 +25,7 @@ export interface Pose {
 
 export const HOME: Pose = { x: 0, y: 0, rotateDeg: 0, scale: 1 };
 
-/** The landing shake, in design px and degrees (`layout.assembly.drop.shake`). */
+/** The landing shake, in unit px and degrees (`layout.assembly.drop.shake`). */
 export interface Shake {
   x: number;
   y: number;
@@ -54,23 +54,55 @@ export function shakePoses(end: Pose, shake: Shake): Pose[] {
   return poses;
 }
 
+/** As a CSS transform on a unit box. The move is in percent of the box (it is in unit px), so
+ * it scales with the unit; it turns and scales around the box center (its transform-origin). */
 function css(p: Pose): string {
-  return `translate(${rem(p.x)}, ${rem(p.y)}) rotate(${p.rotateDeg}deg) scale(${p.scale})`;
+  const x = (p.x / layout.unit.width) * 100;
+  const y = (p.y / layout.unit.height) * 100;
+  return `translate(${+x.toFixed(4)}%, ${+y.toFixed(4)}%) rotate(${p.rotateDeg}deg) scale(${p.scale})`;
 }
 
 /**
- * Moves the assembly with the Web Animations API, and every other target (the spotlight
- * layer that holds round 12's lit shape) exactly in step, each around the same stage point.
+ * Pure: the dropped pose for a window `windowHeight` tall with the unit drawn `unitHeight`
+ * tall. It moves down at least `drop.y`, and on tall windows far enough that its center
+ * sits `drop.centerFromBottom` above the window bottom, so it falls to the bottom of view.
+ */
+export function droppedPose(windowHeight: number, unitHeight: number): Pose {
+  const { drop } = layout.assembly;
+  const halfWindow = windowHeight / 2 / unitScale(unitHeight);
+  return {
+    x: drop.x,
+    y: Math.max(drop.y, halfWindow - drop.centerFromBottom),
+    rotateDeg: drop.rotateDeg,
+    scale: drop.scale,
+  };
+}
+
+/** The dropped pose for the window as it is now. */
+function droppedNow(): Pose {
+  const unit = computeUnitRect(window.innerWidth, window.innerHeight);
+  return droppedPose(window.innerHeight, unit.height);
+}
+
+/**
+ * Moves the unit with the Web Animations API, and every other target (the spotlight unit
+ * that holds round 12's lit shape) exactly in step: the same boxes, around the same center.
  * The end pose is also written to the style, so it stays put after the animation; clicks
- * are mapped through the transform as drawn (`assemblyMatrix()` in src/core/input.ts),
+ * are mapped through the transform as drawn (`unitMatrix()` in src/core/input.ts),
  * mid-animation included.
  */
 export function createScreenDrop(assembly: HTMLElement, followers: HTMLElement[]): ScreenDropFx {
   const cfg = gameConfig.fx.drop;
   const { drop: pose } = layout.assembly;
-  const dropped: Pose = { x: pose.x, y: pose.y, rotateDeg: pose.rotateDeg, scale: pose.scale };
   const targets = [assembly, ...followers];
   let down = false;
+
+  // While down, a resized window gets the pose for its new height.
+  window.addEventListener('resize', () => {
+    if (!down) return;
+    const end = css(droppedNow());
+    for (const el of targets) el.style.transform = end;
+  });
 
   /** Starts from what is drawn right now, so a change mid-way does not jump. */
   const moveTo = (end: Pose, frames: (from: string) => Keyframe[], ms: number): void => {
@@ -89,6 +121,7 @@ export function createScreenDrop(assembly: HTMLElement, followers: HTMLElement[]
     },
     drop(reducedMotion) {
       down = true;
+      const dropped = droppedNow();
       if (reducedMotion) {
         const ms = cfg.reducedMotionMs;
         moveTo(

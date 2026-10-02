@@ -1,5 +1,9 @@
+import { gameConfig } from '../config/game.config';
 import { layout } from '../config/layout.config';
-import { createLayerElement, createPlaceholderLabel, placeBox } from './placeholder';
+import { u } from '../core/units';
+import { prefersReducedMotion } from '../ui/motion';
+import { createArt, unitShare } from './art';
+import { createLayerElement, placeBox } from './layer';
 
 /** Opens and closes the blast doors. */
 export interface DoorsControl {
@@ -15,22 +19,38 @@ export interface DoorsControl {
 }
 
 /**
- * Left and right blast-door halves, clipped to the screen viewport.
- * Each half fills 50% of the viewport and slides out sideways to open.
+ * Left and right blast doors, clipped to the screen surface (the frame covers its edges).
+ * Both images span the whole surface and meet at the seam; to open, each slides
+ * `doors.openShift` out to its side, far enough that none of it is left in view.
  * Clicks always pass through to the screen (round 11 still counts clicks behind them).
+ * Opening (not snapping open) zooms `revealed` — what is behind the doors — in from
+ * `doorReveal.fromScale` over the same time.
  */
-export function createDoorsLayer(): { el: HTMLElement; control: DoorsControl } {
+export function createDoorsLayer(revealed: HTMLElement[]): {
+  el: HTMLElement;
+  control: DoorsControl;
+} {
   const el = createLayerElement('doors');
-  placeBox(el, layout.screen);
+  const { surface, unit, doors } = layout;
+  placeBox(el, surface);
+  el.style.setProperty('--door-shift', u(doors.openShift));
 
-  const halves: Record<'left' | 'right', HTMLElement> = { left: el, right: el };
+  const halves = {} as Record<'left' | 'right', HTMLElement>;
   for (const side of ['left', 'right'] as const) {
-    const door = document.createElement('div');
-    door.className = `door door--${side}`;
-    door.dataset.door = side;
-    door.append(createPlaceholderLabel(`doors · ${side}`));
-    el.append(door);
-    halves[side] = door;
+    const art = createArt(
+      side === 'left' ? 'doorLeft' : 'doorRight',
+      `door door--${side}`,
+      unitShare(doors.width, unit.width),
+    );
+    art.img.dataset.door = side;
+    placeBox(art.img, {
+      left: (surface.width - doors.width) / 2,
+      top: (surface.height - doors.height) / 2,
+      width: doors.width,
+      height: doors.height,
+    });
+    el.append(art.el);
+    halves[side] = art.img;
   }
 
   let closed = true;
@@ -52,15 +72,24 @@ export function createDoorsLayer(): { el: HTMLElement; control: DoorsControl } {
       void el.offsetWidth;
       el.style.setProperty('--door-duration', `${durationMs}ms`);
       el.classList.toggle('is-open', open);
+      if (open && durationMs > 0 && !prefersReducedMotion()) {
+        const { fromScale, easing } = gameConfig.doorReveal;
+        for (const target of revealed) {
+          target.animate([{ transform: `scale(${fromScale})` }, { transform: 'none' }], {
+            duration: durationMs,
+            easing,
+          });
+        }
+      }
     },
     setClosedAmount(amount) {
       const a = Math.min(Math.max(amount, 0), 1);
       closed = a > 0;
       el.classList.add('is-held');
       el.classList.remove('is-open');
-      const off = (1 - a) * 100;
-      halves.left.style.transform = `translateX(${-off}%)`;
-      halves.right.style.transform = `translateX(${off}%)`;
+      const off = (1 - a) * doors.openShift;
+      halves.left.style.transform = `translateX(${u(-off)})`;
+      halves.right.style.transform = `translateX(${u(off)})`;
     },
   };
   return { el, control };

@@ -5,7 +5,7 @@ import { getRound } from '../config/rounds.config';
 import type { SceneContext } from '../core/game';
 import { contentSize } from '../core/input';
 import { defineScene, type Scene } from '../core/scenes';
-import { setRem } from '../core/units';
+import { setU } from '../core/units';
 import { buildObjectiveIntro } from '../rounds/sequence';
 import { h } from '../ui/dom';
 import { commitStyles, fadeTo, moveTo, prefersReducedMotion } from '../ui/motion';
@@ -34,9 +34,9 @@ export function createObjectiveScene(ctx: SceneContext): Scene {
 
     // The wrapper rises and zooms; the title inside fades.
     const titleMotion = h('div', 'objective-intro move');
-    setRem(titleMotion, { top: titleTop, height: L.titleLineHeight });
+    setU(titleMotion, { top: titleTop, height: L.titleLineHeight });
     const title = h('h2', 'objective-intro__title fade', copy.objectiveIntro.title);
-    setRem(title, { fontSize: L.titleFontSize, lineHeight: L.titleLineHeight });
+    setU(title, { fontSize: L.titleFontSize, lineHeight: L.titleLineHeight });
     title.style.opacity = '0';
     titleMotion.append(title);
     moveTo(titleMotion, { y: L.rise, scale: L.titleScale }, 0);

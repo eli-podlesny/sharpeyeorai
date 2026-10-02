@@ -77,11 +77,11 @@ describe('rounds config', () => {
     expect(1000 / ((decoy?.onMs ?? 0) + (decoy?.offMs ?? 0))).toBeLessThanOrEqual(3);
   });
 
-  it('round 11 times out at 10s; round 12 takes clicks for 5s, then idles 4s', () => {
-    expect(getRound(11).timeLimitMs).toBe(10000);
+  it('round 11 times out at 8s; round 12 takes clicks for 4s, then idles for its last breath', () => {
+    expect(getRound(11).timeLimitMs).toBe(8000);
     const r12 = getRound(12);
-    expect(r12.inputWindows).toEqual([[0, 5000]]);
-    expect(r12.postRoundIdleMs).toBe(4000);
+    expect(r12.inputWindows).toEqual([[0, 4000]]);
+    expect(r12.postRoundIdleMs).toBe(1200);
     expect(r12.hideAfter).toEqual({ visibleMs: 1000, fadeMs: 200 });
   });
 
@@ -109,8 +109,8 @@ describe('rounds config', () => {
   });
 
   describe('round 7: a rectangle turned clockwise and leaning, that fills the free area', () => {
-    const { screen } = layout;
-    const content = { width: screen.width, height: screen.height };
+    const { opening } = layout;
+    const content = { width: opening.width, height: opening.height };
     const r7 = getRound(7);
     const area = freeScreenArea();
     const skew = r7.motions?.find((m) => m.type === 'skew');

@@ -1,25 +1,26 @@
 import { layout } from '../config/layout.config';
-import { rem } from '../core/units';
-import { createLayerElement, createPlaceholderLabel, placeBox } from './placeholder';
+import { u } from '../core/units';
+import { createArt, unitShare } from './art';
+import { createLayerElement, placeBox } from './layer';
 
 /**
- * The metal frame, on top of the screen edges. The placeholder is a border whose
- * thickness is worked out from the frame and screen boxes, so the middle stays open.
+ * The metal frame, on top of the screen edges, with its inner shadow just below it
+ * ("frame inner shadow" in Figma): the same art, nearly black, smaller, lower, soft and faint,
+ * so the opening's edge darkens over the doors and the screen.
  */
 export function createFrameLayer(): HTMLElement {
   const el = createLayerElement('frame');
-  const { frame, screen } = layout;
-  placeBox(el, frame);
+  const { unit, frameInnerShadow: shadow } = layout;
+  placeBox(el, { left: 0, top: 0, width: unit.width, height: unit.height });
+  const width = unitShare(unit.width, unit.width);
 
-  const overlap = frame.screenOverlap;
-  const top = screen.top - frame.top + overlap;
-  const left = screen.left - frame.left + overlap;
-  const right = frame.left + frame.width - (screen.left + screen.width) + overlap;
-  const bottom = frame.top + frame.height - (screen.top + screen.height) + overlap;
-  const ring = document.createElement('div');
-  ring.className = 'frame__ring';
-  ring.style.borderWidth = [top, right, bottom, left].map(rem).join(' ');
+  const inner = createArt('frame', 'frame__inner-shadow', width);
+  inner.img.style.transform = `translateY(${u(shadow.offsetY)}) scale(${shadow.scale})`;
+  inner.img.style.filter = `brightness(${shadow.brightness}) blur(${u(shadow.blur)})`;
+  inner.img.style.opacity = String(shadow.opacity);
 
-  el.append(ring, createPlaceholderLabel('frame'));
+  const art = createArt('frame', 'frame__art', width);
+
+  el.append(inner.el, art.el);
   return el;
 }

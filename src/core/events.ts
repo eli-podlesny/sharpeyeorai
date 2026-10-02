@@ -8,6 +8,9 @@ import type { GameState, SceneMode } from './state';
  * Emitting a name that is not listed here, or the wrong payload, is a type error.
  */
 export interface GameEvents {
+  /** Art preloading (src/core/preload.ts), before the Ready screen: for the v1.2 loading screen. */
+  'assets.progress': { loaded: number; total: number };
+  'assets.ready': { total: number };
   'state.change': { from: GameState | null; to: GameState };
   'door.open.start': { durationMs: number };
   'door.open.end': Record<string, never>;
@@ -35,7 +38,7 @@ export interface GameEvents {
   'fx.glitch': { durationMs: number };
   /** Alert mode's pulse and glow switch on or off (src/fx/alert.ts). */
   'alert.show': { active: boolean };
-  /** The screen assembly drops (round 10) or returns (src/fx/drop.ts). */
+  /** The screen unit drops (after round 9's click) or returns (src/fx/drop.ts). */
   'screen.drop': { down: boolean; durationMs: number };
   'score.reveal': { summary: SessionSummary; isSample: boolean };
   /** Share result was pressed; `copied` is false when the clipboard refused. */

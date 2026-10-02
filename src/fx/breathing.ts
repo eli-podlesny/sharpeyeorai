@@ -126,10 +126,10 @@ export function createBreathing(background: BackgroundLayer): BreathingFx {
   /** Uploads the image once. SVG art is rasterized at its natural (art) size first. */
   const upload = (): void => {
     if (!gl || !supported || textureReady) return;
-    const { artWidth, artHeight } = layout.background;
+    const { refWidth, refHeight } = layout.background;
     const raster = document.createElement('canvas');
-    raster.width = art.naturalWidth || artWidth;
-    raster.height = art.naturalHeight || artHeight;
+    raster.width = art.naturalWidth || refWidth;
+    raster.height = art.naturalHeight || refHeight;
     const g = raster.getContext('2d');
     if (!g) return;
     g.drawImage(art, 0, 0, raster.width, raster.height);
@@ -205,8 +205,8 @@ export function createBreathing(background: BackgroundLayer): BreathingFx {
       const dt = lastNow === null ? 0 : Math.min(now - lastNow, 100);
       lastNow = now;
       phase += (dt * speed.value(now) * 2 * Math.PI) / cfg.cycleMs;
-      const { artWidth, artHeight } = layout.background;
-      gl.uniform2f(uAmp, a / artWidth, a / artHeight);
+      const { refWidth, refHeight } = layout.background;
+      gl.uniform2f(uAmp, a / refWidth, a / refHeight);
       gl.uniform1f(uPhase, phase);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     },
