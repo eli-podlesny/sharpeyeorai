@@ -35,7 +35,12 @@ export function createScreenHud(): { el: HTMLElement; control: ScreenHudControl 
 
   // "Test 04/12" + progress bar
   const progress = h('div', 'screen-hud__progress');
-  setU(progress, { left: L.progress.left, top: L.progress.top, gap: L.progress.gap });
+  setU(progress, {
+    left: L.progress.left,
+    top: L.progress.top,
+    width: L.progress.width,
+    gap: L.progress.gap,
+  });
   const label = h('span', 'screen-hud__label');
   const count = h('span', '');
   const total = h(
@@ -45,7 +50,7 @@ export function createScreenHud(): { el: HTMLElement; control: ScreenHudControl 
   );
   label.append(count, total);
   const track = h('div', 'screen-hud__track');
-  setU(track, { width: L.progress.barWidth, height: L.progress.barHeight });
+  setU(track, { height: L.progress.barHeight });
   const bar = h('div', 'screen-hud__bar');
   track.append(bar);
   progress.append(label, track);

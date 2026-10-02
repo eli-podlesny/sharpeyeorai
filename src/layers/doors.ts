@@ -1,5 +1,7 @@
+import { gameConfig } from '../config/game.config';
 import { layout } from '../config/layout.config';
 import { u } from '../core/units';
+import { prefersReducedMotion } from '../ui/motion';
 import { createArt, unitShare } from './art';
 import { createLayerElement, placeBox } from './layer';
 
@@ -21,8 +23,13 @@ export interface DoorsControl {
  * Both images span the whole surface and meet at the seam; to open, each slides
  * `doors.openShift` out to its side, far enough that none of it is left in view.
  * Clicks always pass through to the screen (round 11 still counts clicks behind them).
+ * Opening (not snapping open) zooms `revealed` — what is behind the doors — in from
+ * `doorReveal.fromScale` over the same time.
  */
-export function createDoorsLayer(): { el: HTMLElement; control: DoorsControl } {
+export function createDoorsLayer(revealed: HTMLElement[]): {
+  el: HTMLElement;
+  control: DoorsControl;
+} {
   const el = createLayerElement('doors');
   const { surface, unit, doors } = layout;
   placeBox(el, surface);
@@ -65,6 +72,15 @@ export function createDoorsLayer(): { el: HTMLElement; control: DoorsControl } {
       void el.offsetWidth;
       el.style.setProperty('--door-duration', `${durationMs}ms`);
       el.classList.toggle('is-open', open);
+      if (open && durationMs > 0 && !prefersReducedMotion()) {
+        const { fromScale, easing } = gameConfig.doorReveal;
+        for (const target of revealed) {
+          target.animate([{ transform: `scale(${fromScale})` }, { transform: 'none' }], {
+            duration: durationMs,
+            easing,
+          });
+        }
+      }
     },
     setClosedAmount(amount) {
       const a = Math.min(Math.max(amount, 0), 1);

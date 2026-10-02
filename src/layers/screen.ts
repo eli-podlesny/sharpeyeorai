@@ -12,10 +12,16 @@ export const openingInSurface: Box = {
 };
 
 /**
- * The panel surface: base color over a blurred view of the room, and the texture in overlay.
- * Game content renders in `screen-content`, which covers the opening (game coordinates).
+ * The panel surface: base color over a blurred view of the room, game content, and the
+ * texture in overlay on top of it all (shapes and the screen HUD included). Game content
+ * renders in `screen-content`, which covers the opening (game coordinates). Put the
+ * screen HUD in with `addAboveContent`, so it stays under the texture.
  */
-export function createScreenLayer(): { el: HTMLElement; content: HTMLElement } {
+export function createScreenLayer(): {
+  el: HTMLElement;
+  content: HTMLElement;
+  addAboveContent(el: HTMLElement): void;
+} {
   const el = createLayerElement('screen');
   const { surface, unit, screenSurface } = layout;
   placeBox(el, surface);
@@ -35,6 +41,12 @@ export function createScreenLayer(): { el: HTMLElement; content: HTMLElement } {
   content.className = 'screen-content';
   placeBox(content, openingInSurface);
 
-  el.append(base, texture.el, content);
-  return { el, content };
+  el.append(base, content, texture.el);
+  return {
+    el,
+    content,
+    addAboveContent(child) {
+      el.insertBefore(child, texture.el);
+    },
+  };
 }

@@ -68,7 +68,9 @@ export type RoundConfig = {
   clickFeedback: boolean;
   /** Scene effects tied to this round (src/fx/sceneController.ts); the scene mode comes from `gameConfig.fx.modeByRound`. */
   effects: readonly RoundEffect[];
-  /** The round renders above the scene darkness, fully lit (round 12's smiley). */
+  /** A dark question mark on the shape, at its centroid C, in the logo font (round 12). */
+  shapeMark?: boolean;
+  /** The round renders above the scene darkness, fully lit (round 12's triangle). */
   aboveDarkness: boolean;
   copyKey: ObjectiveKey;
   /** Hooks into the round sequence (moving shapes, glitches…). Empty for now. */
@@ -345,6 +347,7 @@ const ROUND_SHAPES: Record<number, Partial<RoundConfig>> = {
     // The scene stays black; only the triangle shows, lit, on the dropped screen. The doors
     // close over the idle time.
     aboveDarkness: true,
+    shapeMark: true,
     effects: ['stayDropped', 'stayDark'],
   },
 };

@@ -1,12 +1,9 @@
 import { copy } from '../config/copy';
 import { gameConfig } from '../config/game.config';
-import { layout } from '../config/layout.config';
 import type { SceneContext } from '../core/game';
 import { defineScene, type Scene } from '../core/scenes';
-import { setU } from '../core/units';
-import { h } from '../ui/dom';
-import { commitStyles, fadeTo } from '../ui/motion';
-import { createPanel, createTitle } from './layout';
+import { fadeTo } from '../ui/motion';
+import { createFillingBar, createPanel, createTitle } from './layout';
 
 /**
  * "Initializing" starts behind the shut doors, the doors open onto it after
@@ -20,17 +17,10 @@ export function createLoadingScene(ctx: SceneContext): Scene {
 
     const panel = createPanel('loading');
     panel.classList.add('fade');
-    const track = h('div', 'progress-track');
-    setU(track, layout.scenes.loadingBar);
-    const bar = h('div', 'progress-fill');
-    bar.style.transitionDuration = `${gameConfig.loadingMs}ms`;
-    track.append(bar);
-    panel.append(createTitle(copy.loading.title), track);
+    const bar = createFillingBar(gameConfig.loadingMs);
+    panel.append(createTitle(copy.loading.title), bar.el);
     scope.mount(ctx.content, panel);
-
-    // Lay out the empty bar first so the browser animates it filling.
-    commitStyles(bar);
-    bar.classList.add('is-full');
+    bar.start();
 
     let loaded = false;
     let doorsOpen = false;

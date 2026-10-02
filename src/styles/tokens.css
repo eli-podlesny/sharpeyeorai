@@ -44,6 +44,8 @@
   /* Round 12 uses the light logo color, pulsing the same way */
   --shape-fill-light: color-mix(in srgb, var(--color-hud-text) 80%, transparent);
   --shape-fill-light-pulse-high: var(--color-hud-text);
+  /* Round 12's question mark on the triangle */
+  --shape-mark: var(--color-ink);
   --shape-border: var(--color-ink);
   --click-marker: var(--color-hazard);
   --decoy-dot: var(--color-hazard);

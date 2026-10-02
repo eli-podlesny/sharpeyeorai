@@ -17,7 +17,7 @@ export interface LayerStack {
   background: BackgroundLayer;
   /** The screen unit: frame, shadows, screen and doors, which move as one piece (the drop). */
   assembly: HTMLElement;
-  /** The screen layer (base, texture, content, screen HUD): what the glitch distorts. */
+  /** The screen layer (base, content, screen HUD, texture): what the glitch distorts. */
   screen: HTMLElement;
   /** Where scenes render: inside the screen opening, and above the doors in the HUD. */
   screenContent: HTMLElement;
@@ -46,8 +46,8 @@ export function createLayerStack(): LayerStack {
   const screen = createScreenLayer();
   const screenHud = createScreenHud();
   placeBox(screenHud.el, openingInSurface);
-  screen.el.append(screenHud.el);
-  const doors = createDoorsLayer();
+  screen.addAboveContent(screenHud.el);
+  const doors = createDoorsLayer([screen.content, screenHud.el]);
   const hud = createHudLayer();
   const darkness = createDarknessLayer();
 

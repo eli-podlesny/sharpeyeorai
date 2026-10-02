@@ -1,5 +1,6 @@
 import { gameConfig } from '../config/game.config';
 import { layout } from '../config/layout.config';
+import { computeUnitRect, unitScale } from '../core/stage';
 
 /**
  * The screen drop: the whole screen unit (frame, shadows, screen, doors) falls after
@@ -62,6 +63,28 @@ function css(p: Pose): string {
 }
 
 /**
+ * Pure: the dropped pose for a window `windowHeight` tall with the unit drawn `unitHeight`
+ * tall. It moves down at least `drop.y`, and on tall windows far enough that its center
+ * sits `drop.centerFromBottom` above the window bottom, so it falls to the bottom of view.
+ */
+export function droppedPose(windowHeight: number, unitHeight: number): Pose {
+  const { drop } = layout.assembly;
+  const halfWindow = windowHeight / 2 / unitScale(unitHeight);
+  return {
+    x: drop.x,
+    y: Math.max(drop.y, halfWindow - drop.centerFromBottom),
+    rotateDeg: drop.rotateDeg,
+    scale: drop.scale,
+  };
+}
+
+/** The dropped pose for the window as it is now. */
+function droppedNow(): Pose {
+  const unit = computeUnitRect(window.innerWidth, window.innerHeight);
+  return droppedPose(window.innerHeight, unit.height);
+}
+
+/**
  * Moves the unit with the Web Animations API, and every other target (the spotlight unit
  * that holds round 12's lit shape) exactly in step: the same boxes, around the same center.
  * The end pose is also written to the style, so it stays put after the animation; clicks
@@ -71,9 +94,15 @@ function css(p: Pose): string {
 export function createScreenDrop(assembly: HTMLElement, followers: HTMLElement[]): ScreenDropFx {
   const cfg = gameConfig.fx.drop;
   const { drop: pose } = layout.assembly;
-  const dropped: Pose = { x: pose.x, y: pose.y, rotateDeg: pose.rotateDeg, scale: pose.scale };
   const targets = [assembly, ...followers];
   let down = false;
+
+  // While down, a resized window gets the pose for its new height.
+  window.addEventListener('resize', () => {
+    if (!down) return;
+    const end = css(droppedNow());
+    for (const el of targets) el.style.transform = end;
+  });
 
   /** Starts from what is drawn right now, so a change mid-way does not jump. */
   const moveTo = (end: Pose, frames: (from: string) => Keyframe[], ms: number): void => {
@@ -92,6 +121,7 @@ export function createScreenDrop(assembly: HTMLElement, followers: HTMLElement[]
     },
     drop(reducedMotion) {
       down = true;
+      const dropped = droppedNow();
       if (reducedMotion) {
         const ms = cfg.reducedMotionMs;
         moveTo(

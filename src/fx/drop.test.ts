@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { layout } from '../config/layout.config';
-import { shakePoses } from './drop';
+import { computeUnitRect, unitScale } from '../core/stage';
+import { droppedPose, shakePoses } from './drop';
 
 const { drop } = layout.assembly;
 const end = { x: drop.x, y: drop.y, rotateDeg: drop.rotateDeg, scale: drop.scale };
@@ -30,6 +31,39 @@ describe('landing shake', () => {
       expect(Math.abs(p.y - end.y)).toBeLessThanOrEqual(drop.shake.y);
       expect(Math.abs(p.x - end.x)).toBeLessThanOrEqual(drop.shake.x);
       expect(Math.abs(p.rotateDeg - end.rotateDeg)).toBeLessThanOrEqual(drop.shake.rotateDeg);
+    }
+  });
+});
+
+describe('dropped pose', () => {
+  const at = (w: number, h: number) => droppedPose(h, computeUnitRect(w, h).height);
+
+  it('is the configured drop at 1440 × 900', () => {
+    expect(at(1440, 900).y).toBeCloseTo(drop.y, 6);
+  });
+
+  it('never drops less than the configured drop', () => {
+    for (const [w, h] of [
+      [1280, 720],
+      [1920, 1080],
+      [2560, 1440],
+      [3440, 1440],
+    ] as const) {
+      expect(at(w, h).y).toBeGreaterThanOrEqual(drop.y);
+    }
+  });
+
+  it('falls to the bottom of tall windows', () => {
+    for (const [w, h] of [
+      [1280, 1000],
+      [1024, 1366],
+      [1200, 1920],
+    ] as const) {
+      const unit = computeUnitRect(w, h);
+      const s = unitScale(unit.height);
+      // Its center ends up drop.centerFromBottom (unit px) above the window bottom.
+      const centerY = h / 2 + at(w, h).y * s;
+      expect(h - centerY).toBeCloseTo(drop.centerFromBottom * s, 6);
     }
   });
 });

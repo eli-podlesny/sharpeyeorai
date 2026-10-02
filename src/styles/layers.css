@@ -144,6 +144,7 @@
   background: var(--screen-surface);
 }
 
+/* Over the content and the screen HUD too: the whole screen looks printed on the panel */
 .screen__texture {
   object-fit: cover;
   mix-blend-mode: overlay;
@@ -197,8 +198,10 @@
   align-items: center;
 }
 
+/* The bar fills the rest of the counter's box */
 .screen-hud__track {
   position: relative;
+  flex: 1;
   background: var(--progress-track);
 }
 

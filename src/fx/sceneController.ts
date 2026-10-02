@@ -43,7 +43,7 @@ export interface SceneFx {
  *   normal → nothing; distorted → subtle breathing; alert → strong breathing + alert pulse;
  *   blackout → the same, darkening. Leaving the rounds puts everything back.
  * - Round effects (`effects` in rounds.config.ts): glitch every 4s (7–8), every 2s (9),
- *   without pause (10–11); the screen drop right after round 9's click, kept down through
+ *   without pause from round 9's click through 11; the screen drop right after round 9's click, kept down through
  *   round 12; the closing doors and blackout (11); the black scene around the lit triangle
  *   on the dropped screen (12). The screen goes home at the end, in the dark.
  *
@@ -99,6 +99,9 @@ export function createSceneController(
     // once, so the lights return on a calm stage. Every other change eases in.
     const ms = mode === 'normal' ? 0 : undefined;
     breathing.setLevel(breathingForMode(mode), now, ms);
+    // Round 11 (blackout): the alarm pulses faster. Reduced motion keeps it slow.
+    const intense = mode === 'blackout' && !prefersReducedMotion();
+    alert.setPeriod(intense ? fx.alert.intensePeriodMs : fx.alert.periodMs);
     applyAlert(now, ms);
     if (mode === 'normal') {
       // Back to a calm scene (round 1, or the end of the game while it is dark).
@@ -148,7 +151,8 @@ export function createSceneController(
 
     if (has('glitchSlow')) glitch.setPattern(fx.glitch.slow, now);
     else if (has('glitchFast')) glitch.setPattern(fx.glitch.fast, now);
-    // Glitches from the moment the screen is down; one from the round before keeps going.
+    // Glitches from the moment the screen is down; one from the round before (round 9's
+    // click) keeps going.
     else if (has('glitchConstant')) glitch.setConstant(downAt);
     else glitch.stop();
 
@@ -164,8 +168,12 @@ export function createSceneController(
   });
 
   bus.on('round.click', () => {
-    // Round 9: the screen falls right after the click (the round is already scored).
-    if (has('dropOnClick')) setDrop(true);
+    // Round 9: the screen falls right after the click (the round is already scored), and
+    // glitches without pause from that moment, as if the click broke it.
+    if (has('dropOnClick')) {
+      setDrop(true);
+      glitch.setConstant(performance.now());
+    }
     if (has('closingDoors') && closing < 1) {
       speedUp = { at: performance.now(), fromAmount: closing };
     }
@@ -173,8 +181,10 @@ export function createSceneController(
 
   bus.on('round.outro.start', ({ roundId }) => {
     const next = roundId < gameConfig.roundCount ? getRound(roundId + 1).effects : [];
-    // The glitch keeps its rhythm into a next round with the same kind (7 → 8, 10 → 11).
-    if (glitchKind(round?.effects ?? []) !== glitchKind(next)) glitch.stop();
+    // The glitch keeps its rhythm into a next round with the same kind (7 → 8, 10 → 11),
+    // and round 9's constant glitch (from its click) runs on into round 10.
+    const kind = glitch.constant ? 'glitchConstant' : glitchKind(round?.effects ?? []);
+    if (kind !== glitchKind(next)) glitch.stop();
   });
 
   bus.on('round.outro.end', ({ roundId }) => {

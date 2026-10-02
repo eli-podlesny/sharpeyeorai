@@ -3,8 +3,8 @@ import { freeScreenArea } from '../config/rounds.config';
 import { placeBox } from '../layers/layer';
 import { h } from './dom';
 
-/** Width drawn for the HUD anchors' outlines (their text width varies). */
-const ANCHOR_OUTLINE_WIDTH = 220;
+/** The logged tooltip's placement box in the Figma "hud placement" frame. */
+const TOOLTIP_BOX = { width: 147, height: 120 };
 
 /**
  * Debug: outlines the screen opening, the surface, the HUD anchors and the shapes' safe
@@ -45,18 +45,18 @@ export function createLayoutOutline(host: HTMLElement): { setVisible(visible: bo
     inOpening({
       left: L.progress.left,
       top: L.progress.top,
-      width: ANCHOR_OUTLINE_WIDTH,
+      width: L.progress.width,
       height: line,
     }),
     'progress',
     'anchor',
   );
-  const right = (r: number): number => opening.width - r - ANCHOR_OUTLINE_WIDTH;
+  const right = (r: number, width: number): number => opening.width - r - width;
   add(
     inOpening({
-      left: right(L.timer.right),
+      left: right(L.timer.right, L.progress.width),
       top: L.timer.top,
-      width: ANCHOR_OUTLINE_WIDTH,
+      width: L.progress.width,
       height: line,
     }),
     'timer',
@@ -64,7 +64,7 @@ export function createLayoutOutline(host: HTMLElement): { setVisible(visible: bo
   );
   const tip = round.loggedTooltip;
   add(
-    inOpening({ left: right(tip.right), top: tip.top, width: ANCHOR_OUTLINE_WIDTH, height: line }),
+    inOpening({ left: right(tip.right, TOOLTIP_BOX.width), top: tip.top, ...TOOLTIP_BOX }),
     'logged tooltip',
     'anchor',
   );

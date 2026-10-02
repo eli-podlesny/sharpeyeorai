@@ -17,6 +17,11 @@ export interface GameConfig {
   autoStartDelayMs: number;
   /** How long the blast doors take to slide apart. */
   doorOpenMs: number;
+  /**
+   * While the doors open, what is behind them (screen content and HUD) zooms in from
+   * `fromScale` to 1 over the same time. Not on closing; none with reduced motion.
+   */
+  doorReveal: { fromScale: number; easing: string };
   /** How long the blast doors take to slide shut (end of the game). */
   doorCloseMs: number;
   /** "Initializing" starts behind the shut doors; the doors start opening this much later. */
@@ -25,8 +30,12 @@ export interface GameConfig {
   loadingMs: number;
   /** "Initializing" fades out over this time before round 1's intro. */
   loadingFadeOutMs: number;
-  /** How long "Calculating" stays on screen. Unused while Calculating is out of the flow. */
+  /**
+   * The score screen opens on "Calculating", which stays this long after the doors are
+   * fully open; then it fades out and the score fades in over `calculatingFadeMs` each.
+   */
   calculatingMs: number;
+  calculatingFadeMs: number;
   roundCount: number;
   /** Before round 1: "Objective:" and the objective line (src/rounds/sequence.ts). */
   objectiveIntro: ObjectiveIntroConfig;
@@ -112,6 +121,8 @@ export interface FxConfig {
   alert: {
     /** One full pulse #111 → orange → #111. */
     periodMs: number;
+    /** Round 11 (blackout): the alarm speeds up to this period (still far under 3 Hz). */
+    intensePeriodMs: number;
     /** Alert fades in over the room color (and out again) over this time. */
     rampMs: number;
     /** The glow ellipse's opacity at full alert. Its blur radius is `layout.alertGlow.blur`. */
@@ -226,11 +237,13 @@ export const gameConfig: GameConfig = {
   startMode: 'button',
   autoStartDelayMs: 1500,
   doorOpenMs: 2000,
+  doorReveal: { fromScale: 0.9, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' },
   doorCloseMs: 2000,
   loadingStartBeforeDoorsMs: 300,
   loadingMs: 2500,
   loadingFadeOutMs: 200,
-  calculatingMs: 1500,
+  calculatingMs: 800,
+  calculatingFadeMs: 200,
   roundCount: 12,
   objectiveIntro: {
     titleInMs: 400,
@@ -319,6 +332,7 @@ export const gameConfig: GameConfig = {
     },
     alert: {
       periodMs: 2400,
+      intensePeriodMs: 900,
       rampMs: 2000,
       glowOpacity: 0.16,
     },

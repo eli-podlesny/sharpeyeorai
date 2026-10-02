@@ -1,5 +1,6 @@
 import type { ShapeFill } from '../config/rounds.config';
 import { u } from '../core/units';
+import type { Point } from '../core/stage';
 import { shapePath, type PlacedShape, type Size } from '../rounds/geometry';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -40,4 +41,14 @@ export function updateShapeSvg(
   shape: Pick<PlacedShape, 'outer' | 'holes'>,
 ): void {
   root.querySelector('path')?.setAttribute('d', shapePath(shape));
+}
+
+/** Prints `text` centered on `at` (screen-content px) over a shape SVG (round 12's "?"). */
+export function addShapeMark(root: SVGSVGElement, at: Point, text: string, fontSize: number): void {
+  const mark = svg('text', 'round-shape__mark');
+  mark.setAttribute('x', String(at.x));
+  mark.setAttribute('y', String(at.y));
+  mark.setAttribute('font-size', String(fontSize));
+  mark.textContent = text;
+  root.append(mark);
 }

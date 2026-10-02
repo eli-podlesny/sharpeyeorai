@@ -24,6 +24,8 @@ export const copy = {
     /** `{ms}` is padded with `padDigits()`, so the idle timer reads 0000ms. */
     timeValue: '{ms}ms',
     logged: 'Sample {n}, logged',
+    /** Printed on round 12's triangle. */
+    shapeMark: '?',
     loggedPosition: 'x {x}  y {y}',
     loggedTime: 't {ms}ms',
   },

@@ -30,7 +30,7 @@ import {
   shapeOpacityAt,
 } from '../rounds/timing';
 import { h } from '../ui/dom';
-import { createShapeSvg, updateShapeSvg } from '../ui/shapeSvg';
+import { addShapeMark, createShapeSvg, updateShapeSvg } from '../ui/shapeSvg';
 import { commitStyles, fadeTo, moveTo, prefersReducedMotion } from '../ui/motion';
 import { showTooltipAtCorner } from '../ui/tooltip';
 
@@ -119,6 +119,9 @@ export function createRoundScene(ctx: SceneContext): Scene {
       strokeWidth: L.shapeBorder,
       type: round.shape.type,
     });
+    if (round.shapeMark) {
+      addShapeMark(shape, restTarget.centers.C, copy.round.shapeMark, L.shapeMarkSize);
+    }
     const markers: Record<MarkerKind, HTMLElement> = {
       computed: createMarker('computed', restTarget.centers.C),
       pole: createMarker('pole', restTarget.centers.M),

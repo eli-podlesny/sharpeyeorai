@@ -9,8 +9,9 @@ import { setU, u } from '../core/units';
 import { createSampleResults } from '../rounds/autoplay';
 import { summarize, type SessionSummary } from '../scoring/summary';
 import { h } from '../ui/dom';
-import { prefersReducedMotion } from '../ui/motion';
+import { fadeTo, prefersReducedMotion } from '../ui/motion';
 import { besideElement, showTooltip } from '../ui/tooltip';
+import { createFillingBar, createPanel, createTitle } from './layout';
 
 const { score: L } = layout;
 
@@ -90,8 +91,9 @@ function createDetailsTable(summary: SessionSummary): HTMLTableElement {
 
 /**
  * The end of the test: total (counted up), verdict persona, speed tag, a Details table,
- * Share result and Play again. It renders behind the shut doors, then opens them; the
- * count-up runs while they open. The screen HUD is hidden here. Reached without
+ * Share result and Play again. The doors open onto "Calculating" (like "Initializing"),
+ * which stays `calculatingMs` once they are open; then the score fades in and counts up.
+ * The screen HUD is hidden here. Reached without
  * playing (debug jump), it scores seeded sample clicks instead.
  */
 export function createScoreScene(ctx: SceneContext): Scene {
@@ -143,15 +145,39 @@ export function createScoreScene(ctx: SceneContext): Scene {
 
     root.append(createLine('p', 'score-label', copy.score.label, L.label), verdict, table, links);
     if (isSample) root.append(h('p', 'score-sample-note', copy.score.sampleNote));
+    root.classList.add('fade');
+    root.style.opacity = '0';
+    root.inert = true;
     scope.mount(ctx.content, root);
 
+    // "Calculating" first, like "Initializing": it starts behind the shut doors, the doors
+    // open onto it (zooming in), and it stays `calculatingMs` once they are open.
+    const doorAt = gameConfig.loadingStartBeforeDoorsMs;
     const doorMs = gameConfig.doorOpenMs;
-    ctx.bus.emit('door.open.start', { durationMs: doorMs });
-    ctx.doors.setOpen(true, doorMs);
-    // The total counts up while the doors slide open.
-    ctx.bus.emit('score.reveal', { summary, isSample });
-    countUp(scope, total, summary.total);
-    scope.timeout(() => ctx.bus.emit('door.open.end', {}), doorMs);
+    const fadeMs = gameConfig.calculatingFadeMs;
+    const calcEnd = doorAt + doorMs + gameConfig.calculatingMs;
+    const calculating = createPanel('calculating');
+    calculating.classList.add('fade');
+    const bar = createFillingBar(calcEnd);
+    calculating.append(createTitle(copy.calculating.title), bar.el);
+    scope.mount(ctx.content, calculating);
+    bar.start();
+
+    scope.timeout(() => {
+      ctx.bus.emit('door.open.start', { durationMs: doorMs });
+      ctx.doors.setOpen(true, doorMs);
+      scope.timeout(() => ctx.bus.emit('door.open.end', {}), doorMs);
+    }, doorAt);
+
+    // Then the score: it fades in and the total counts up.
+    scope.timeout(() => fadeTo(calculating, 0, fadeMs), calcEnd);
+    scope.timeout(() => {
+      calculating.remove();
+      root.inert = false;
+      fadeTo(root, 1, fadeMs);
+      ctx.bus.emit('score.reveal', { summary, isSample });
+      countUp(scope, total, summary.total);
+    }, calcEnd + fadeMs);
 
     scope.listen(details, 'click', () => {
       const open = table.hidden;

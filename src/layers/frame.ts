@@ -5,7 +5,7 @@ import { createLayerElement, placeBox } from './layer';
 
 /**
  * The metal frame, on top of the screen edges, with its inner shadow just below it
- * ("frame inner shadow" in Figma): the same art, nearly black, smaller, higher and faint,
+ * ("frame inner shadow" in Figma): the same art, nearly black, smaller, lower, soft and faint,
  * so the opening's edge darkens over the doors and the screen.
  */
 export function createFrameLayer(): HTMLElement {

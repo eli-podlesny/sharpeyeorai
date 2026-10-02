@@ -102,6 +102,17 @@
 }
 
 /* While the timer runs the fill pulses (--pulse-ms per cycle); on the click it freezes */
+/* Round 12's question mark, in the logo font, centered on its point */
+.round-shape__mark {
+  fill: var(--shape-mark);
+  font-family: var(--font-display);
+  font-weight: var(--weight-display-bold);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  user-select: none;
+}
+
 .round-shape.is-pulsing .round-shape__path {
   animation: shape-pulse var(--pulse-ms, 1000ms) ease-in-out infinite;
 }

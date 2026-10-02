@@ -79,14 +79,18 @@ const surface: Box = {
   top: 24,
 };
 
-/** HUD anchors inside the opening, in percent of the opening. */
+/**
+ * HUD anchors inside the opening, in percent of the opening. From the Figma "hud placement"
+ * frame (184:2, see docs/figma/v1.1a-layers.md): the counter and the timer sit in the top
+ * band on either side of the top notch, each in a box `progress.width` wide.
+ */
 const ANCHORS = {
-  /** Round counter and progress bar: top-left, inside the corner chamfer. */
-  progress: { left: 7, top: 7 },
-  /** Timer: top-right, mirrored. */
-  timer: { right: 7, top: 7 },
-  /** "Sample 0X, logged" tooltip: top-right, below the timer. */
-  loggedTooltip: { right: 7, top: 12 },
+  /** Round counter, with the progress bar filling the rest of its box. */
+  progress: { left: 16.52, top: 1.59, width: 27.885 },
+  /** Timer: mirrored, right-aligned in its box. */
+  timer: { right: 16.52, top: 1.59 },
+  /** "Sample 0X, logged" tooltip: its top-right corner, in the opening's top-right corner. */
+  loggedTooltip: { right: 6.195, top: 8.166 },
   /** Objective line: bottom-center, its bottom this far up, clear of the bottom notch. */
   objective: { bottom: 9 },
 } as const;
@@ -136,8 +140,8 @@ export const layout = {
 
   /** "frame as shadow" in Figma: the frame, darkened, blurred, a little lower. */
   frameShadow: { offsetY: 16, blur: 16, brightness: 0.34 },
-  /** "frame inner shadow": the frame, nearly black, smaller and higher, faint, over the doors. */
-  frameInnerShadow: { scale: 0.925, offsetY: -22.4, blur: 16, brightness: 0.14, opacity: 0.32 },
+  /** "frame inner shadow": the frame, nearly black, smaller, a little lower, very soft and faint, over the doors. */
+  frameInnerShadow: { scale: 0.925, offsetY: 17.6, blur: 64, brightness: 0.14, opacity: 0.32 },
   /** Screen Color: backdrop blur under the screen base color. */
   screenSurface: { backdropBlur: 8, textureOpacity: 0.32 },
 
@@ -153,7 +157,13 @@ export const layout = {
      */
     drop: {
       x: -300,
+      /** Moves down at least this far… */
       y: 140,
+      /**
+       * …and on taller windows further, until its center is this close to the window
+       * bottom (unit px; at 1440 × 900 that is the 140 above), so it always lands low.
+       */
+      centerFromBottom: 310,
       rotateDeg: -8,
       scale: 0.8,
       shake: { x: 3, y: 8, rotateDeg: 0.6, count: 5 },
@@ -176,8 +186,9 @@ export const layout = {
     progress: {
       left: pctW(ANCHORS.progress.left),
       top: pctH(ANCHORS.progress.top),
+      /** The counter and the bar together fill this width; the bar takes what is left. */
+      width: pctW(ANCHORS.progress.width),
       gap: 16,
-      barWidth: 160,
       barHeight: 4,
     },
     /** Timer, right-aligned. */
@@ -222,6 +233,8 @@ export const layout = {
     motionMargin: 48,
     /** Round 5's decoy dot. */
     decoySize: 2,
+    /** Round 12's question mark on the triangle (font size). */
+    shapeMarkSize: 44,
   },
 
   /** The shared tooltip (in-round "logged" sample, "Copied"), placed this far from its point. */
