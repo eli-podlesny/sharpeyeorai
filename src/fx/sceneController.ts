@@ -5,7 +5,7 @@ import { randomSeed } from '../core/rng';
 import type { SceneMode } from '../core/state';
 import type { LayerStack } from '../layers';
 import { liveRound } from '../rounds/clock';
-import { fixedRoundEndMs, inputDeadlineMs } from '../rounds/timing';
+import { inputDeadlineMs } from '../rounds/timing';
 import { prefersReducedMotion } from '../ui/motion';
 import { createAlert } from './alert';
 import { createBreathing } from './breathing';
@@ -232,6 +232,8 @@ export function createSceneController(
     const phase = breathPhaseAt(now - breathStart);
     const lit = phase === 'rising' || phase === 'holding';
     if (lit && !breathLit) {
+      // The doors are shut for it, at once, in the dark.
+      if (!doors.isClosed) doors.setOpen(false, 0);
       darkness.setLevel(
         fx.blackout.closingDarkness * (1 - fx.lastBreath.brightness),
         fx.lastBreath.riseMs,
@@ -245,18 +247,14 @@ export function createSceneController(
     if (phase === 'done') breathStart = null;
   };
 
-  /** Round 12: black scene, lit triangle; the doors close over the idle time. */
+  /** Round 12: black scene, lit triangle; the last breath when the time for clicks is over. */
   const tickStayDark = (now: number): void => {
     const live = liveRound.current;
     if (!round || live?.roundId !== round.id) return;
     const t = live.elapsedMs();
     const idleStart = inputDeadlineMs(round);
-    const end = fixedRoundEndMs(round);
-    if (idleStart !== null && end !== null && t >= idleStart) {
-      // No click came: the last breath, as the time for clicks runs out.
-      startBreath(now);
-      doors.setClosedAmount(clamp01((t - idleStart) / (end - idleStart)));
-    }
+    // No click came: the last breath, as the time for clicks runs out.
+    if (idleStart !== null && t >= idleStart) startBreath(now);
   };
 
   const tick = (now: number): void => {

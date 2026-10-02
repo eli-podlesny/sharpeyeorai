@@ -4,6 +4,7 @@ import { getRound, rounds } from '../config/rounds.config';
 import {
   alertForMode,
   alertPulseAt,
+  breathDurationMs,
   breathEndAfterClickMs,
   breathPhaseAt,
   breathingForMode,
@@ -178,7 +179,11 @@ describe('round 12: the last breath', () => {
     expect(breathPhaseAt(b.riseMs + b.holdMs + b.fallMs)).toBe('done');
   });
 
-  it('is over before the lights return after a click', () => {
-    expect(breathEndAfterClickMs()).toBeLessThan(gameConfig.fx.blackout.afterClickMs);
+  it('ends delayAfterClickMs + its own length after a click', () => {
+    expect(breathEndAfterClickMs()).toBe(b.delayAfterClickMs + breathDurationMs());
+  });
+
+  it('ends round 12 when no click came: its idle time is the breath', () => {
+    expect(getRound(12).postRoundIdleMs).toBe(breathDurationMs());
   });
 });

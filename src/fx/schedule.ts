@@ -100,9 +100,14 @@ export function breathPhaseAt(
   return 'done';
 }
 
+/** How long the last breath lasts, rise to fall. */
+export function breathDurationMs(cfg = gameConfig.fx.lastBreath): number {
+  return cfg.riseMs + cfg.holdMs + cfg.fallMs;
+}
+
 /** When the last breath is over, in ms from a round 12 click (it starts `delayAfterClickMs` after it). */
 export function breathEndAfterClickMs(cfg = gameConfig.fx.lastBreath): number {
-  return cfg.delayAfterClickMs + cfg.riseMs + cfg.holdMs + cfg.fallMs;
+  return cfg.delayAfterClickMs + breathDurationMs(cfg);
 }
 
 /** Brightness pulse of the alert, 0 (#111) → 1 (orange) → 0, smooth, starting dark. */
